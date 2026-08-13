@@ -1,0 +1,2 @@
+ALTER TABLE decks ADD COLUMN show_meaning_first BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE flashcards ADD COLUMN card_color VARCHAR(50);

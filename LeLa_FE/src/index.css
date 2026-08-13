@@ -1,0 +1,266 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@theme {
+  --color-brand-coral: #F05A4A;
+  --color-brand-teal: #2A8B9D;
+  --color-brand-offwhite: #F4F3EE;
+  --color-brand-navy: #1D2A3A;
+  --color-brand-black: #000000;
+  
+  --font-sans: "Inter", -apple-system, sans-serif;
+}
+
+@layer utilities {
+  .brutal-shadow {
+    box-shadow: 6px 6px 0px 0px #000000 !important;
+  }
+
+  .brutal-shadow-sm {
+    box-shadow: 3px 3px 0px 0px #000000 !important;
+  }
+
+  .brutal-border {
+    border: 3px solid #000000 !important;
+  }
+
+  .brutal-card {
+    border: 3px solid #000000 !important;
+    box-shadow: 6px 6px 0px 0px #000000 !important;
+    border-radius: 1.5rem !important;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .brutal-pill {
+    border: 3px solid #000000 !important;
+    box-shadow: 6px 6px 0px 0px #000000 !important;
+    border-radius: 9999px !important;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  
+  .brutal-pill:active {
+    transform: translate(4px, 4px) !important;
+    box-shadow: 2px 2px 0px 0px #000000 !important;
+  }
+}
+
+body {
+  font-family: "Inter", -apple-system, sans-serif;
+  background-color: var(--color-brand-offwhite);
+  color: var(--color-brand-navy);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background-color: rgba(240, 90, 74, 0.3);
+}
+
+/* brand-coral/30 */
+  /* Brutalist Form Validation Errors */
+  .ant-form-item {
+    margin-bottom: 24px !important;
+  }
+
+  .ant-form-item-explain-error {
+    font-weight: bold !important;
+    color: var(--color-brand-coral) !important;
+    font-size: 0.85rem;
+    padding-top: 8px; /* Đẩy chữ xuống để không đè lên shadow 6px */
+  }
+
+  /* Brutalist Global Toast Messages */
+  .ant-message {
+    /* Trả lại default của AntD: width 100%, left 0 */
+    top: 24px !important;
+    pointer-events: none !important;
+  }
+
+  .ant-message-notice {
+    width: 100% !important;
+    display: flex !important;
+    justify-content: flex-end !important;
+    padding-right: 24px !important;
+    pointer-events: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  /* Khử khung trắng mặc định của AntD */
+  .ant-message-notice-content {
+    background: transparent !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    border: none !important;
+    pointer-events: auto !important;
+  }
+
+  .ant-message-notice-wrapper {
+    border: 3px solid #000000 !important;
+    box-shadow: 4px 4px 0px 0px #000000 !important;
+    border-radius: 0px !important;
+    /* Strict brutalism */
+    font-weight: 900 !important;
+    padding: 12px 20px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px;
+    white-space: nowrap !important;
+    min-width: max-content !important;
+  }
+
+  .ant-message-notice-success .ant-message-notice-wrapper {
+    background-color: var(--color-brand-teal) !important;
+    color: #000000 !important;
+  }
+
+  .ant-message-notice-error .ant-message-notice-wrapper {
+    background-color: var(--color-brand-coral) !important;
+    color: #000000 !important;
+  }
+
+  .ant-message-notice-icon svg {
+    fill: #000000 !important;
+  }
+
+  @custom-variant dark (&:is(.dark *));
+
+  :root {
+    /* Geist Light Mode Variables */
+    --geist-bg-100: #ffffff;
+    --geist-bg-200: #fafafa;
+    
+    --geist-gray-100: #f2f2f2;
+    --geist-gray-200: #ebebeb;
+    --geist-gray-300: #e6e6e6;
+    --geist-gray-400: #eaeaea;
+    --geist-gray-500: #c9c9c9;
+    --geist-gray-600: #a8a8a8;
+    --geist-gray-700: #8f8f8f;
+    --geist-gray-800: #7d7d7d;
+    --geist-gray-900: #4d4d4d;
+    --geist-gray-1000: #171717;
+
+    --geist-blue-100: #f0f7ff;
+    --geist-blue-200: #e9f4ff;
+    --geist-blue-300: #dfefff;
+    --geist-blue-400: #cae7ff;
+    --geist-blue-500: #94ccff;
+    --geist-blue-600: #48aeff;
+    --geist-blue-700: #006bff;
+    --geist-blue-800: #0059ec;
+    --geist-blue-900: #005ff2;
+    --geist-blue-1000: #002359;
+
+    --geist-red-100: #ffeeef;
+    --geist-red-200: #ffe8ea;
+    --geist-red-300: #ffe3e4;
+    --geist-red-400: #ffd7d6;
+    --geist-red-500: #ffb1b3;
+    --geist-red-600: #ff676d;
+    --geist-red-700: #fc0035;
+    --geist-red-800: #ea001d;
+    --geist-red-900: #d8001b;
+    --geist-red-1000: #47000c;
+
+    --geist-success-100: #ecfdec; /* Map to green */
+    --geist-success-800: #279141;
+  }
+
+  .dark {
+    /* Geist Dark Mode Variables */
+    --geist-bg-100: #000000;
+    --geist-bg-200: #111111;
+    
+    --geist-gray-100: #1a1a1a;
+    --geist-gray-200: #1f1f1f;
+    --geist-gray-300: #292929;
+    --geist-gray-400: #2e2e2e;
+    --geist-gray-500: #454545;
+    --geist-gray-600: #878787;
+    --geist-gray-700: #8f8f8f;
+    --geist-gray-800: #7d7d7d;
+    --geist-gray-900: #a0a0a0;
+    --geist-gray-1000: #ededed;
+
+    --geist-blue-100: #06193a;
+    --geist-blue-200: #022248;
+    --geist-blue-300: #002f62;
+    --geist-blue-400: #003674;
+    --geist-blue-500: #00418b;
+    --geist-blue-600: #0090ff;
+    --geist-blue-700: #006efe;
+    --geist-blue-800: #005be7;
+    --geist-blue-900: #47a8ff;
+    --geist-blue-1000: #eaf6ff;
+
+    --geist-red-100: #330a11;
+    --geist-red-200: #440d13;
+    --geist-red-300: #5d0e17;
+    --geist-red-400: #6f101b;
+    --geist-red-500: #88151f;
+    --geist-red-600: #f32e40;
+    --geist-red-700: #f13242;
+    --geist-red-800: #e2162a;
+    --geist-red-900: #ff565f;
+    --geist-red-1000: #ffe9ed;
+
+    --geist-success-100: #002608;
+    --geist-success-800: #009432;
+  }
+
+  @theme {
+    --color-geist-bg-100: var(--geist-bg-100);
+    --color-geist-bg-200: var(--geist-bg-200);
+
+    --color-geist-gray-100: var(--geist-gray-100);
+    --color-geist-gray-200: var(--geist-gray-200);
+    --color-geist-gray-300: var(--geist-gray-300);
+    --color-geist-gray-400: var(--geist-gray-400);
+    --color-geist-gray-500: var(--geist-gray-500);
+    --color-geist-gray-600: var(--geist-gray-600);
+    --color-geist-gray-700: var(--geist-gray-700);
+    --color-geist-gray-800: var(--geist-gray-800);
+    --color-geist-gray-900: var(--geist-gray-900);
+    --color-geist-gray-1000: var(--geist-gray-1000);
+
+    --color-geist-blue-100: var(--geist-blue-100);
+    --color-geist-blue-200: var(--geist-blue-200);
+    --color-geist-blue-300: var(--geist-blue-300);
+    --color-geist-blue-400: var(--geist-blue-400);
+    --color-geist-blue-500: var(--geist-blue-500);
+    --color-geist-blue-600: var(--geist-blue-600);
+    --color-geist-blue-700: var(--geist-blue-700);
+    --color-geist-blue-800: var(--geist-blue-800);
+    --color-geist-blue-900: var(--geist-blue-900);
+    --color-geist-blue-1000: var(--geist-blue-1000);
+
+    --color-geist-red-100: var(--geist-red-100);
+    --color-geist-red-200: var(--geist-red-200);
+    --color-geist-red-300: var(--geist-red-300);
+    --color-geist-red-400: var(--geist-red-400);
+    --color-geist-red-500: var(--geist-red-500);
+    --color-geist-red-600: var(--geist-red-600);
+    --color-geist-red-700: var(--geist-red-700);
+    --color-geist-red-800: var(--geist-red-800);
+    --color-geist-red-900: var(--geist-red-900);
+    --color-geist-red-1000: var(--geist-red-1000);
+
+    --color-geist-success-100: var(--geist-success-100);
+    --color-geist-success-800: var(--geist-success-800);
+  }
+
+  /* Fix Ant Design Switch in dark mode */
+  .dark .ant-switch {
+    background: var(--geist-gray-400) !important;
+  }
+  .dark .ant-switch:hover:not(.ant-switch-disabled) {
+    background: var(--geist-gray-500) !important;
+  }
+  .dark .ant-switch.ant-switch-checked {
+    background: var(--geist-blue-700) !important;
+  }
+  .dark .ant-switch.ant-switch-checked:hover:not(.ant-switch-disabled) {
+    background: var(--geist-blue-600) !important;
+  }

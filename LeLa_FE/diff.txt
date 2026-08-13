@@ -1,0 +1,289 @@
+﻿diff --git a/src/features/study-content/pages/ExploreDecksPage.tsx b/src/features/study-content/pages/ExploreDecksPage.tsx
+index bc9d47c..0c6b7ad 100644
+--- a/src/features/study-content/pages/ExploreDecksPage.tsx
++++ b/src/features/study-content/pages/ExploreDecksPage.tsx
+@@ -1,9 +1,12 @@
+ import { useQuery } from '@tanstack/react-query';
+-import { Card, Tag, Button, Skeleton } from 'antd';
++import { Card, Tag, Button, Skeleton, Select } from 'antd';
+ import { useNavigate } from 'react-router-dom';
+-import { SearchOutlined, UserOutlined, SignalFilled, InfoCircleOutlined } from '@ant-design/icons';
+-import { useState } from 'react';
++import { SearchOutlined, UserOutlined, SignalFilled, InfoCircleOutlined, FilterOutlined } from '@ant-design/icons';
++import { useState, useEffect } from 'react';
+ import { decksApi } from '../api/decks.api';
++import { useAuth } from '@/features/auth/hooks/useAuth';
++import { examTypesApi } from '@/features/master-data/api/exam-types.api';
++import { onboardingApi } from '@/features/users/api/onboarding.api';
+ 
+ const difficultyColors = {
+   BEGINNER: '#2A8B9D', // Teal
+@@ -12,27 +15,64 @@ const difficultyColors = {
+ };
+ 
+ const difficultyLabels = {
+-  BEGINNER: 'CÆ¡ báº£n',
+-  INTERMEDIATE: 'Trung cáº¥p',
+-  ADVANCED: 'NĂ¢ng cao',
++  BEGINNER: 'Cơ b?n',
++  INTERMEDIATE: 'Trung c?p',
++  ADVANCED: 'Nâng cao',
+ };
+ 
+ export function ExploreDecksPage() {
+   const navigate = useNavigate();
++  const { user, refreshUser } = useAuth();
+   const [searchQuery, setSearchQuery] = useState('');
++  
++  // UI filter state
++  const [filterExamTypeId, setFilterExamTypeId] = useState<number | undefined>();
++  const [filterLevelId, setFilterLevelId] = useState<number | undefined>();
++
++  useEffect(() => {
++    if (user?.currentExamType) {
++      setFilterExamTypeId(user.currentExamType.id);
++    }
++    if (user?.currentLevel) {
++      setFilterLevelId(user.currentLevel.id);
++    }
++  }, [user]);
++
++  const { data: examTypes } = useQuery({
++    queryKey: ['exam-types'],
++    queryFn: examTypesApi.getAll,
++  });
++
++  const { data: levels } = useQuery({
++    queryKey: ['proficiency-levels', filterExamTypeId],
++    queryFn: () => examTypesApi.getLevels(filterExamTypeId!),
++    enabled: !!filterExamTypeId,
++  });
+ 
+   const { data, isLoading } = useQuery({
+     queryKey: ['explore-decks'],
+-    queryFn: () => decksApi.getAll({ size: 100 }), // Increased size to fetch more for frontend search
++    queryFn: () => decksApi.getAll({ size: 100 }), 
+   });
+ 
++  const handleUpdateLevel = async () => {
++    if (filterExamTypeId && filterLevelId) {
++      await onboardingApi.manualSelectLevel(filterExamTypeId, filterLevelId);
++      refreshUser();
++    }
++  };
++
+   const decks = data?.content || [];
+   
+-  const searchedDecks = decks.filter((deck: any) => 
+-    deck.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+-    (deck.description && deck.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
+-    (deck.topic?.name && deck.topic.name.toLowerCase().includes(searchQuery.toLowerCase()))
+-  );
++  const searchedDecks = decks.filter((deck: any) => {
++    const matchesSearch = deck.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
++      (deck.description && deck.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
++      (deck.topic?.name && deck.topic.name.toLowerCase().includes(searchQuery.toLowerCase()));
++      
++    const matchesExamType = filterExamTypeId ? deck.examTypeId === filterExamTypeId : true;
++    const matchesLevel = filterLevelId ? deck.levelId === filterLevelId : true;
++
++    return matchesSearch && (matchesExamType && matchesLevel);
++  });
+ 
+   const featuredDeck = searchedDecks.find((d: any) => d.isFeatured) || null;
+   const standardDecks = searchedDecks.filter((d: any) => d.id !== featuredDeck?.id);
+@@ -47,7 +87,6 @@ export function ExploreDecksPage() {
+ 
+   const handleSearch = (e: React.FormEvent) => {
+     e.preventDefault();
+-    // Frontend search happens automatically via state, but we handle submit to prevent page reload
+   };
+ 
+   return (
+@@ -55,8 +94,8 @@ export function ExploreDecksPage() {
+       {/* Search & Header Section */}
+       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
+         <div>
+-          <h1 className="text-4xl md:text-5xl font-black uppercase tracking-tighter text-[#1D2A3A] mb-2">KhĂ¡m phĂ¡ bá»™ tháº»</h1>
+-          <p className="text-gray-600 font-bold text-lg">TĂ¬m kiáº¿m hĂ ng ngĂ n bá»™ flashcard cháº¥t lÆ°á»£ng cao.</p>
++          <h1 className="text-4xl md:text-5xl font-black uppercase tracking-tighter text-[#1D2A3A] mb-2">Khám phá b? th?</h1>
++          <p className="text-gray-600 font-bold text-lg">T?m ki?m hàng ngàn b? flashcard ch?t lư?ng cao.</p>
+         </div>
+         <form 
+           onSubmit={handleSearch}
+@@ -67,7 +106,7 @@ export function ExploreDecksPage() {
+             type="text"
+             value={searchQuery}
+             onChange={(e) => setSearchQuery(e.target.value)}
+-            placeholder="Báº¡n muá»‘n há»c gĂ¬ hĂ´m nay?" 
++            placeholder="B?n mu?n h?c g? hôm nay?" 
+             className="flex-1 bg-transparent border-none outline-none shadow-none focus:outline-none focus:ring-0 px-6 text-base font-bold h-full min-w-0 placeholder:text-gray-400 placeholder:font-medium" 
+           />
+           <button 
+@@ -75,10 +114,42 @@ export function ExploreDecksPage() {
+             className="h-full px-8 font-black uppercase flex items-center justify-center gap-2 bg-[#F05A4A] text-white border-l-[3px] border-black hover:bg-[#d94f41] transition-colors shrink-0 outline-none"
+           >
+             <SearchOutlined className="text-xl" />
+-            TĂŒM
++            T?M
+           </button>
+         </form>
+       </div>
++      
++      {/* Level Filter Section */}
++      <div className="mb-10 brutal-card bg-white p-6 flex flex-col md:flex-row items-center gap-4">
++        <div className="flex items-center gap-2 font-bold text-lg text-[#1D2A3A]">
++          <FilterOutlined /> L?c theo m?c tiêu:
++        </div>
++        <Select
++          className="w-full md:w-48 brutal-border"
++          placeholder="Ch?n h? thi"
++          value={filterExamTypeId}
++          onChange={(val) => { setFilterExamTypeId(val); setFilterLevelId(undefined); }}
++          options={examTypes?.map(et => ({ label: et.name, value: et.id }))}
++          allowClear
++        />
++        <Select
++          className="w-full md:w-48 brutal-border"
++          placeholder="Ch?n c?p đ?"
++          value={filterLevelId}
++          onChange={(val) => setFilterLevelId(val)}
++          options={levels?.map(l => ({ label: l.name, value: l.id }))}
++          disabled={!filterExamTypeId}
++          allowClear
++        />
++        <Button 
++          type="primary" 
++          className="brutal-button bg-[#1D2A3A]" 
++          onClick={handleUpdateLevel}
++          disabled={!filterExamTypeId || !filterLevelId}
++        >
++          C?p nh?t h? sơ
++        </Button>
++      </div>
+ 
+       {isLoading ? (
+         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+@@ -95,14 +166,14 @@ export function ExploreDecksPage() {
+             <div className="mb-12">
+               <div className="inline-flex relative z-10 -mb-4 ml-6 lg:ml-10">
+                 <div className="bg-[#FFD700] text-black px-6 py-2 brutal-border border-black shadow-[4px_4px_0px_0px_#000] -rotate-2">
+-                  <h2 className="text-2xl font-black uppercase tracking-tight m-0">Ná»•i Báº­t HĂ´m Nay</h2>
++                  <h2 className="text-2xl font-black uppercase tracking-tight m-0">N?i B?t Hôm Nay</h2>
+                 </div>
+               </div>
+               
+               <div className="brutal-card brutal-shadow bg-white flex flex-col lg:flex-row overflow-hidden hover:-translate-y-1 transition-transform duration-300">
+                 <div 
+                   className="h-64 lg:h-auto lg:w-1/2 bg-gray-200 border-b-[3px] lg:border-b-0 lg:border-r-[3px] border-black bg-cover bg-center"
+-                  style={{ backgroundImage: `url(${featuredDeck.coverImageUrl || 'https://placehold.co/800x600/F4F3EE/1D2A3A?text=Featured'})` }}
++                  style={{ backgroundImage: url(\) }}
+                 />
+                 <div className="p-8 lg:p-12 flex flex-col justify-center flex-1">
+                   <div className="flex flex-wrap items-center gap-3 mb-6">
+@@ -110,10 +181,10 @@ export function ExploreDecksPage() {
+                       {featuredDeck.topic?.name || 'Chung'}
+                     </Tag>
+                     <span className="text-sm font-bold bg-[#F4F3EE] px-3 py-1 brutal-border border-black">
+-                      {featuredDeck.totalCards} tháº»
++                      {featuredDeck.totalCards} th?
+                     </span>
+-                    <span className="text-sm font-bold bg-[#F4F3EE] px-3 py-1 brutal-border border-black flex items-center gap-1" style={{ color: difficultyColors[featuredDeck.difficulty] }}>
+-                      <SignalFilled /> {difficultyLabels[featuredDeck.difficulty]}
++                    <span className="text-sm font-bold bg-[#F4F3EE] px-3 py-1 brutal-border border-black flex items-center gap-1" style={{ color: difficultyColors[featuredDeck.difficulty as keyof typeof difficultyColors] }}>
++                      <SignalFilled /> {difficultyLabels[featuredDeck.difficulty as keyof typeof difficultyLabels]}
+                     </span>
+                   </div>
+                   
+@@ -121,19 +192,19 @@ export function ExploreDecksPage() {
+                     {featuredDeck.title}
+                   </h3>
+                   <p className="text-gray-600 text-lg mb-8 line-clamp-3">
+-                    {featuredDeck.description || 'ChÆ°a cĂ³ mĂ´ táº£ chi tiáº¿t cho bá»™ tháº» nĂ y.'}
++                    {featuredDeck.description || 'Chưa có mô t? chi ti?t cho b? th? này.'}
+                   </p>
+                   
+                   <div className="flex items-center gap-6 mt-auto">
+                     <Button 
+                       className="brutal-pill font-black uppercase h-14 px-10 bg-[#1D2A3A] text-white hover:bg-black transition-colors text-lg border-[2px] border-black"
+-                      onClick={() => navigate(`/decks/${featuredDeck.id}`)}
++                      onClick={() => navigate(/decks/\)}
+                     >
+-                      XEM CHI TIáº¾T
++                      XEM CHI TI?T
+                     </Button>
+                     <div className="flex items-center gap-2 text-gray-500 font-bold">
+                       <UserOutlined className="text-xl" />
+-                      <span className="text-lg">{featuredDeck.enrollmentCount} ngÆ°á»i há»c</span>
++                      <span className="text-lg">{featuredDeck.enrollmentCount} ngư?i h?c</span>
+                     </div>
+                   </div>
+                 </div>
+@@ -160,26 +231,26 @@ export function ExploreDecksPage() {
+                       >
+                         <div 
+                           className="h-32 bg-gray-200 border-b-[3px] border-black bg-cover bg-center relative"
+-                          style={{ backgroundImage: `url(${deck.coverImageUrl || 'https://placehold.co/400x200/F4F3EE/1D2A3A?text=No+Image'})` }}
++                          style={{ backgroundImage: url(\) }}
+                         />
+                         <div className="p-4 flex flex-col flex-1">
+                           <div className="flex justify-between items-start mb-2 gap-2">
+                             <h3 
+                               className="text-xl font-bold leading-tight line-clamp-2 cursor-pointer hover:text-[#F05A4A] transition-colors"
+-                              onClick={() => navigate(`/decks/${deck.id}`)}
++                              onClick={() => navigate(/decks/\)}
+                             >
+                               {deck.title}
+                             </h3>
+                             <Button 
+                               icon={<InfoCircleOutlined />} 
+                               className="brutal-pill border-[2px] border-black bg-white text-black shrink-0 hover:bg-[#F4F3EE] hover:-translate-y-1 transition-transform" 
+-                              onClick={() => navigate(`/decks/${deck.id}`)}
+-                              title="Chi tiáº¿t bá»™ tháº»"
++                              onClick={() => navigate(/decks/\)}
++                              title="Chi ti?t b? th?"
+                             />
+                           </div>
+                           
+                           <p className="text-gray-600 text-sm mb-4 line-clamp-2 flex-1">
+-                            {deck.description || 'ChÆ°a cĂ³ mĂ´ táº£ chi tiáº¿t cho bá»™ tháº» nĂ y.'}
++                            {deck.description || 'Chưa có mô t? chi ti?t cho b? th? này.'}
+                           </p>
+ 
+                           <div className="mb-4 mt-auto">
+@@ -187,19 +258,19 @@ export function ExploreDecksPage() {
+                               <span className="flex items-center gap-1" style={{ color: difficultyColors[deck.difficulty as keyof typeof difficultyColors] }}>
+                                 <SignalFilled /> {difficultyLabels[deck.difficulty as keyof typeof difficultyLabels]}
+                               </span>
+-                              <span>{deck.totalCards} tháº»</span>
++                              <span>{deck.totalCards} th?</span>
+                             </div>
+                             <div className="flex items-center gap-1 font-bold text-gray-500 text-xs mt-2">
+-                              <UserOutlined /> {deck.enrollmentCount} ngÆ°á»i há»c
++                              <UserOutlined /> {deck.enrollmentCount} ngư?i h?c
+                             </div>
+                           </div>
+ 
+                           <div className="mt-auto flex gap-2">
+                             <Button 
+                               className="flex-1 brutal-pill font-black uppercase h-10 !bg-[#F05A4A] !text-white border-[2px] border-black hover:!bg-[#d94f41] hover:!translate-y-[-2px]"
+-                              onClick={() => navigate(`/decks/${deck.id}`)}
++                              onClick={() => navigate(/decks/\)}
+                             >
+-                              XEM CHI TIáº¾T
++                              XEM CHI TI?T
+                             </Button>
+                           </div>
+                         </div>
+@@ -211,9 +282,9 @@ export function ExploreDecksPage() {
+             </div>
+           )}
+           
+-          {!isLoading && decks.length === 0 && (
++          {!isLoading && standardDecks.length === 0 && !featuredDeck && (
+             <div className="text-center py-20 brutal-card bg-white shadow-[4px_4px_0px_0px_#000]">
+-              <h2 className="text-2xl font-black uppercase text-[#1D2A3A]">KhĂ´ng tĂ¬m tháº¥y bá»™ tháº» nĂ o.</h2>
++              <h2 className="text-2xl font-black uppercase text-[#1D2A3A]">Không t?m th?y b? th? nào phù h?p v?i tr?nh đ? c?a b?n.</h2>
+             </div>
+           )}
+         </>

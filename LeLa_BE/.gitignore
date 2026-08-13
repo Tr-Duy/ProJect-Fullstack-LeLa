@@ -1,0 +1,55 @@
+HELP.md
+target/
+.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### VS Code ###
+.vscode/
+
+KE_HOACH_NANG_CAP_LELA_MYSQL_FLYWAY.md
+LeLa_upgraded_schema_mysql8.sql
+coding_rules.md
+
+# Added by code-review-graph
+.code-review-graph/
+.mcp.json
+.opencode.json
+.cursorrules
+.windsurfrules
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+QODER.md
+.claude/
+.gemini/
+.kiro/
+.qoder/
+.github/code-review-graph.instruction.md
+.code-review-graphignore
+global-error.log
