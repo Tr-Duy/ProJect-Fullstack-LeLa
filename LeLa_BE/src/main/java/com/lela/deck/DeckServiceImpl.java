@@ -146,10 +146,27 @@ public class DeckServiceImpl implements DeckService {
     @Override
     public DeckResponse getDeckById(Long id) {
         Deck deck = deckRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Deck not found"));
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy bộ thẻ."));
 
         if (deck.getTopic() != null && Boolean.FALSE.equals(deck.getTopic().getIsActive())) {
-            throw new IllegalArgumentException("This deck belongs to an inactive topic.");
+            throw new IllegalArgumentException("Bộ thẻ thuộc chủ đề đang ngưng hoạt động.");
+        }
+
+        Users currentUser = getOptionalCurrentUser();
+        if (!canUserAccessDeck(currentUser, deck)) {
+            if (currentUser == null) {
+                throw new org.springframework.security.access.AccessDeniedException(
+                        "Đăng nhập để học TOEIC theo đúng trình độ của bạn"
+                );
+            } else if (currentUser.getCurrentLevel() == null) {
+                throw new org.springframework.security.access.AccessDeniedException(
+                        "Bạn chưa chọn trình độ TOEIC. Vui lòng chọn trình độ tại trang Onboarding."
+                );
+            } else {
+                throw new org.springframework.security.access.AccessDeniedException(
+                        "Bạn không có quyền truy cập bộ thẻ TOEIC này. Vui lòng học các bộ thẻ đúng trình độ hiện tại của bạn."
+                );
+            }
         }
 
         return DeckResponse.fromEntity(deck);
@@ -158,12 +175,24 @@ public class DeckServiceImpl implements DeckService {
     @Transactional(readOnly = true)
     @Override
     public Page<DeckResponse> getAllDecks(Long examTypeId, Long levelId, Pageable pageable) {
+        Users currentUser = getOptionalCurrentUser();
         Page<Deck> page;
-        if (examTypeId != null && levelId != null) {
-            page = deckRepository.findByExamTypeIdAndLevelIdAndIsActiveTrue(examTypeId, levelId, pageable);
+
+        if (isUserAdmin(currentUser)) {
+            if (examTypeId != null && levelId != null) {
+                page = deckRepository.findByExamTypeIdAndLevelIdAndIsActiveTrue(examTypeId, levelId, pageable);
+            } else {
+                page = deckRepository.findByIsActiveTrue(pageable);
+            }
+        } else if (currentUser == null || currentUser.getCurrentLevel() == null) {
+            // Guest or Learner without selected level -> only get public non-level-gated decks
+            page = deckRepository.findByIsActiveTrueAndExamTypeIsNullAndLevelIsNull(pageable);
         } else {
-            page = deckRepository.findByIsActiveTrue(pageable);
+            // Learner with selected level -> get non-level-gated decks + TOEIC decks up to their level
+            Integer maxDisplayOrder = currentUser.getCurrentLevel().getDisplayOrder();
+            page = deckRepository.findAccessibleDecksUpToDisplayOrder(maxDisplayOrder != null ? maxDisplayOrder : 1, pageable);
         }
+
         return page.map(DeckResponse::fromEntity);
     }
     
@@ -203,6 +232,49 @@ public class DeckServiceImpl implements DeckService {
 
         return usersRepository.findByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy người dùng đang đăng nhập."));
+    }
+
+    private Users getOptionalCurrentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
+            return null;
+        }
+        String username = authentication.getName();
+        return usersRepository.findByUsername(username).orElse(null);
+    }
+
+    private boolean isUserAdmin(Users user) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getAuthorities().stream().anyMatch(a -> "ROLE_ADMIN".equalsIgnoreCase(a.getAuthority()) || "ADMIN".equalsIgnoreCase(a.getAuthority()))) {
+            return true;
+        }
+        if (user == null) return false;
+        return user.getRoleCodes() != null && user.getRoleCodes().contains("ADMIN");
+    }
+
+    private boolean canUserAccessDeck(Users user, Deck deck) {
+        // Non-level-gated decks are accessible to everyone (Guests, Learners, Admins)
+        if (deck.getExamType() == null && deck.getLevel() == null) {
+            return true;
+        }
+        // Level-gated decks: Guests cannot access
+        if (user == null) {
+            return false;
+        }
+        // Admins can access all decks
+        if (isUserAdmin(user)) {
+            return true;
+        }
+        // Learners must have a selected level that allows accessing this deck
+        if (user.getCurrentLevel() == null || deck.getLevel() == null) {
+            return false;
+        }
+        Integer userOrder = user.getCurrentLevel().getDisplayOrder();
+        Integer deckOrder = deck.getLevel().getDisplayOrder();
+        if (userOrder == null || deckOrder == null) {
+            return deck.getLevel().getId().equals(user.getCurrentLevel().getId());
+        }
+        return deckOrder <= userOrder;
     }
 
     private String generateSlug(String title, Long excludeId) {

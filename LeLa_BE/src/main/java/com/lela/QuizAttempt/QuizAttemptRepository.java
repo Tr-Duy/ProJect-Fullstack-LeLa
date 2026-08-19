@@ -21,6 +21,8 @@ public interface QuizAttemptRepository extends JpaRepository<QuizAttempt, Long> 
 
     boolean existsByUserIdAndQuizQuizCategoryAndStatusIn(Long userId, QuizCategory category, List<QuizAttemptStatus> statuses);
 
+    boolean existsByUserIdAndQuizIdAndStatusIn(Long userId, Long quizId, List<QuizAttemptStatus> statuses);
+
     @Query("SELECT a FROM QuizAttempt a WHERE a.user.id = :userId AND a.quiz.quizCategory = 'FINAL' AND a.status IN ('SUBMITTED')")
     List<QuizAttempt> findFinalAttemptsByUserId(@Param("userId") Long userId);
 

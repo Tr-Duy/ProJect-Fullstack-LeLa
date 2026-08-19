@@ -25,7 +25,7 @@ export function DeckDetailPage() {
     }
   };
 
-  const { data: deck, isLoading: isLoadingDeck } = useQuery({
+  const { data: deck, isLoading: isLoadingDeck, isError: isErrorDeck, error: errorDeck } = useQuery({
     queryKey: ['deck', deckId],
     queryFn: () => decksApi.getById(Number(deckId)),
     enabled: !!deckId,
@@ -34,25 +34,25 @@ export function DeckDetailPage() {
   const { data: cardsPage, isLoading: isLoadingCards } = useQuery({
     queryKey: ['deck-flashcards', deckId],
     queryFn: () => flashcardsApi.getByDeckId(Number(deckId), { size: 1000 }),
-    enabled: !!deckId,
+    enabled: !!deckId && !isErrorDeck,
   });
 
   const { data: enrollmentsPage } = useQuery({
     queryKey: ['my-enrollments'],
     queryFn: () => deckEnrollmentsApi.getMyList({ size: 100 }),
-    enabled: !!deckId && !!user,
+    enabled: !!deckId && !!user && !isErrorDeck,
   });
 
   const { data: quizzesResp } = useQuery({
     queryKey: ['deck-quizzes', deckId],
     queryFn: () => quizzesApi.getByDeckId(Number(deckId)),
-    enabled: !!deckId,
+    enabled: !!deckId && !isErrorDeck,
   });
 
   const { data: attemptsResp } = useQuery({
     queryKey: ['my-quiz-attempts', deckId],
     queryFn: () => quizAttemptsApi.getMyAttempts({ size: 100 }),
-    enabled: !!deckId && !!user,
+    enabled: !!deckId && !!user && !isErrorDeck,
   });
 
   const enrollment = enrollmentsPage?.data?.content?.find(e => e.deckId === Number(deckId));
@@ -65,13 +65,39 @@ export function DeckDetailPage() {
     return <div className="p-8 max-w-5xl mx-auto"><Skeleton active /></div>;
   }
 
-  if (!deck) {
+  if (isErrorDeck || !deck) {
+    const errMessage = (errorDeck as any)?.response?.data?.message || (errorDeck as any)?.message;
     return (
-      <div className="p-8 max-w-5xl mx-auto text-center">
-        <h2 className="text-3xl font-black mb-4">Không tìm thấy bộ thẻ</h2>
-        <Button onClick={() => navigate('/decks')} className="brutal-pill font-bold">
-          QUAY LẠI
-        </Button>
+      <div className="p-8 max-w-3xl mx-auto text-center min-h-[60vh] flex flex-col justify-center items-center">
+        <div className="text-7xl mb-4">🔒</div>
+        <h2 className="text-3xl md:text-4xl font-black uppercase text-[#1D2A3A] mb-3">
+          {!user ? 'Đăng nhập để học TOEIC theo đúng trình độ' : 'Bộ thẻ ngoài trình độ hiện tại'}
+        </h2>
+        <p className="text-gray-600 font-bold text-base md:text-lg mb-8 max-w-xl">
+          {errMessage || (!user 
+            ? 'LeLa cá nhân hóa bộ từ vựng TOEIC theo trình độ mục tiêu của bạn. Vui lòng đăng nhập để mở khóa bài học.'
+            : 'Bộ thẻ TOEIC này dành cho cấp độ khác. Vui lòng chọn và học bộ thẻ đúng trình độ mục tiêu của bạn.')}
+        </p>
+        <div className="flex flex-wrap justify-center gap-4">
+          {!user && (
+            <>
+              <Button onClick={() => navigate('/login')} className="brutal-pill font-black uppercase px-8 h-12 bg-[#F05A4A] text-white hover:bg-[#d94f41] border-2 border-black">
+                ĐĂNG NHẬP
+              </Button>
+              <Button onClick={() => navigate('/register')} className="brutal-pill font-black uppercase px-8 h-12 bg-white text-black border-2 border-black">
+                ĐĂNG KÝ
+              </Button>
+            </>
+          )}
+          {user && !user.currentLevel && (
+            <Button onClick={() => navigate('/onboarding')} className="brutal-pill font-black uppercase px-8 h-12 bg-[#1D2A3A] text-white border-2 border-black">
+              CHỌN TRÌNH ĐỘ NGAY
+            </Button>
+          )}
+          <Button onClick={() => navigate('/decks')} className="brutal-pill font-bold uppercase px-8 h-12 bg-gray-200 border-2 border-black">
+            VỀ DANH SÁCH BỘ THẺ
+          </Button>
+        </div>
       </div>
     );
   }
@@ -145,34 +171,52 @@ export function DeckDetailPage() {
       {quizzes.length > 0 && (
         <div className="mb-12">
           <div className="mb-8 border-b-[3px] border-black pb-4 flex justify-between items-end">
-            <h2 className="text-3xl font-black uppercase text-[#1D2A3A]">Bài kiểm tra</h2>
+            <h2 className="text-3xl font-black uppercase text-[#1D2A3A]">Bài kiểm tra & Luyện tập</h2>
           </div>
           
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {quizzes.map(quiz => {
-              const attemptsForQuiz = myAttempts.filter((a: any) => a.quizId === quiz.id && a.status === 'COMPLETED');
-              let highestScore = null;
+              const attemptsForQuiz = myAttempts.filter((a: any) => a.quizId === quiz.id && (a.status === 'SUBMITTED' || a.status === 'COMPLETED'));
+              let highestScore: number | null = null;
               if (attemptsForQuiz.length > 0) {
-                highestScore = Math.max(...attemptsForQuiz.map((a: any) => a.scorePercent || 0));
+                highestScore = Math.max(...attemptsForQuiz.map((a: any) => a.scorePercent != null ? Number(a.scorePercent) : 0));
               }
 
+              const isQuick = quiz.quizCode?.includes('QUICK');
+              const isStd = quiz.quizCode?.includes('STD');
+              const isChallenge = quiz.quizCode?.includes('CHALLENGE');
+
               return (
-                <div key={quiz.id} className="brutal-card bg-[#F4F3EE] p-6 md:p-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 border-[3px] border-black shadow-[4px_4px_0px_0px_#000]">
+                <div key={quiz.id} className="brutal-card bg-[#F4F3EE] p-6 flex flex-col justify-between gap-6 border-[3px] border-black shadow-[4px_4px_0px_0px_#000]">
                   <div>
-                    <h3 className="text-2xl font-black text-[#1D2A3A] mb-2">{quiz.title}</h3>
-                    <div className="flex items-center gap-4 text-gray-700 font-bold flex-wrap">
-                      <span className="flex items-center gap-1 bg-white px-2 py-1 brutal-border border-[2px]"><FieldTimeOutlined /> {quiz.timeLimitSeconds ? `${Math.floor(quiz.timeLimitSeconds/60)} phút` : 'Không giới hạn'}</span>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-black text-xs px-2 py-1 bg-white brutal-border border-[2px]">
+                        {quiz.totalQuestions || 0} câu hỏi
+                      </span>
+                      {isQuick && <span className="font-black text-xs px-2 py-1 bg-yellow-300 brutal-border border-[2px]">⚡ LUYỆN NHANH</span>}
+                      {isStd && <span className="font-black text-xs px-2 py-1 bg-blue-300 brutal-border border-[2px]">📝 TIÊU CHUẨN</span>}
+                      {isChallenge && <span className="font-black text-xs px-2 py-1 bg-red-300 brutal-border border-[2px]">🔥 THỬ THÁCH</span>}
+                    </div>
+
+                    <h3 className="text-xl font-black text-[#1D2A3A] mb-2">{quiz.title}</h3>
+                    <p className="text-sm text-gray-600 font-medium mb-4">{quiz.description}</p>
+
+                    <div className="flex items-center gap-2 text-gray-700 font-bold text-sm flex-wrap">
+                      <span className="flex items-center gap-1 bg-white px-2 py-1 brutal-border border-[2px]">
+                        <FieldTimeOutlined /> {quiz.timeLimitSeconds ? `${Math.floor(quiz.timeLimitSeconds / 60)} phút` : 'Tự do'}
+                      </span>
                       <span className="flex items-center gap-1 bg-white px-2 py-1 brutal-border border-[2px]">
                         <CheckCircleOutlined /> 
-                        {highestScore !== null ? `Đạt: ${highestScore}%` : 'Chưa làm'}
+                        {highestScore !== null ? `Đạt: ${Math.round(highestScore)}%` : 'Chưa làm'}
                       </span>
                     </div>
                   </div>
+
                   <Button 
-                    className="brutal-pill font-black h-12 px-8 uppercase !bg-[#1D2A3A] !text-white hover:!bg-[#2A8B9D] transition-colors w-full sm:w-auto"
+                    className="brutal-pill font-black h-12 px-6 uppercase !bg-[#1D2A3A] !text-white hover:!bg-[#2A8B9D] transition-colors w-full"
                     onClick={() => user ? navigate(`/quiz/${quiz.id}/start`) : navigate('/login')}
                   >
-                    Làm bài
+                    Bắt đầu quiz ➔
                   </Button>
                 </div>
               );

@@ -39,7 +39,7 @@ export function ExploreDecksPage() {
   }, [enrollmentsResponse]);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['explore-decks', filterExamTypeId, filterLevelId],
+    queryKey: ['explore-decks', user?.id || 'guest', user?.currentLevel?.id || 'no-level', user?.roles?.join('-') || 'guest'],
     queryFn: () => decksApi.getAll({ 
       size: 100,
       ...(filterExamTypeId ? { examTypeId: filterExamTypeId } : {}),
@@ -66,10 +66,6 @@ export function ExploreDecksPage() {
       if (!matchSearch) match = false;
     }
     
-    // Check filters
-    if (filterExamTypeId && deck.examTypeId !== filterExamTypeId) match = false;
-    if (filterLevelId && deck.levelId !== filterLevelId) match = false;
-    
     return match;
   });
 
@@ -88,12 +84,12 @@ export function ExploreDecksPage() {
     e.preventDefault();
   };
 
-  // handleUpdateLevel removed as requested
+  const isAdmin = user?.roles?.includes('ADMIN');
 
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto min-h-screen bg-[#F4F3EE]">
       {/* Search & Header Section */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-6">
         <div>
           <h1 className="text-4xl md:text-5xl font-black uppercase tracking-tighter text-[#1D2A3A] mb-2">Khám phá bộ thẻ</h1>
           <p className="text-gray-600 font-bold text-lg">Tìm kiếm hàng ngàn bộ flashcard chất lượng cao.</p>
@@ -120,7 +116,97 @@ export function ExploreDecksPage() {
         </form>
       </div>
 
-      {/* Filter Section Removed */}
+      {/* USER CONTEXT BANNERS */}
+
+      {/* Case 1: GUEST */}
+      {!user && (
+        <div className="mb-10 brutal-card p-6 md:p-8 bg-gradient-to-r from-amber-50 to-orange-50 brutal-border border-2 border-black flex flex-col md:flex-row justify-between items-center gap-6 shadow-[4px_4px_0px_0px_#000]">
+          <div>
+            <div className="inline-block bg-black text-amber-300 font-black text-xs px-3 py-1 mb-2 uppercase tracking-wider brutal-border border border-black">
+              🔒 KHU VỰC TOEIC THEO TRÌNH ĐỘ
+            </div>
+            <h2 className="text-2xl md:text-3xl font-black uppercase text-[#1D2A3A] mb-1">
+              Đăng nhập để học TOEIC theo đúng trình độ của bạn
+            </h2>
+            <p className="text-gray-700 font-semibold text-base">
+              Chọn trình độ TOEIC của bạn để LeLa đề xuất bộ từ vựng và bài kiểm tra phù hợp nhất.
+            </p>
+          </div>
+          <div className="flex gap-3 shrink-0">
+            <Button 
+              className="brutal-pill font-black bg-[#F05A4A] text-white h-12 px-6 hover:bg-[#d94f41] border-2 border-black"
+              onClick={() => navigate('/login')}
+            >
+              ĐĂNG NHẬP
+            </Button>
+            <Button 
+              className="brutal-pill font-black bg-white text-black h-12 px-6 hover:bg-gray-100 border-2 border-black"
+              onClick={() => navigate('/register')}
+            >
+              ĐĂNG KÝ
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Case 2: LEARNER WITHOUT LEVEL */}
+      {user && !isAdmin && !user.currentLevel && (
+        <div className="mb-10 brutal-card p-6 md:p-8 bg-gradient-to-r from-yellow-50 to-amber-100 brutal-border border-2 border-black flex flex-col md:flex-row justify-between items-center gap-6 shadow-[4px_4px_0px_0px_#000]">
+          <div>
+            <div className="inline-block bg-amber-400 text-black font-black text-xs px-3 py-1 mb-2 uppercase tracking-wider brutal-border border border-black">
+              🎯 CÁ NHÂN HÓA LỘ TRÌNH TOEIC
+            </div>
+            <h2 className="text-2xl md:text-3xl font-black uppercase text-[#1D2A3A] mb-1">
+              Bạn chưa chọn trình độ TOEIC
+            </h2>
+            <p className="text-gray-700 font-semibold text-base">
+              Chọn trình độ để LeLa gợi ý bộ từ vựng TOEIC phù hợp nhất với mục tiêu điểm số của bạn.
+            </p>
+          </div>
+          <Button 
+            className="brutal-pill font-black bg-[#1D2A3A] text-white h-12 px-8 hover:bg-black border-2 border-black shrink-0"
+            onClick={() => navigate('/onboarding')}
+          >
+            CHỌN TRÌNH ĐỘ NGAY ➔
+          </Button>
+        </div>
+      )}
+
+      {/* Case 3: LEARNER WITH LEVEL */}
+      {user && !isAdmin && user.currentLevel && (
+        <div className="mb-8 p-4 bg-white brutal-card brutal-border border-2 border-black flex items-center justify-between shadow-[4px_4px_0px_0px_#000]">
+          <div className="flex items-center gap-3">
+            <span className="font-black text-xs uppercase px-3 py-1 bg-yellow-300 brutal-border border border-black">
+              🎯 LỘ TRÌNH TOEIC
+            </span>
+            <span className="font-black text-base md:text-lg text-[#1D2A3A]">
+              TRÌNH ĐỘ CỦA BẠN: <span className="text-[#F05A4A]">{user.currentLevel.name}</span>
+            </span>
+          </div>
+          <Button 
+            size="small"
+            className="font-bold text-xs brutal-border border border-black"
+            onClick={() => navigate('/onboarding')}
+          >
+            Đổi trình độ ⚙️
+          </Button>
+        </div>
+      )}
+
+      {/* Case 4: ADMIN */}
+      {isAdmin && (
+        <div className="mb-8 p-4 bg-[#1D2A3A] text-white brutal-card brutal-border border-2 border-black flex flex-col sm:flex-row items-center justify-between gap-4 shadow-[4px_4px_0px_0px_#000]">
+          <div className="font-bold text-sm md:text-base">
+            👑 Bạn đang xem với quyền <span className="text-yellow-400 font-black">ADMINISTRATOR</span> (Hiển thị tất cả bộ thẻ).
+          </div>
+          <Button 
+            className="brutal-pill font-black bg-yellow-400 text-black border-2 border-black shrink-0"
+            onClick={() => navigate('/admin/decks')}
+          >
+            QUẢN LÝ DECKS ADMIN ➔
+          </Button>
+        </div>
+      )}
 
       {isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

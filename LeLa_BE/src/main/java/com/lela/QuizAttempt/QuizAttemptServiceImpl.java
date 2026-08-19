@@ -34,7 +34,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.LocalDateTime;
+import java.time.Duration;
 import java.util.List;
+import java.util.Objects;
 
 import java.util.Set;
 import java.util.UUID;
@@ -56,6 +58,8 @@ public class QuizAttemptServiceImpl implements QuizAttemptService {
     private final QuizAttemptOptionRepository quizAttemptOptionRepository;
     private final QuizQuestionOptionRepository quizQuestionOptionRepository;
     private final QuizAnswerRepository quizAnswerRepository;
+    private final com.lela.deck.DeckRepository deckRepository;
+    private final com.lela.deckenrollment.DeckEnrollmentRepository deckEnrollmentRepository;
     private final ModelMapper mapper;
 
     private Long getCurrentUserId() {
@@ -178,14 +182,7 @@ public class QuizAttemptServiceImpl implements QuizAttemptService {
                 .orElseThrow(() -> new NotFoundExeception("User not found: " + userId));
 
         if (quiz.getQuizCategory() == com.lela.Quiz.domain.QuizCategory.PLACEMENT) {
-            boolean hasCompletedPlacement = quizAttemptRepository.existsByUserIdAndQuizQuizCategoryAndStatusIn(
-                    userId,
-                    com.lela.Quiz.domain.QuizCategory.PLACEMENT,
-                    java.util.Collections
-                            .singletonList(com.lela.QuizAttemptQuestion.domain.QuizAttemptStatus.SUBMITTED));
-            if (hasCompletedPlacement || user.getCurrentLevel() != null) {
-                throw new IllegalStateException("Placement Test chỉ được thực hiện một lần.");
-            }
+            // Placement tests are always unlocked for any learner to attempt level placement
         }
 
         if (quiz.getQuizCategory() == com.lela.Quiz.domain.QuizCategory.FINAL
@@ -208,37 +205,117 @@ public class QuizAttemptServiceImpl implements QuizAttemptService {
                 int currentRank = getLevelRank(userLevel, allLevels);
                 int targetRank = getLevelRank(targetLevel, allLevels);
 
-                if (targetRank <= currentRank) {
-                    throw new IllegalStateException(
-                            "Bạn không thể thi nâng cấp cho trình độ bằng hoặc thấp hơn trình độ hiện tại.");
-                }
-                if (targetRank > currentRank + 1) {
-                    com.lela.common.domain.ProficiencyLevel nextLevel = (currentRank < allLevels.size())
-                            ? allLevels.get(currentRank)
-                            : null;
-                    String nextLevelName = nextLevel != null ? nextLevel.getName() : "kế tiếp";
-                    throw new IllegalStateException("Bạn chỉ có thể nâng lên " + nextLevelName + " trước.");
-                }
-            }
+                // Sequential Chain Check
+                List<Quiz> levelUpQuizzes = quizRepository.findByLevelIdAndCategoriesForLearner(
+                        targetLevel.getId(),
+                        List.of(com.lela.Quiz.domain.QuizCategory.LEVEL_UP),
+                        Pageable.unpaged()).getContent();
+                List<Quiz> sortedQuizzes = new ArrayList<>(levelUpQuizzes);
+                sortedQuizzes.sort((a, b) -> (a.getQuizCode() != null ? a.getQuizCode() : "")
+                        .compareTo(b.getQuizCode() != null ? b.getQuizCode() : ""));
 
-            List<QuizAttempt> recentAttempts = quizAttemptRepository
-                    .findByUserIdAndQuizIdOrderByStartedAtDesc(userId, quiz.getId());
-            if (!recentAttempts.isEmpty()) {
-                QuizAttempt lastAttempt = recentAttempts.get(0);
-                if (Boolean.FALSE.equals(lastAttempt.getPassed())) {
-                    LocalDateTime subTime = lastAttempt.getSubmittedAt() != null ? lastAttempt.getSubmittedAt()
-                            : lastAttempt.getStartedAt();
-                    if (subTime != null) {
-                        LocalDateTime cooldownEnd = subTime.plusHours(24);
-                        if (LocalDateTime.now().isBefore(cooldownEnd)) {
-                            java.time.Duration remaining = java.time.Duration.between(LocalDateTime.now(), cooldownEnd);
-                            long hours = remaining.toHours();
-                            long minutes = remaining.toMinutes() % 60;
-                            String remainingTime = hours > 0 ? hours + " giờ " + minutes + " phút" : minutes + " phút";
-                            throw new IllegalStateException("Bạn chưa đạt 80% ở lần thi trước. Vui lòng thử lại sau "
-                                    + remainingTime + ".");
-                        }
+                int requestedIdx = -1;
+                for (int i = 0; i < sortedQuizzes.size(); i++) {
+                    if (sortedQuizzes.get(i).getId().equals(quiz.getId())) {
+                        requestedIdx = i;
+                        break;
                     }
+                }
+
+                int firstUnattemptedIdx = -1;
+                LocalDateTime lastFailedSubmitTime = null;
+                boolean anyPassed = false;
+                for (int i = 0; i < sortedQuizzes.size(); i++) {
+                    Quiz q = sortedQuizzes.get(i);
+                    List<QuizAttempt> attempts = quizAttemptRepository
+                            .findByUserIdAndQuizIdOrderByStartedAtDesc(userId, q.getId());
+                    if (!attempts.isEmpty()) {
+                        QuizAttempt latest = attempts.get(0);
+                        if (Boolean.TRUE.equals(latest.getPassed())) {
+                            anyPassed = true;
+                        } else if (firstUnattemptedIdx == -1) {
+                            lastFailedSubmitTime = latest.getSubmittedAt() != null ? latest.getSubmittedAt() : latest.getStartedAt();
+                        }
+                    } else if (firstUnattemptedIdx == -1) {
+                        firstUnattemptedIdx = i;
+                    }
+                }
+
+                if (anyPassed) {
+                    throw new IllegalStateException("Bạn đã đạt bài kiểm tra nâng cấp trình độ này rồi.");
+                }
+                if (firstUnattemptedIdx == -1) {
+                    throw new IllegalStateException("Bạn đã hoàn thành cả 10 bài kiểm tra trong chu kỳ này.");
+                }
+                if (requestedIdx != firstUnattemptedIdx) {
+                    throw new IllegalStateException("Bạn phải làm bài thi theo đúng thứ tự chuỗi 10 bài. Bài thi mở tiếp theo là Bài #" + (firstUnattemptedIdx + 1) + ".");
+                }
+                if (firstUnattemptedIdx > 0 && lastFailedSubmitTime != null) {
+                    LocalDateTime cooldownEnd = lastFailedSubmitTime.plusHours(24);
+                    if (LocalDateTime.now().isBefore(cooldownEnd)) {
+                        java.time.Duration remaining = java.time.Duration.between(LocalDateTime.now(), cooldownEnd);
+                        long hours = remaining.toHours();
+                        long minutes = remaining.toMinutes() % 60;
+                        String remainingTime = hours > 0 ? hours + " giờ " + minutes + " phút" : minutes + " phút";
+                        throw new IllegalStateException("Chuỗi bài thi đang trong thời gian chờ 24 giờ sau lần làm chưa đạt trước đó. Vui lòng thử lại sau " + remainingTime + ".");
+                    }
+                }
+            } else if (quiz.getQuizCategory() == com.lela.Quiz.domain.QuizCategory.FINAL_LEVEL && quiz.getLevel() != null) {
+                Long levelId = quiz.getLevel().getId();
+                // 1. Deck completion eligibility check
+                List<com.lela.deck.domain.Deck> activeDecks = deckRepository.findAll().stream()
+                        .filter(d -> d.isActive && d.getLevel() != null && Objects.equals(d.getLevel().getId(), levelId))
+                        .toList();
+
+                List<com.lela.deckenrollment.domain.DeckEnrollment> userEnrollments = deckEnrollmentRepository
+                        .findByUserId(userId, Pageable.unpaged()).getContent();
+                long completedDecks = userEnrollments.stream()
+                        .filter(e -> e.getDeck() != null && e.getDeck().getLevel() != null && Objects.equals(e.getDeck().getLevel().getId(), levelId))
+                        .filter(e -> e.getCompletedAt() != null || e.getStatus() == com.lela.deckenrollment.domain.DeckEnrollmentStatus.COMPLETED
+                                || (e.getDeck().getTotalCards() != null && e.getDeck().getTotalCards() > 0 && e.getMasteredCards() >= e.getDeck().getTotalCards()))
+                        .count();
+
+                int requiredDecks = Math.min(10, activeDecks.size());
+                if (!activeDecks.isEmpty() && completedDecks < requiredDecks) {
+                    throw new IllegalStateException("Bạn cần hoàn thành đủ " + requiredDecks + " bộ thẻ của trình độ hiện tại trước khi thực hiện bài kiểm tra kết thúc mức độ (Hiện tại: " + completedDecks + "/" + requiredDecks + ").");
+                }
+
+                // 2. 12-Hour Global Cooldown Check
+                List<QuizAttempt> allFinalAttempts = quizAttemptRepository.findByUserId(userId, Pageable.unpaged())
+                        .getContent()
+                        .stream()
+                        .filter(a -> a.getQuiz() != null && a.getQuiz().getQuizCategory() == com.lela.Quiz.domain.QuizCategory.FINAL_LEVEL
+                                && a.getQuiz().getLevel() != null && Objects.equals(a.getQuiz().getLevel().getId(), levelId))
+                        .toList();
+
+                java.util.Optional<QuizAttempt> latestFailed = allFinalAttempts.stream()
+                        .filter(a -> Boolean.FALSE.equals(a.getPassed()) && a.getSubmittedAt() != null)
+                        .max(java.util.Comparator.comparing(QuizAttempt::getSubmittedAt));
+
+                if (latestFailed.isPresent()) {
+                    LocalDateTime cooldownEnd = latestFailed.get().getSubmittedAt().plusHours(12);
+                    if (LocalDateTime.now().isBefore(cooldownEnd)) {
+                        java.time.Duration remaining = java.time.Duration.between(LocalDateTime.now(), cooldownEnd);
+                        long hours = remaining.toHours();
+                        long mins = remaining.toMinutes() % 60;
+                        String remainingTimeStr = hours > 0 ? hours + " giờ " + mins + " phút" : mins + " phút";
+                        throw new IllegalStateException("Hệ thống bài kiểm tra kết thúc mức độ đang trong thời gian tạm khóa 12 giờ sau lần thi chưa đạt. Vui lòng quay lại sau " + remainingTimeStr + ".");
+                    }
+                }
+
+                // 3. Single attempt per cycle check
+                int maxCycle = allFinalAttempts.stream()
+                        .map(QuizAttempt::getCycleNumber)
+                        .filter(Objects::nonNull)
+                        .max(Integer::compareTo)
+                        .orElse(1);
+
+                boolean alreadyAttemptedThisCycle = allFinalAttempts.stream()
+                        .filter(a -> Objects.equals(a.getCycleNumber(), maxCycle))
+                        .anyMatch(a -> a.getQuiz() != null && a.getQuiz().getId().equals(quiz.getId()) && a.getSubmittedAt() != null);
+
+                if (alreadyAttemptedThisCycle) {
+                    throw new IllegalStateException("Bài kiểm tra này đã được thực hiện trong chu kỳ hiện tại và không thể làm lại.");
                 }
             }
         }
@@ -438,14 +515,16 @@ public class QuizAttemptServiceImpl implements QuizAttemptService {
         attempt.setScorePercent(percent);
         attempt.setStatus(com.lela.QuizAttemptQuestion.domain.QuizAttemptStatus.SUBMITTED);
         attempt.setCorrectAnswers(correctCount);
-        // Use 80% threshold for passing across quiz types (scorePercent >= 80 =>
-        // passed)
-        attempt.setPassed(percent.compareTo(BigDecimal.valueOf(80)) >= 0);
+        Quiz quiz = attempt.getQuiz();
+        if (quiz != null && quiz.getQuizCategory() == com.lela.Quiz.domain.QuizCategory.FINAL_LEVEL) {
+            attempt.setPassed(percent.compareTo(BigDecimal.valueOf(70)) >= 0);
+        } else {
+            attempt.setPassed(percent.compareTo(BigDecimal.valueOf(80)) >= 0);
+        }
 
         attempt.setXpAwarded(correctCount * 10); // Example: 10 XP per correct answer
 
         Users user = attempt.getUser();
-        Quiz quiz = attempt.getQuiz();
 
         if (quiz != null && quiz.getQuizCategory() == com.lela.Quiz.domain.QuizCategory.FINAL) {
             if (user.getCurrentLevel() != null && quiz.getLevel() != null
@@ -454,10 +533,30 @@ public class QuizAttemptServiceImpl implements QuizAttemptService {
             }
         }
 
-        boolean isLevelUpCategory = quiz != null && (quiz.getQuizCategory() == com.lela.Quiz.domain.QuizCategory.FINAL
-                || quiz.getQuizCategory() == com.lela.Quiz.domain.QuizCategory.LEVEL_UP);
+        if (quiz != null && quiz.getQuizCategory() == com.lela.Quiz.domain.QuizCategory.PLACEMENT) {
+            if (Boolean.TRUE.equals(attempt.getPassed())) {
+                if (quiz.getLevel() != null) {
+                    com.lela.common.domain.ProficiencyLevel currentLevel = user.getCurrentLevel();
+                    if (currentLevel == null || (quiz.getLevel().getDisplayOrder() != null && currentLevel.getDisplayOrder() != null && quiz.getLevel().getDisplayOrder() > currentLevel.getDisplayOrder())) {
+                        user.setCurrentLevel(quiz.getLevel());
+                    }
+                }
+                if (quiz.getExamType() != null) {
+                    user.setCurrentExamType(quiz.getExamType());
+                }
+                usersRepository.save(user);
+            } else {
+                if (user.getCurrentLevel() == null && quiz.getLevel() != null && "PLACEMENT-TOEIC-U500".equalsIgnoreCase(quiz.getQuizCode())) {
+                    user.setCurrentLevel(quiz.getLevel());
+                    if (quiz.getExamType() != null) {
+                        user.setCurrentExamType(quiz.getExamType());
+                    }
+                    usersRepository.save(user);
+                }
+            }
+        }
 
-        if (isLevelUpCategory && Boolean.TRUE.equals(attempt.getPassed())) {
+        if (quiz != null && quiz.getQuizCategory() == com.lela.Quiz.domain.QuizCategory.FINAL_LEVEL && Boolean.TRUE.equals(attempt.getPassed())) {
             com.lela.common.domain.ProficiencyLevel currentLevel = user.getCurrentLevel();
             if (currentLevel != null && currentLevel.getExamType() != null) {
                 List<com.lela.common.domain.ProficiencyLevel> allLevels = levelRepository
@@ -469,10 +568,22 @@ public class QuizAttemptServiceImpl implements QuizAttemptService {
                     usersRepository.save(user);
                 }
             }
+        } else if (quiz != null && quiz.getQuizCategory() == com.lela.Quiz.domain.QuizCategory.LEVEL_UP && Boolean.TRUE.equals(attempt.getPassed())) {
+            if (quiz.getLevel() != null) {
+                user.setCurrentLevel(quiz.getLevel());
+                usersRepository.save(user);
+            }
         }
 
         QuizAttempt savedAttempt = quizAttemptRepository.save(attempt);
         return buildDetailResponse(savedAttempt);
+    }
+
+    private boolean hasUserPassedPlacementQuiz(Long userId, String quizCode) {
+        return quizRepository.findByQuizCode(quizCode)
+                .map(q -> quizAttemptRepository.findByUserIdAndQuizIdOrderByStartedAtDesc(userId, q.getId()))
+                .map(attempts -> attempts.stream().anyMatch(a -> Boolean.TRUE.equals(a.getPassed())))
+                .orElse(false);
     }
 
     // build response chi tiết đầy đủ cho 1 attempt

@@ -28,6 +28,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.stream.Collectors;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -77,7 +78,10 @@ public class QuizServiceImpl implements QuizService {
                             .findByUserIdAndQuizIdOrderByStartedAtDesc(user.getId(), q.getId());
                     if (!attempts.isEmpty()) {
                         com.lela.QuizAttempt.domain.QuizAttempt latest = attempts.get(0);
-                        if (Boolean.FALSE.equals(latest.getPassed())) {
+                        if (Boolean.TRUE.equals(latest.getPassed())) {
+                            res.setIsLocked(false);
+                            res.setAttemptStatus("PASSED");
+                        } else if (Boolean.FALSE.equals(latest.getPassed())) {
                             java.time.LocalDateTime subTime = latest.getSubmittedAt() != null ? latest.getSubmittedAt()
                                     : latest.getStartedAt();
                             if (subTime != null) {
@@ -85,16 +89,22 @@ public class QuizServiceImpl implements QuizService {
                                 if (java.time.LocalDateTime.now().isBefore(cooldownEnd)) {
                                     res.setIsLocked(true);
                                     res.setLockedUntil(cooldownEnd.toString());
-                                    res.setLockReason("Bạn chưa đạt 80% ở lần thi trước. Có thể làm lại sau 24 giờ.");
+                                    long remSec = java.time.Duration.between(java.time.LocalDateTime.now(), cooldownEnd).getSeconds();
+                                    res.setRemainingLockSeconds(remSec > 0 ? remSec : 0);
+                                    long hours = remSec / 3600;
+                                    long mins = (remSec % 3600) / 60;
+                                    String remainingTimeStr = hours > 0 ? hours + " giờ " + mins + " phút" : mins + " phút";
+                                    res.setLockReason("Lần làm trước chưa đạt 80%. Có thể thử lại sau " + remainingTimeStr + ".");
+                                    res.setAttemptStatus("LOCKED");
                                 } else {
                                     res.setIsLocked(false);
+                                    res.setAttemptStatus("AVAILABLE");
                                 }
                             }
-                        } else {
-                            res.setIsLocked(false);
                         }
                     } else {
                         res.setIsLocked(false);
+                        res.setAttemptStatus("AVAILABLE");
                     }
                 }
             }
@@ -125,20 +135,41 @@ public class QuizServiceImpl implements QuizService {
                             .map(this::mapToResponse);
                 }
                 if (category == QuizCategory.LEVEL_UP) {
-                    ProficiencyLevel nextLevel = resolveNextLearnerLevel(user);
-                    if (nextLevel == null || (levelId != null && !nextLevel.getId().equals(levelId))) {
-                        return Page.empty(pageable);
+                    Long targetLvlId = levelId;
+                    if (targetLvlId == null) {
+                        ProficiencyLevel nextLevel = resolveNextLearnerLevel(user);
+                        if (nextLevel != null) {
+                            targetLvlId = nextLevel.getId();
+                        }
                     }
-                    return quizRepository.findByLevelIdAndCategoriesForLearner(
-                                    nextLevel.getId(),
-                                    List.of(QuizCategory.LEVEL_UP),
-                                    pageable)
-                            .map(this::mapToResponse);
+                    if (targetLvlId != null) {
+                        List<Quiz> levelUpQuizzes = quizRepository.findByQuizCategoryAndLevelIdAndIsActiveTrue(QuizCategory.LEVEL_UP, targetLvlId);
+                        List<Quiz> sortedQuizzes = new ArrayList<>(levelUpQuizzes);
+                        sortedQuizzes.sort((a, b) -> (a.getQuizCode() != null ? a.getQuizCode() : "")
+                                .compareTo(b.getQuizCode() != null ? b.getQuizCode() : ""));
+                        return computeSequentialChainForLevelUp(user, sortedQuizzes, pageable);
+                    }
                 }
 
                 return quizRepository.findAllForLearnerLevel(currentLevelId, pageable)
                         .map(this::mapToResponse);
             }
+        }
+
+        if (category == QuizCategory.LEVEL_UP && levelId != null) {
+            List<Quiz> levelUpQuizzes = quizRepository.findByQuizCategoryAndLevelId(QuizCategory.LEVEL_UP, levelId, Pageable.unpaged()).getContent();
+            List<Quiz> sortedQuizzes = new ArrayList<>(levelUpQuizzes);
+            sortedQuizzes.sort((a, b) -> (a.getQuizCode() != null ? a.getQuizCode() : "")
+                    .compareTo(b.getQuizCode() != null ? b.getQuizCode() : ""));
+            Users user = getCurrentUserOrNull();
+            if (user != null) {
+                return computeSequentialChainForLevelUp(user, sortedQuizzes, pageable);
+            }
+            return new org.springframework.data.domain.PageImpl<>(
+                    sortedQuizzes.stream().map(this::mapToResponse).collect(Collectors.toList()),
+                    pageable,
+                    sortedQuizzes.size()
+            );
         }
 
         if (category != null && levelId != null) {
@@ -156,6 +187,110 @@ public class QuizServiceImpl implements QuizService {
         return quizRepository.findAll(pageable).map(this::mapToResponse);
     }
 
+    private Users getCurrentUserOrNull() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
+            return usersRepository.findByUsername(auth.getName()).orElse(null);
+        }
+        return null;
+    }
+
+    private Page<QuizResponse> computeSequentialChainForLevelUp(Users user, List<Quiz> quizzes, Pageable pageable) {
+        if (quizzes.isEmpty()) {
+            return Page.empty(pageable);
+        }
+
+        boolean anyPassed = false;
+        int firstUnattemptedIdx = -1;
+        java.time.LocalDateTime lastFailedSubmitTime = null;
+        java.util.Map<Long, com.lela.QuizAttempt.domain.QuizAttempt> latestAttemptByQuizId = new java.util.HashMap<>();
+
+        for (int i = 0; i < quizzes.size(); i++) {
+            Quiz q = quizzes.get(i);
+            List<com.lela.QuizAttempt.domain.QuizAttempt> attempts = quizAttemptRepository
+                    .findByUserIdAndQuizIdOrderByStartedAtDesc(user.getId(), q.getId());
+            if (!attempts.isEmpty()) {
+                com.lela.QuizAttempt.domain.QuizAttempt latest = attempts.get(0);
+                latestAttemptByQuizId.put(q.getId(), latest);
+                if (Boolean.TRUE.equals(latest.getPassed())) {
+                    anyPassed = true;
+                } else if (firstUnattemptedIdx == -1) {
+                    lastFailedSubmitTime = latest.getSubmittedAt() != null ? latest.getSubmittedAt() : latest.getStartedAt();
+                }
+            } else if (firstUnattemptedIdx == -1) {
+                firstUnattemptedIdx = i;
+            }
+        }
+
+        if (firstUnattemptedIdx == -1 && !anyPassed) {
+            firstUnattemptedIdx = quizzes.size();
+        }
+
+        final int activeIdx = (firstUnattemptedIdx == -1) ? 0 : firstUnattemptedIdx;
+        final boolean passedMode = anyPassed;
+        final java.time.LocalDateTime lastSubTime = lastFailedSubmitTime;
+
+        List<QuizResponse> responses = new ArrayList<>();
+        for (int i = 0; i < quizzes.size(); i++) {
+            Quiz q = quizzes.get(i);
+            QuizResponse res = mapper.map(q, QuizResponse.class);
+            if (q.getDeck() != null) res.setDeckId(q.getDeck().getId());
+            if (q.getExamType() != null) res.setExamTypeId(q.getExamType().getId());
+            if (q.getLevel() != null) res.setLevelId(q.getLevel().getId());
+
+            com.lela.QuizAttempt.domain.QuizAttempt latest = latestAttemptByQuizId.get(q.getId());
+
+            if (passedMode) {
+                if (latest != null && Boolean.TRUE.equals(latest.getPassed())) {
+                    res.setIsLocked(false);
+                    res.setAttemptStatus("COMPLETED_PASSED");
+                } else {
+                    res.setIsLocked(true);
+                    res.setAttemptStatus("NOT_REQUIRED");
+                    res.setLockReason("Bạn đã đạt bài kiểm tra nâng cấp trình độ.");
+                }
+            } else {
+                if (i < activeIdx) {
+                    res.setIsLocked(true);
+                    res.setAttemptStatus("COMPLETED_FAILED");
+                    res.setLockReason("Đã làm - Chưa đạt (Dưới 80%). Không thể làm lại trong chu kỳ này.");
+                } else if (i == activeIdx) {
+                    if (activeIdx >= quizzes.size()) {
+                        res.setIsLocked(true);
+                        res.setAttemptStatus("COMPLETED_FAILED");
+                        res.setLockReason("Bạn đã thử cả 10 bài kiểm tra nhưng chưa đạt 80%. Vui lòng ôn tập lại.");
+                    } else if (activeIdx > 0 && lastSubTime != null) {
+                        java.time.LocalDateTime cooldownEnd = lastSubTime.plusHours(24);
+                        if (java.time.LocalDateTime.now().isBefore(cooldownEnd)) {
+                            res.setIsLocked(true);
+                            res.setLockedUntil(cooldownEnd.toString());
+                            long remSec = java.time.Duration.between(java.time.LocalDateTime.now(), cooldownEnd).getSeconds();
+                            res.setRemainingLockSeconds(remSec > 0 ? remSec : 0);
+                            long hours = remSec / 3600;
+                            long mins = (remSec % 3600) / 60;
+                            String remainingTimeStr = hours > 0 ? hours + " giờ " + mins + " phút" : mins + " phút";
+                            res.setLockReason("Bài tiếp theo (#" + (i + 1) + ") sẽ mở sau " + remainingTimeStr + ".");
+                            res.setAttemptStatus("WAITING_24H");
+                        } else {
+                            res.setIsLocked(false);
+                            res.setAttemptStatus("AVAILABLE");
+                        }
+                    } else {
+                        res.setIsLocked(false);
+                        res.setAttemptStatus("AVAILABLE");
+                    }
+                } else {
+                    res.setIsLocked(true);
+                    res.setAttemptStatus("LOCKED");
+                    res.setLockReason("Vui lòng hoàn thành bài thi trước đó theo đúng thứ tự chuỗi 10 bài.");
+                }
+            }
+            responses.add(res);
+        }
+
+        return new org.springframework.data.domain.PageImpl<>(responses, pageable, responses.size());
+    }
+
     @Override
     public QuizResponse findById(Long id) {
         Quiz quiz = quizRepository.findById(id)
@@ -171,18 +306,6 @@ public class QuizServiceImpl implements QuizService {
                 if (category == QuizCategory.NORMAL || category == QuizCategory.FINAL) {
                     if (quiz.getLevel() != null && !quiz.getLevel().getId().equals(user.getCurrentLevel().getId())) {
                         throw new AccessDeniedException("Ban khong co quyen truy cap bai kiem tra o trinh do nay.");
-                    }
-                } else if (category == QuizCategory.LEVEL_UP) {
-                    ProficiencyLevel userLevel = user.getCurrentLevel();
-                    ProficiencyLevel targetLevel = quiz.getLevel();
-                    if (userLevel != null && targetLevel != null) {
-                        List<ProficiencyLevel> allLevels = proficiencyLevelRepository
-                                .findByExamTypeIdOrderByDisplayOrderAsc(userLevel.getExamType().getId());
-                        int currentRank = getLevelRank(userLevel, allLevels);
-                        int targetRank = getLevelRank(targetLevel, allLevels);
-                        if (targetRank != currentRank + 1) {
-                            throw new AccessDeniedException("Ban khong co quyen lam bai kiem tra thang cap nay.");
-                        }
                     }
                 }
             }
@@ -410,12 +533,21 @@ public class QuizServiceImpl implements QuizService {
                         .stream().map(this::mapToResponse).toList();
             }
             if (category == QuizCategory.LEVEL_UP) {
-                ProficiencyLevel nextLevel = resolveNextLearnerLevel(user);
-                if (nextLevel == null || (levelId != null && !nextLevel.getId().equals(levelId))) {
-                    return List.of();
+                Long targetLvlId = levelId;
+                if (targetLvlId == null) {
+                    ProficiencyLevel nextLevel = resolveNextLearnerLevel(user);
+                    if (nextLevel != null) {
+                        targetLvlId = nextLevel.getId();
+                    }
                 }
-                return quizRepository.findByQuizCategoryAndLevelIdAndIsActiveTrue(QuizCategory.LEVEL_UP, nextLevel.getId())
-                        .stream().map(this::mapToResponse).toList();
+                if (targetLvlId != null) {
+                    List<Quiz> levelUpQuizzes = quizRepository.findByQuizCategoryAndLevelIdAndIsActiveTrue(QuizCategory.LEVEL_UP, targetLvlId);
+                    List<Quiz> sortedQuizzes = new ArrayList<>(levelUpQuizzes);
+                    sortedQuizzes.sort((a, b) -> (a.getQuizCode() != null ? a.getQuizCode() : "")
+                            .compareTo(b.getQuizCode() != null ? b.getQuizCode() : ""));
+
+                    return computeSequentialChainForLevelUp(user, sortedQuizzes, Pageable.unpaged()).getContent();
+                }
             }
             if (category == QuizCategory.PLACEMENT) {
                 return quizRepository.findByQuizCategoryAndIsActiveTrue(QuizCategory.PLACEMENT)

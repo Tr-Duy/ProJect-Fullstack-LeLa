@@ -23,6 +23,10 @@ export function QuizAttemptResultPage() {
   const { refreshUser } = useAuth();
   const locationState = location.state as QuizAttemptResultLocationState | null;
   const [placementResult, setPlacementResult] = useState<PlacementTestResult | null>(locationState?.placementResult || null);
+  const [isReviewMode, setIsReviewMode] = useState(false);
+  const [reviewCurrentIndex, setReviewCurrentIndex] = useState(0);
+  const [reviewSelectedOption, setReviewSelectedOption] = useState<number | null>(null);
+  const [reviewFeedback, setReviewFeedback] = useState<string | null>(null);
 
   const { data: attemptRes, isLoading, isError } = useQuery({
     queryKey: ['attemptDetail', publicId],
@@ -148,6 +152,11 @@ export function QuizAttemptResultPage() {
     return answers.find((answer: any) => answer.attemptQuestionId === questionId);
   };
 
+  const incorrectQuestions = questions.filter((q: any) => {
+    const ans = getAnswerForQuestion(q.id);
+    return !ans?.isCorrect;
+  });
+
   const formatTime = (seconds: number) => {
     if (!seconds) {
       return '00:00';
@@ -157,6 +166,109 @@ export function QuizAttemptResultPage() {
     const remainingSeconds = (seconds % 60).toString().padStart(2, '0');
     return `${minutes}:${remainingSeconds}`;
   };
+
+  if (isReviewMode && incorrectQuestions.length > 0) {
+    const currentReviewQuestion = incorrectQuestions[reviewCurrentIndex];
+    const correctOption = currentReviewQuestion?.options?.find((o: any) => o.isCorrect);
+
+    const handleCheckOption = (optId: number) => {
+      setReviewSelectedOption(optId);
+      if (optId === correctOption?.id) {
+        setReviewFeedback('CORRECT');
+      } else {
+        setReviewFeedback('INCORRECT');
+      }
+    };
+
+    const handleNextReview = () => {
+      setReviewSelectedOption(null);
+      setReviewFeedback(null);
+      if (reviewCurrentIndex + 1 < incorrectQuestions.length) {
+        setReviewCurrentIndex(reviewCurrentIndex + 1);
+      } else {
+        setIsReviewMode(false);
+        setReviewCurrentIndex(0);
+        message.success('🎉 Hoàn thành ôn luyện lại các câu chưa chắc!');
+      }
+    };
+
+    return (
+      <div className="min-h-screen bg-[#F4F3EE] p-4 md:p-8 flex flex-col items-center justify-center">
+        <div className="max-w-3xl w-full bg-white p-6 md:p-10 border-[3px] border-black brutal-shadow">
+          <div className="flex justify-between items-center mb-6 pb-4 border-b-[2px] border-black">
+            <h2 className="text-2xl font-black text-[#1D2A3A] uppercase">
+              🔁 Ôn lại câu sai ({reviewCurrentIndex + 1} / {incorrectQuestions.length})
+            </h2>
+            <Button
+              className="brutal-border font-bold bg-gray-100 hover:bg-gray-200"
+              onClick={() => {
+                setIsReviewMode(false);
+                setReviewCurrentIndex(0);
+                setReviewSelectedOption(null);
+                setReviewFeedback(null);
+              }}
+            >
+              Đóng ôn luyện
+            </Button>
+          </div>
+
+          <div className="mb-6">
+            <h3 className="text-xl md:text-2xl font-bold text-[#1D2A3A] mb-4">
+              {currentReviewQuestion.questionText}
+            </h3>
+
+            <div className="flex flex-col gap-3">
+              {currentReviewQuestion.options?.map((option: any) => {
+                let btnStyle = 'bg-[#F4F3EE] hover:bg-gray-200 text-[#1D2A3A]';
+                if (reviewSelectedOption === option.id) {
+                  if (option.isCorrect) {
+                    btnStyle = 'bg-[#2A8B9D] text-white';
+                  } else {
+                    btnStyle = 'bg-[#F05A4A] text-white';
+                  }
+                } else if (reviewFeedback && option.isCorrect) {
+                  btnStyle = 'bg-[#2A8B9D] text-white';
+                }
+
+                return (
+                  <button
+                    key={option.id}
+                    onClick={() => !reviewFeedback && handleCheckOption(option.id)}
+                    disabled={!!reviewFeedback}
+                    className={`w-full p-4 border-[3px] border-black font-bold text-lg text-left transition-all brutal-shadow ${btnStyle}`}
+                  >
+                    {option.optionText}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {reviewFeedback && (
+            <div className="mb-6 p-4 border-[3px] border-black bg-white brutal-shadow">
+              <p className={`font-black text-xl mb-2 ${reviewFeedback === 'CORRECT' ? 'text-[#2A8B9D]' : 'text-[#F05A4A]'}`}>
+                {reviewFeedback === 'CORRECT' ? '🎉 Chính xác!' : '❌ Chưa chính xác!'}
+              </p>
+              {currentReviewQuestion.explanation && (
+                <p className="text-gray-700 font-medium">{currentReviewQuestion.explanation}</p>
+              )}
+            </div>
+          )}
+
+          {reviewFeedback && (
+            <div className="flex justify-end">
+              <Button
+                className="brutal-pill font-black h-12 px-8 uppercase !bg-[#1D2A3A] !text-white text-lg hover:-translate-y-1 transition-transform"
+                onClick={handleNextReview}
+              >
+                {reviewCurrentIndex + 1 < incorrectQuestions.length ? 'Câu tiếp theo ➔' : 'Hoàn thành ôn luyện ✓'}
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F4F3EE] p-4 md:p-8">
@@ -168,7 +280,15 @@ export function QuizAttemptResultPage() {
           <div className="text-xl font-bold brutal-border bg-white px-6 py-2 shadow-[2px_2px_0px_0px_#000] border-[3px]">
             Kết quả: {attemptDetail.quizTitle}
           </div>
-          <div className="flex gap-4">
+          <div className="flex gap-4 flex-wrap">
+            {incorrectQuestions.length > 0 && (
+              <Button
+                className="brutal-border font-bold h-12 px-6 !bg-[#F05A4A] !text-white shadow-[2px_2px_0px_0px_#000] hover:!translate-y-[-2px] transition-transform"
+                onClick={() => setIsReviewMode(true)}
+              >
+                🔁 ÔN LẠI {incorrectQuestions.length} CÂU SAI
+              </Button>
+            )}
             {!isPlacement && (
               <Button
                 className="brutal-border font-bold h-12 px-6 !bg-[#1D2A3A] !text-white shadow-[2px_2px_0px_0px_#000] hover:!translate-y-[-2px] transition-transform"
@@ -388,22 +508,50 @@ export function QuizAttemptResultPage() {
                 </div>
               )}
 
-              {placementResult && (
+              {attemptDetail && (
+                <div className={`w-full mb-6 p-4 border-2 rounded font-bold text-center text-lg ${
+                  attemptDetail.passed
+                    ? 'bg-green-100 border-green-600 text-green-800'
+                    : 'bg-red-100 border-red-500 text-red-700'
+                }`}>
+                  {attemptDetail.passed ? (
+                    <div>
+                      🎉 Chúc mừng! Bạn đã đạt {attemptDetail.scorePercent != null ? Number(attemptDetail.scorePercent).toFixed(0) : 0}% ở bài kiểm tra xác định trình độ!
+                      <div className="text-base font-normal mt-1">Trình độ của bạn đã được cập nhật thành công!</div>
+                    </div>
+                  ) : (
+                    <div>
+                      ❌ Bạn chưa đạt 80% ở bài kiểm tra trình độ này ({attemptDetail.scorePercent != null ? Number(attemptDetail.scorePercent).toFixed(0) : 0}%).
+                      <div className="text-base font-normal mt-1">Trình độ hiện tại của bạn vẫn giữ nguyên. Bạn có thể ôn tập và thử lại bất cứ lúc nào!</div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {placementResult && attemptDetail.passed && (
                 <div className="w-full flex flex-col items-center bg-[#2A8B9D] text-white p-6 border-[3px] border-black brutal-shadow mb-6">
-                  <span className="font-bold text-lg mb-2">TRÌNH ĐỘ ĐỀ XUẤT</span>
+                  <span className="font-bold text-lg mb-2">TRÌNH ĐỘ ĐỀ XUẤT MỚI</span>
                   <span className="text-3xl font-black uppercase text-center">
                     {placementResult.suggestedLevel?.name}
                   </span>
                 </div>
               )}
               
-              <Button
-                className="brutal-border font-black text-xl h-14 px-10 !bg-[#1D2A3A] !text-white shadow-[4px_4px_0px_0px_#000] hover:!translate-y-[-2px] transition-transform w-full md:w-auto"
-                onClick={handlePlacementConfirm}
-                disabled={!placementResult}
-              >
-                BẮT ĐẦU HỌC Ở TRÌNH ĐỘ NÀY
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+                <Button
+                  className="brutal-border font-black text-lg h-14 px-8 !bg-[#1D2A3A] !text-white shadow-[4px_4px_0px_0px_#000] hover:!translate-y-[-2px] transition-transform"
+                  onClick={handlePlacementConfirm}
+                >
+                  {attemptDetail.passed ? 'BẮT ĐẦU HỌC TẠI TRÌNH ĐỘ MỚI ➔' : 'VỀ BẢNG ĐIỀU KHIỂN HỌC ➔'}
+                </Button>
+                
+                <Button
+                  className="brutal-border font-black text-lg h-14 px-8 !bg-[#F05A4A] !text-white shadow-[4px_4px_0px_0px_#000] hover:!translate-y-[-2px] transition-transform"
+                  onClick={() => navigate('/onboarding')}
+                >
+                  CHỌN TRÌNH ĐỘ KHÁC ➔
+                </Button>
+              </div>
             </div>
           )}
 

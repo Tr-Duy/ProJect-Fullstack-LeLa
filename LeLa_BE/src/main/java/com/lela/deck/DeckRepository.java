@@ -26,4 +26,15 @@ public interface DeckRepository extends JpaRepository<Deck, Long> {
     Page<Deck> findByIsActiveTrue(Pageable pageable);
 
     Page<Deck> findByOwnerIdAndIsActiveTrue(Long ownerId, Pageable pageable);
+
+    // Filter public non-level-gated decks only (for Guests and Learners without level)
+    Page<Deck> findByIsActiveTrueAndExamTypeIsNullAndLevelIsNull(Pageable pageable);
+
+    // Filter public non-level-gated decks OR level-gated decks matching user's level (for Learners with level)
+    @org.springframework.data.jpa.repository.Query("SELECT d FROM Deck d WHERE d.isActive = true AND ((d.examType IS NULL AND d.level IS NULL) OR d.level.id = :levelId)")
+    Page<Deck> findByIsActiveTrueAndNonGatedOrLevelId(@org.springframework.data.repository.query.Param("levelId") Long levelId, Pageable pageable);
+
+    // Filter public non-level-gated decks OR level-gated decks up to user's level display order
+    @org.springframework.data.jpa.repository.Query("SELECT d FROM Deck d LEFT JOIN d.level l WHERE d.isActive = true AND ((d.examType IS NULL AND d.level IS NULL) OR l.displayOrder <= :maxDisplayOrder)")
+    Page<Deck> findAccessibleDecksUpToDisplayOrder(@org.springframework.data.repository.query.Param("maxDisplayOrder") Integer maxDisplayOrder, Pageable pageable);
 }

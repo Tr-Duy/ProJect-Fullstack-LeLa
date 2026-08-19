@@ -4,5 +4,6 @@ public enum QuizCategory {
     NORMAL,
     PLACEMENT,
     FINAL,
-    LEVEL_UP
+    LEVEL_UP,
+    FINAL_LEVEL
 }

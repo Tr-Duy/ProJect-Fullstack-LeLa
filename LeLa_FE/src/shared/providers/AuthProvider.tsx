@@ -67,6 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Ensure a fresh fetch in background
     try {
       await queryClient.invalidateQueries({ queryKey: ['profile'] });
+      await queryClient.invalidateQueries({ queryKey: ['explore-decks'] });
       await refetch();
     } catch (e) {
       console.error('Failed to refetch profile after login', e);
@@ -91,6 +92,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     queryClient.setQueryData(['profile'], null);
     queryClient.removeQueries({ queryKey: ['profile'] });
     queryClient.clear();
+    queryClient.invalidateQueries({ queryKey: ['explore-decks'] });
   };
 
   const refreshUser = async () => {

@@ -35,4 +35,6 @@ public class QuizResponse {
     private Boolean isLocked;
     private String lockedUntil;
     private String lockReason;
+    private String attemptStatus;
+    private Long remainingLockSeconds;
 }

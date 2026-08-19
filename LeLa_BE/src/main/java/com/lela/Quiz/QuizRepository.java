@@ -12,6 +12,7 @@ import java.util.List;
 
 public interface QuizRepository extends JpaRepository<Quiz, Long> {
     boolean existsByQuizCode(String quizCode);
+    java.util.Optional<Quiz> findByQuizCode(String quizCode);
     List<Quiz> findByDeckIdAndIsActiveTrue(Long deckId);
     List<Quiz> findByQuizCategoryAndExamTypeIdAndIsActiveTrue(QuizCategory category, Long examTypeId);
     List<Quiz> findByQuizCategoryAndLevelIdAndIsActiveTrue(QuizCategory category, Long levelId);

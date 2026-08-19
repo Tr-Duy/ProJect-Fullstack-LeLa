@@ -86,6 +86,9 @@ public class QuizAttempt extends AuditableEntity {
     @Column(name = "xp_awarded", nullable = false)
     private Integer xpAwarded = 0; // XP được cộng sau khi nộp bài.
 
+    @Column(name = "cycle_number", nullable = false)
+    private Integer cycleNumber = 1; // Chu kỳ làm bài (dùng cho Final Level Test)
+
     @Version
     @Column(nullable = false)
     private Long version = 0L; // Phiên bản dùng cho optimistic locking.

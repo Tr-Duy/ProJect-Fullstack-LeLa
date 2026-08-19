@@ -95,6 +95,7 @@ export function LearnerLayout() {
     { key: 'dashboard', label: <Link to="/dashboard" className="font-bold text-lg !text-brand-navy hover:!text-brand-coral transition-colors">Tổng Quan</Link> },
     { key: 'my-decks', label: <Link to="/my-decks" className="font-bold text-lg !text-brand-navy hover:!text-brand-coral transition-colors">Bộ Thẻ Của Tôi</Link> },
     { key: 'explore', label: <Link to="/decks" className="font-bold text-lg !text-brand-navy hover:!text-brand-coral transition-colors">Khám Phá</Link> },
+    { key: 'final-tests', label: <Link to="/final-level-tests" className="font-bold text-lg !text-[#F05A4A] hover:!text-brand-navy transition-colors">Thi Kết Thúc Level</Link> },
     { key: 'leaderboard', label: <Link to="/leaderboard" className="font-bold text-lg !text-brand-navy hover:!text-brand-coral transition-colors">Xếp Hạng</Link> },
     { key: 'ai-chat', label: <Link to="/ai-chat" className="font-black text-lg !text-brand-purple hover:!text-brand-navy transition-colors flex items-center gap-1"><Sparkles className="w-4 h-4" /> AI Tutor</Link> },
   ];
@@ -113,6 +114,7 @@ export function LearnerLayout() {
       ]
     : [
         { key: 'dashboard', label: <Link to="/dashboard" className="font-bold block w-full !text-brand-navy">Tổng quan học tập</Link> },
+        { key: 'final-tests', label: <Link to="/final-level-tests" className="font-bold block w-full !text-[#F05A4A]">Thi Kết Thúc Level</Link> },
         { key: 'profile', label: <Link to="/profile" className="font-bold block w-full !text-brand-navy">Hồ sơ cá nhân</Link> },
         { key: 'logout', label: <span className="font-bold text-red-600">Đăng xuất</span>, onClick: handleLogout },
       ];

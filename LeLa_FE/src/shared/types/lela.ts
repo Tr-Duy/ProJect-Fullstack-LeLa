@@ -135,8 +135,32 @@ export interface DeckEnrollmentResponse {
 }
 
 export type QuizType = 'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'FILL_BLANK' | 'MIXED';
-export type QuizCategory = 'NORMAL' | 'PLACEMENT' | 'FINAL' | 'LEVEL_UP';
+export type QuizCategory = 'NORMAL' | 'PLACEMENT' | 'FINAL' | 'LEVEL_UP' | 'FINAL_LEVEL';
 export type QuestionType = 'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'FILL_IN_THE_BLANK';
+
+export interface DeckEligibilityItem {
+  id: number;
+  deckCode: string;
+  title: string;
+  totalCards: number;
+  masteredCards: number;
+  isCompleted: boolean;
+}
+
+export interface FinalLevelAssessmentResponse {
+  isEligible: boolean;
+  currentLevelId?: number;
+  currentLevelName?: string;
+  totalDecks: number;
+  completedDecks: number;
+  cycleNumber: number;
+  cycleStatus: 'IN_PROGRESS' | 'PASSED' | 'REQUIRES_REVIEW';
+  cooldownUntil?: string;
+  cooldownRemainingSeconds?: number;
+  lockMessage?: string;
+  quizzes: QuizResponse[];
+  decks: DeckEligibilityItem[];
+}
 
 export interface QuizQuestionOptionResponse {
   id: number;

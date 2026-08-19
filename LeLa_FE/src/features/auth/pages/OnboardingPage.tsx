@@ -1,24 +1,17 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { examTypesApi } from '../../master-data/api/exam-types.api';
 import { onboardingApi } from '../../users/api/onboarding.api';
 import { useAuth } from '../../../shared/providers/AuthProvider';
-import { Button, Card, Spin, Modal, message } from 'antd';
-import { LockOutlined } from '@ant-design/icons';
-
+import { Button, Card, Spin, message } from 'antd';
+import { RocketOutlined } from '@ant-design/icons';
 import { quizAttemptsApi } from '../../quiz/api/quiz-attempts.api';
 
 export const OnboardingPage = () => {
   const navigate = useNavigate();
   const { user, refreshUser, isProfileLoading } = useAuth();
   const queryClient = useQueryClient();
-
-  const [isDowngradeModalVisible, setIsDowngradeModalVisible] = useState(false);
-  const [isUpgradeModalVisible, setIsUpgradeModalVisible] = useState(false);
-  const [isBlockModalVisible, setIsBlockModalVisible] = useState(false);
-  const [targetLevel, setTargetLevel] = useState<any>(null);
 
   const { data: examTypes, isLoading: loadingExamTypes } = useQuery({
     queryKey: ['exam-types'],
@@ -45,7 +38,6 @@ export const OnboardingPage = () => {
       (attempt.status === 'SUBMITTED' || attempt.status === 'COMPLETED')
   );
 
-  // Debug logs to verify single source of truth for currentLevel
   useEffect(() => {
     try {
       const profile = queryClient.getQueryData<any>(['profile']);
@@ -53,9 +45,7 @@ export const OnboardingPage = () => {
         userId: profile?.data?.id,
         currentLevelId: profile?.data?.currentLevel?.id,
         currentLevelName: profile?.data?.currentLevel?.name,
-        currentExamTypeId: profile?.data?.currentExamType?.id,
       });
-      console.log('[ONBOARDING] useAuth user', { userId: user?.id, currentLevelId: user?.currentLevel?.id, currentLevelName: user?.currentLevel?.name });
     } catch (e) {
       console.error('Failed to log profile data in OnboardingPage', e);
     }
@@ -77,22 +67,17 @@ export const OnboardingPage = () => {
       queryClient.invalidateQueries({ queryKey: ['my-enrollments'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       queryClient.invalidateQueries({ queryKey: ['quizzes'] });
-      queryClient.invalidateQueries({ queryKey: ['daily-goal', user?.id] });
       
       const targetLvl = sortedLevels.find(l => l.id === variables);
-      if (hasCurrentLevel && targetLvl) {
-          message.success(`Đã chuyển trình độ học sang: ${targetLvl.name}`);
+      if (targetLvl) {
+        message.success(`Đã thiết lập trình độ học: ${targetLvl.name}`);
       }
       navigate('/dashboard');
     },
     onError: (err: any) => {
-      message.error(err.response?.data?.message || 'Có lỗi xảy ra khi đổi trình độ.');
+      message.error(err.response?.data?.message || 'Có lỗi xảy ra khi chọn trình độ.');
     }
   });
-
-  const handlePlacementTest = () => {
-    navigate(`/placement-tests`);
-  };
 
   const handleLevelClick = (lvl: any, idx: number) => {
     const targetRank = idx + 1;
@@ -104,35 +89,31 @@ export const OnboardingPage = () => {
 
     if (targetRank === userRank) {
       return;
-    } else if (targetRank < userRank) {
-      setTargetLevel(lvl);
-      setIsDowngradeModalVisible(true);
-    } else if (targetRank === userRank + 1) {
-      setTargetLevel(lvl);
-      setIsUpgradeModalVisible(true);
-    } else {
-      setTargetLevel(lvl);
-      setIsBlockModalVisible(true);
     }
+
+    // Direct navigation to 10-test Upgrade Chain for selected target level
+    navigate(`/quizzes?category=LEVEL_UP&levelId=${lvl.id}`);
   };
 
   if (loadingExamTypes || isProfileLoading) {
-    return <div className="flex h-screen items-center justify-center"><Spin size="large" /></div>;
+    return <div className="flex h-screen items-center justify-center bg-[#F4F3EE]"><Spin size="large" /></div>;
   }
-
-  const nextLevel = hasCurrentLevel && currentLevelIndex + 1 < sortedLevels.length ? sortedLevels[currentLevelIndex + 1] : null;
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#F4F3EE] p-4">
-      <Card className="w-full max-w-md brutal-card brutal-shadow border-[3px] border-black">
+      <Card className="w-full max-w-lg brutal-card border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] bg-white p-2 sm:p-4">
         <div className="text-center mb-6">
-          <h2 className="text-2xl font-black uppercase text-[#1D2A3A]">
-            {hasCurrentLevel ? 'Đổi trình độ học' : 'Chào mừng đến với LeLa'}
+          <div className="inline-block bg-black text-yellow-300 font-black text-xs px-3 py-1 mb-2 uppercase tracking-wider border-2 border-black">
+            ⚡ HỆ THỐNG TRÌNH ĐỘ TOEIC
+          </div>
+          <h2 className="text-2xl sm:text-3xl font-black uppercase text-[#1D2A3A] flex items-center justify-center gap-2">
+            <RocketOutlined className="text-[#F05A4A]" />
+            {hasCurrentLevel ? 'Thay đổi trình độ' : 'Chọn trình độ bắt đầu'}
           </h2>
-          <p className="text-gray-600 font-bold mt-2">
+          <p className="text-gray-600 font-bold mt-2 text-sm sm:text-base">
             {hasCurrentLevel 
-              ? `Trình độ hiện tại: ${user?.currentLevel?.name}`
-              : 'Bạn đã biết trình độ TOEIC của mình chưa?'}
+              ? `Trình độ hiện tại của bạn: ${user?.currentLevel?.name}`
+              : 'Hãy chọn trình độ bạn muốn bắt đầu hoặc thi để xác định năng lực!'}
           </p>
         </div>
         
@@ -142,57 +123,38 @@ export const OnboardingPage = () => {
           ) : (
              sortedLevels.map((lvl, idx) => {
                 const targetRank = idx + 1;
-                let statusButton = null;
-                
-                if (!hasCurrentLevel) {
-                   statusButton = (
-                     <Button 
-                       className="brutal-pill border-black font-black uppercase text-white bg-[#F05A4A] hover:!bg-[#d94f41]" 
-                       onClick={() => handleLevelClick(lvl, idx)}
-                       loading={manualSelectMutation.isPending}
-                     >
-                        CHỌN
-                     </Button>
-                   );
-                } else if (targetRank === userRank) {
-                   statusButton = (
-                     <Button disabled className="brutal-pill border-black font-black uppercase text-gray-700 bg-gray-200 cursor-not-allowed">
-                        ĐANG HỌC
-                     </Button>
-                   );
-                } else if (targetRank < userRank) {
-                   statusButton = (
-                     <Button 
-                       className="brutal-pill border-black font-black uppercase text-white bg-[#F05A4A] hover:!bg-[#d94f41]" 
-                       onClick={() => handleLevelClick(lvl, idx)}
-                     >
-                        ĐỔI XUỐNG
-                     </Button>
-                   );
-                } else if (targetRank === userRank + 1) {
-                   statusButton = (
-                     <Button 
-                       className="brutal-pill border-black font-black uppercase text-white bg-[#2A8B9D] hover:!bg-[#1f6d7a]" 
-                       onClick={() => handleLevelClick(lvl, idx)}
-                     >
-                        <LockOutlined /> YÊU CẦU THI
-                     </Button>
-                   );
-                } else {
-                   statusButton = (
-                     <Button 
-                       className="brutal-pill border-black font-black uppercase text-gray-600 bg-gray-100 hover:!bg-gray-200" 
-                       onClick={() => handleLevelClick(lvl, idx)}
-                     >
-                        <LockOutlined /> KHÓA
-                     </Button>
-                   );
-                }
+                const isCurrent = hasCurrentLevel && targetRank === userRank;
 
                 return (
-                  <div key={lvl.id} className="flex justify-between items-center p-4 border-[2px] border-black shadow-[2px_2px_0px_0px_#000] bg-white">
-                     <span className="font-bold text-lg">{lvl.name}</span>
-                     {statusButton}
+                  <div 
+                    key={lvl.id} 
+                    className={`flex justify-between items-center p-4 border-3 border-black shadow-[3px_3px_0px_0px_#000] transition-transform ${
+                      isCurrent ? 'bg-[#F0FDF4] border-[#22C55E]' : 'bg-white hover:-translate-y-0.5'
+                    }`}
+                  >
+                     <div className="flex flex-col">
+                       <span className="font-black text-lg text-[#1D2A3A]">{lvl.name}</span>
+                       <span className="text-xs font-bold text-gray-500">
+                         {isCurrent ? 'Trình độ hiện tại của bạn' : 'Chuỗi 10 bài kiểm tra thay đổi trình độ'}
+                       </span>
+                     </div>
+
+                     {isCurrent ? (
+                       <Button 
+                         disabled 
+                         className="brutal-pill border-2 border-black font-black uppercase text-gray-700 bg-gray-200 cursor-not-allowed h-10 px-4"
+                       >
+                          🟢 ĐANG HỌC
+                       </Button>
+                     ) : (
+                       <Button 
+                         className="brutal-pill border-2 border-black font-black uppercase text-white bg-[#F05A4A] hover:!bg-[#d94f41] h-10 px-5 shadow-[2px_2px_0px_0px_#000]" 
+                         onClick={() => handleLevelClick(lvl, idx)}
+                         loading={manualSelectMutation.isPending}
+                       >
+                          {hasCurrentLevel ? '🔑 YÊU CẦU THI' : 'CHỌN'}
+                       </Button>
+                     )}
                   </div>
                 );
              })
@@ -200,141 +162,19 @@ export const OnboardingPage = () => {
         </div>
         
         {showPlacementOption && (
-          <div className="flex flex-col space-y-4 mt-8">
-            <div className="text-center w-full mt-4">
+          <div className="flex flex-col space-y-4 mt-6">
+            <div className="text-center w-full">
               <span className="text-sm text-gray-500 font-bold mb-2 block">Hoặc</span>
               <Button 
-                type="link" 
-                className="w-full text-[#F05A4A] font-bold underline hover:text-[#d94f41] text-lg" 
-                onClick={handlePlacementTest}
+                className="w-full brutal-pill font-black uppercase bg-[#2A8B9D] text-white hover:!bg-[#1F6D7A] h-12 border-2 border-black text-base shadow-[3px_3px_0px_0px_#000]" 
+                onClick={() => navigate('/placement-tests')}
               >
-                CHƯA BIẾT TRÌNH ĐỘ?
+                TẤT CẢ BÀI KIỂM TRA ĐẦU VÀO ➔
               </Button>
             </div>
           </div>
         )}
       </Card>
-
-      {/* Downgrade Modal */}
-      <Modal
-        title={null}
-        open={isDowngradeModalVisible}
-        onCancel={() => setIsDowngradeModalVisible(false)}
-        footer={null}
-        className="brutal-modal"
-        closable={false}
-      >
-        <div className="p-6">
-          <h2 className="text-2xl font-black mb-4 uppercase text-[#1D2A3A]">THAY ĐỔI TRÌNH ĐỘ</h2>
-          <p className="font-bold text-lg mb-2">
-            Bạn đang học: <span className="text-[#F05A4A]">{user?.currentLevel?.name}</span>
-          </p>
-          <p className="font-bold text-lg mb-4">
-            Bạn muốn chuyển xuống: <span className="text-[#F05A4A]">{targetLevel?.name}</span>
-          </p>
-          <div className="bg-gray-100 p-4 rounded-xl mb-4 space-y-1 text-sm font-bold text-gray-700">
-            <p>Sau khi đổi:</p>
-            <ul className="list-disc list-inside space-y-1">
-              <li>Lộ trình học sẽ chuyển sang trình độ mới.</li>
-              <li>Bộ thẻ sẽ được điều chỉnh theo trình độ mới.</li>
-              <li>Các bài kiểm tra đề xuất sẽ thay đổi.</li>
-              <li>Lịch sử các bài kiểm tra cũ KHÔNG bị thay đổi.</li>
-            </ul>
-          </div>
-          <p className="font-bold text-base mb-6 text-gray-600">Bạn có chắc chắn muốn đổi xuống không?</p>
-          <div className="flex gap-4">
-            <Button 
-              className="flex-1 brutal-pill h-12 font-black uppercase border-[2px] border-black bg-white text-black hover:!bg-gray-100"
-              onClick={() => setIsDowngradeModalVisible(false)}
-            >
-              HỦY
-            </Button>
-            <Button 
-              className="flex-1 brutal-pill h-12 font-black uppercase border-[2px] border-black bg-[#F05A4A] text-white hover:!bg-[#d94f41]"
-              onClick={() => {
-                 manualSelectMutation.mutate(targetLevel?.id);
-                 setIsDowngradeModalVisible(false);
-              }}
-              loading={manualSelectMutation.isPending}
-            >
-              ĐỔI CẤP ĐỘ
-            </Button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* Upgrade Next Level Modal */}
-      <Modal
-        title={null}
-        open={isUpgradeModalVisible}
-        onCancel={() => setIsUpgradeModalVisible(false)}
-        footer={null}
-        className="brutal-modal"
-        closable={false}
-      >
-        <div className="p-6">
-          <h2 className="text-2xl font-black mb-4 uppercase text-[#1D2A3A]">MỞ KHÓA TRÌNH ĐỘ MỚI</h2>
-          <p className="font-bold text-lg mb-2">
-            Bạn đang ở: <span className="text-[#2A8B9D]">{user?.currentLevel?.name}</span>
-          </p>
-          <p className="font-bold text-lg mb-4">
-            Để chuyển lên: <span className="text-[#2A8B9D]">{targetLevel?.name}</span>
-          </p>
-          <p className="font-bold text-base mb-6 text-gray-600">
-            Bạn cần hoàn thành Bài kiểm tra kết thúc cấp độ hiện tại và đạt ít nhất 80%. Bạn có muốn làm bài kiểm tra ngay không?
-          </p>
-          <div className="flex gap-4">
-            <Button 
-              className="flex-1 brutal-pill h-12 font-black uppercase border-[2px] border-black bg-white text-black hover:!bg-gray-100"
-              onClick={() => setIsUpgradeModalVisible(false)}
-            >
-              HỦY
-            </Button>
-            <Button 
-              className="flex-1 brutal-pill h-12 font-black uppercase border-[2px] border-black bg-[#2A8B9D] text-white hover:!bg-[#1f6d7a]"
-              onClick={() => {
-                setIsUpgradeModalVisible(false);
-                navigate(`/quizzes?category=LEVEL_UP&levelId=${targetLevel?.id}`);
-              }}
-            >
-              LÀM BÀI KIỂM TRA
-            </Button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* Block Jump Modal */}
-      <Modal
-        title={null}
-        open={isBlockModalVisible}
-        onCancel={() => setIsBlockModalVisible(false)}
-        footer={null}
-        className="brutal-modal"
-        closable={false}
-      >
-        <div className="p-6">
-          <h2 className="text-2xl font-black mb-4 uppercase text-[#F05A4A]">KHÔNG THỂ NHẢY TRÌNH ĐỘ</h2>
-          <p className="font-bold text-lg mb-2">
-            Bạn hiện đang ở: <span className="text-[#1D2A3A]">{user?.currentLevel?.name}</span>
-          </p>
-          {nextLevel && (
-            <p className="font-bold text-lg mb-4">
-              Bạn chỉ có thể nâng lên: <span className="text-[#2A8B9D]">{nextLevel.name}</span>
-            </p>
-          )}
-          <p className="font-bold text-base mb-6 text-gray-600">
-            Bạn cần hoàn thành bài kiểm tra kết thúc cấp độ hiện tại để mở khóa trình độ tiếp theo.
-          </p>
-          <div className="flex justify-end">
-            <Button 
-              className="w-full brutal-pill h-12 font-black uppercase border-[2px] border-black bg-white text-black hover:!bg-gray-100"
-              onClick={() => setIsBlockModalVisible(false)}
-            >
-              HỦY
-            </Button>
-          </div>
-        </div>
-      </Modal>
     </div>
   );
 };
