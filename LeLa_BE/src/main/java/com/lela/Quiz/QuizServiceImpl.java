@@ -68,6 +68,8 @@ public class QuizServiceImpl implements QuizService {
         if (q.getLevel() != null) {
             res.setLevelId(q.getLevel().getId());
         }
+        res.setDifficulty(q.getDifficulty());
+        res.setPassScore(q.getPassScore());
 
         if (q.getQuizCategory() == QuizCategory.FINAL || q.getQuizCategory() == QuizCategory.LEVEL_UP) {
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -350,6 +352,7 @@ public class QuizServiceImpl implements QuizService {
         existing.setDescription(req.getDescription());
         existing.setQuizType(req.getQuizType());
         existing.setQuizCategory(req.getQuizCategory() != null ? req.getQuizCategory() : QuizCategory.NORMAL);
+        existing.setDifficulty(req.getDifficulty());
         existing.setTimeLimitSeconds(req.getTimeLimitSeconds());
         existing.setPassScore(req.getPassScore());
         existing.setMaxAttempts(req.getMaxAttempts());
@@ -512,6 +515,12 @@ public class QuizServiceImpl implements QuizService {
     @Override
     public List<QuizResponse> findByDeckId(Long deckId) {
         return quizRepository.findByDeckIdAndIsActiveTrue(deckId).stream()
+                .sorted((a, b) -> {
+                    int rankA = a.getDifficulty() == com.lela.Quiz.domain.QuizDifficulty.EASY ? 1 : (a.getDifficulty() == com.lela.Quiz.domain.QuizDifficulty.MEDIUM ? 2 : (a.getDifficulty() == com.lela.Quiz.domain.QuizDifficulty.HARD ? 3 : 4));
+                    int rankB = b.getDifficulty() == com.lela.Quiz.domain.QuizDifficulty.EASY ? 1 : (b.getDifficulty() == com.lela.Quiz.domain.QuizDifficulty.MEDIUM ? 2 : (b.getDifficulty() == com.lela.Quiz.domain.QuizDifficulty.HARD ? 3 : 4));
+                    if (rankA != rankB) return Integer.compare(rankA, rankB);
+                    return Long.compare(a.getId(), b.getId());
+                })
                 .map(this::mapToResponse)
                 .toList();
     }

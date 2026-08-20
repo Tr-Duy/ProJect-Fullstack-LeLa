@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Button, Skeleton, Tag } from 'antd';
-import { ArrowLeftOutlined, SoundOutlined, CheckCircleOutlined, FieldTimeOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, SoundOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import { decksApi } from '../api/decks.api';
 import { flashcardsApi } from '../api/flashcards.api';
 import { deckEnrollmentsApi } from '../api/deck-enrollments.api';
@@ -182,9 +182,9 @@ export function DeckDetailPage() {
                 highestScore = Math.max(...attemptsForQuiz.map((a: any) => a.scorePercent != null ? Number(a.scorePercent) : 0));
               }
 
-              const isQuick = quiz.quizCode?.includes('QUICK');
-              const isStd = quiz.quizCode?.includes('STD');
-              const isChallenge = quiz.quizCode?.includes('CHALLENGE');
+              const isEasy = quiz.difficulty === 'EASY' || quiz.quizCode?.includes('EASY') || quiz.quizCode?.includes('QUICK');
+              const isMedium = quiz.difficulty === 'MEDIUM' || quiz.quizCode?.includes('MEDIUM') || quiz.quizCode?.includes('STD');
+              const isHard = quiz.difficulty === 'HARD' || quiz.quizCode?.includes('HARD') || quiz.quizCode?.includes('CHALLENGE');
 
               return (
                 <div key={quiz.id} className="brutal-card bg-[#F4F3EE] p-6 flex flex-col justify-between gap-6 border-[3px] border-black shadow-[4px_4px_0px_0px_#000]">
@@ -193,9 +193,9 @@ export function DeckDetailPage() {
                       <span className="font-black text-xs px-2 py-1 bg-white brutal-border border-[2px]">
                         {quiz.totalQuestions || 0} câu hỏi
                       </span>
-                      {isQuick && <span className="font-black text-xs px-2 py-1 bg-yellow-300 brutal-border border-[2px]">⚡ LUYỆN NHANH</span>}
-                      {isStd && <span className="font-black text-xs px-2 py-1 bg-blue-300 brutal-border border-[2px]">📝 TIÊU CHUẨN</span>}
-                      {isChallenge && <span className="font-black text-xs px-2 py-1 bg-red-300 brutal-border border-[2px]">🔥 THỬ THÁCH</span>}
+                      {isEasy && <span className="font-black text-xs px-2 py-1 bg-emerald-300 text-emerald-950 brutal-border border-[2px]">🟢 DỄ</span>}
+                      {isMedium && <span className="font-black text-xs px-2 py-1 bg-amber-300 text-amber-950 brutal-border border-[2px]">🟡 VỪA</span>}
+                      {isHard && <span className="font-black text-xs px-2 py-1 bg-rose-300 text-rose-950 brutal-border border-[2px]">🔴 KHÓ</span>}
                     </div>
 
                     <h3 className="text-xl font-black text-[#1D2A3A] mb-2">{quiz.title}</h3>
@@ -203,11 +203,11 @@ export function DeckDetailPage() {
 
                     <div className="flex items-center gap-2 text-gray-700 font-bold text-sm flex-wrap">
                       <span className="flex items-center gap-1 bg-white px-2 py-1 brutal-border border-[2px]">
-                        <FieldTimeOutlined /> {quiz.timeLimitSeconds ? `${Math.floor(quiz.timeLimitSeconds / 60)} phút` : 'Tự do'}
+                        🎯 Yêu cầu: Đạt ≥ 70%
                       </span>
                       <span className="flex items-center gap-1 bg-white px-2 py-1 brutal-border border-[2px]">
                         <CheckCircleOutlined /> 
-                        {highestScore !== null ? `Đạt: ${Math.round(highestScore)}%` : 'Chưa làm'}
+                        {highestScore !== null ? `Đã làm: ${Math.round(highestScore)}% (${highestScore >= 70 ? 'ĐẠT' : 'CHƯA ĐẠT'})` : 'Chưa làm'}
                       </span>
                     </div>
                   </div>

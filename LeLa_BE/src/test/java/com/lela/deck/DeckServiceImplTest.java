@@ -127,13 +127,13 @@ public class DeckServiceImplTest {
         Pageable pageable = PageRequest.of(0, 10);
         Page<Deck> page = new PageImpl<>(Arrays.asList(deckEntity));
         
-        when(deckRepository.findByIsActiveTrue(pageable)).thenReturn(page);
+        when(deckRepository.findByIsActiveTrueAndExamTypeIsNullAndLevelIsNull(pageable)).thenReturn(page);
 
         Page<DeckResponse> result = deckService.getAllDecks(null, null, pageable);
 
         assertNotNull(result);
         assertEquals(1, result.getTotalElements());
-        verify(deckRepository).findByIsActiveTrue(pageable);
+        verify(deckRepository).findByIsActiveTrueAndExamTypeIsNullAndLevelIsNull(pageable);
     }
 
     @Test

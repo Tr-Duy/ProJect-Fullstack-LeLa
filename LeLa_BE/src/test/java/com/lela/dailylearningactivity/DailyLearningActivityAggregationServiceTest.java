@@ -121,12 +121,12 @@ class DailyLearningActivityAggregationServiceTest {
         yesterdayAttempt.setSubmittedAt(LocalDateTime.of(2026, 8, 9, 8, 0, 0));
 
         when(quizAttemptRepository.findAllByUserIdWithQuiz(12L)).thenReturn(List.of(yesterdayAttempt));
-        when(repository.findByUserIdAndActivityDateBetween(12L, LocalDate.of(2026, 8, 10), LocalDate.of(2026, 8, 10))).thenReturn(List.of());
+        when(repository.findByUserIdAndActivityDateBetween(12L, LocalDate.now(), LocalDate.now())).thenReturn(List.of());
 
         DailyLearningActivityResponse today = service.getTodayActivity();
 
         assertNotNull(today);
-        assertEquals(LocalDate.of(2026, 8, 10), today.getActivityDate());
+        assertEquals(LocalDate.now(), today.getActivityDate());
         assertEquals(1, today.getCurrentStreak());
         assertTrue(Boolean.FALSE.equals(today.getActive()));
     }

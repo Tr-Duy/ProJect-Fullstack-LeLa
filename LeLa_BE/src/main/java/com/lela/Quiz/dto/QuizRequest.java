@@ -36,6 +36,8 @@ public class QuizRequest {
     @Builder.Default
     private com.lela.Quiz.domain.QuizCategory quizCategory = com.lela.Quiz.domain.QuizCategory.NORMAL;
 
+    private com.lela.Quiz.domain.QuizDifficulty difficulty;
+
     private Long examTypeId;
     
     private Long levelId;

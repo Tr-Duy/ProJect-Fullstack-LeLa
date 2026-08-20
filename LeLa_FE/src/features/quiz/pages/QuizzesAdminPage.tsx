@@ -7,13 +7,6 @@ import { useNavigate } from 'react-router-dom';
 import { message, Modal as AntdModal } from 'antd';
 import { Button } from '../../../shared/components/ui/Button';
 
-const QUIZ_TYPE_MAP: Record<string, string> = {
-  MULTIPLE_CHOICE: 'Trắc nghiệm',
-  TRUE_FALSE: 'Đúng / Sai',
-  FILL_BLANK: 'Điền vào chỗ trống',
-  MIXED: 'Hỗn hợp',
-};
-
 const QUIZ_CATEGORY_MAP: Record<string, string> = {
   NORMAL: 'Thông thường',
   PLACEMENT: 'Kiểm tra đầu vào',
@@ -119,8 +112,10 @@ export function QuizzesAdminPage() {
                 <th className="px-4 py-3">Mã</th>
                 <th className="px-4 py-3">Tiêu đề</th>
                 <th className="px-4 py-3">Phân loại</th>
+                <th className="px-4 py-3">Mức độ</th>
+                <th className="px-4 py-3">Số câu</th>
+                <th className="px-4 py-3">Đạt</th>
                 <th className="px-4 py-3">Trình độ</th>
-                <th className="px-4 py-3">Loại</th>
                 <th className="px-4 py-3">Bộ thẻ</th>
                 <th className="px-4 py-3">Trạng thái</th>
                 <th className="px-4 py-3 text-right">Hành động</th>
@@ -128,17 +123,31 @@ export function QuizzesAdminPage() {
             </thead>
             <tbody className="divide-y divide-geist-gray-300">
               {isLoading ? (
-                <tr><td colSpan={8} className="px-4 py-8 text-center text-geist-gray-600">Đang tải...</td></tr>
+                <tr><td colSpan={10} className="px-4 py-8 text-center text-geist-gray-600">Đang tải...</td></tr>
               ) : data?.data?.content?.map((quiz) => {
                 const levelObj = levelsData?.find((l: any) => l.id === quiz.levelId);
+                const isEasy = quiz.difficulty === 'EASY' || quiz.quizCode?.includes('EASY') || quiz.quizCode?.includes('QUICK');
+                const isMedium = quiz.difficulty === 'MEDIUM' || quiz.quizCode?.includes('MEDIUM') || quiz.quizCode?.includes('STD');
+                const isHard = quiz.difficulty === 'HARD' || quiz.quizCode?.includes('HARD') || quiz.quizCode?.includes('CHALLENGE');
+
                 return (
                   <tr key={quiz.id} className="hover:bg-geist-gray-100/50 transition-colors">
-                    <td className="px-4 py-3 font-mono text-geist-gray-900">{quiz.quizCode}</td>
+                    <td className="px-4 py-3 font-mono text-xs text-geist-gray-900">{quiz.quizCode}</td>
                     <td className="px-4 py-3 text-geist-gray-1000 font-medium">{quiz.title}</td>
                     <td className="px-4 py-3 text-geist-gray-1000">
                       <span className="font-semibold text-xs px-2 py-1 rounded bg-blue-50 text-blue-700 border border-blue-200">
                         {QUIZ_CATEGORY_MAP[quiz.quizCategory ?? ''] || quiz.quizCategory}
                       </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      {isEasy && <span className="font-bold text-xs px-2 py-1 rounded bg-emerald-100 text-emerald-800 border border-emerald-300">🟢 DỄ</span>}
+                      {isMedium && <span className="font-bold text-xs px-2 py-1 rounded bg-amber-100 text-amber-800 border border-amber-300">🟡 VỪA</span>}
+                      {isHard && <span className="font-bold text-xs px-2 py-1 rounded bg-rose-100 text-rose-800 border border-rose-300">🔴 KHÓ</span>}
+                      {!isEasy && !isMedium && !isHard && <span className="text-gray-400 text-xs">--</span>}
+                    </td>
+                    <td className="px-4 py-3 font-bold text-xs text-gray-700">{quiz.totalQuestions || 0} câu</td>
+                    <td className="px-4 py-3 font-bold text-xs text-emerald-700">
+                      {quiz.passScore != null ? `${Math.round(Number(quiz.passScore))}%` : '70%'}
                     </td>
                     <td className="px-4 py-3 text-geist-gray-1000 font-medium">
                       {levelObj ? (
@@ -149,9 +158,8 @@ export function QuizzesAdminPage() {
                         <span className="text-gray-400 text-xs">--</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-geist-gray-1000">{QUIZ_TYPE_MAP[quiz.quizType] || quiz.quizType}</td>
-                    <td className="px-4 py-3 text-geist-gray-1000">
-                      {decksData?.content?.find((d: any) => d.id === quiz.deckId)?.title || (quiz.deckId ? `ID: ${quiz.deckId}` : '--')}
+                    <td className="px-4 py-3 text-geist-gray-1000 text-xs">
+                      {decksData?.content?.find((d: any) => d.id === quiz.deckId)?.title || (quiz.deckId ? `Deck #${quiz.deckId}` : '--')}
                     </td>
                     <td className="px-4 py-3">
                       <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${

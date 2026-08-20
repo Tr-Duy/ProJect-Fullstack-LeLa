@@ -194,6 +194,7 @@ export interface QuizResponse {
   description?: string;
   quizType: QuizType;
   quizCategory?: QuizCategory;
+  difficulty?: 'EASY' | 'MEDIUM' | 'HARD';
   examTypeId?: number;
   levelId?: number;
   timeLimitSeconds?: number;

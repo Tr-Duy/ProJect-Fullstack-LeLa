@@ -51,6 +51,10 @@ public class Quiz extends AuditableEntity {
     @Column(name = "quiz_category", length = 30)
     private QuizCategory quizCategory = QuizCategory.NORMAL; // Phân loại quiz (NORMAL, PLACEMENT, FINAL).
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "difficulty", length = 20)
+    private QuizDifficulty difficulty; // EASY, MEDIUM, HARD
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "exam_type_id")
     private com.lela.common.domain.ExamType examType;

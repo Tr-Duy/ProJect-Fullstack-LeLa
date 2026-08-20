@@ -68,7 +68,15 @@ export function LoginPage() {
         throw new Error('Đăng nhập thất bại');
       }
     } catch (err: any) {
-      message.error(err.response?.data?.message || 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.');
+      if (!err.response) {
+        message.error('Không thể kết nối máy chủ.');
+      } else if (err.response.status === 401) {
+        message.error(err.response.data?.message || 'Thông tin đăng nhập không đúng.');
+      } else if (err.response.status >= 500) {
+        message.error('Máy chủ đang gặp sự cố. Vui lòng thử lại sau.');
+      } else {
+        message.error(err.response.data?.message || 'Đăng nhập thất bại.');
+      }
     } finally {
       setLoading(false);
     }

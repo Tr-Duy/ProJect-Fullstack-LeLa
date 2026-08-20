@@ -516,10 +516,10 @@ public class QuizAttemptServiceImpl implements QuizAttemptService {
         attempt.setStatus(com.lela.QuizAttemptQuestion.domain.QuizAttemptStatus.SUBMITTED);
         attempt.setCorrectAnswers(correctCount);
         Quiz quiz = attempt.getQuiz();
-        if (quiz != null && quiz.getQuizCategory() == com.lela.Quiz.domain.QuizCategory.FINAL_LEVEL) {
-            attempt.setPassed(percent.compareTo(BigDecimal.valueOf(70)) >= 0);
+        if (quiz != null && quiz.getPassScore() != null) {
+            attempt.setPassed(percent.compareTo(quiz.getPassScore()) >= 0);
         } else {
-            attempt.setPassed(percent.compareTo(BigDecimal.valueOf(80)) >= 0);
+            attempt.setPassed(percent.compareTo(BigDecimal.valueOf(70)) >= 0);
         }
 
         attempt.setXpAwarded(correctCount * 10); // Example: 10 XP per correct answer

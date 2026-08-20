@@ -20,6 +20,8 @@ public class QuizResponse {
     private String description;
     private QuizType quizType;
     private com.lela.Quiz.domain.QuizCategory quizCategory;
+    private com.lela.Quiz.domain.QuizDifficulty difficulty;
+    private java.math.BigDecimal passScore;
     private Long examTypeId;
     private Long levelId;
     private Integer timeLimitSeconds;
