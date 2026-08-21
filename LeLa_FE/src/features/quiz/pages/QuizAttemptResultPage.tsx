@@ -8,6 +8,7 @@ import { useAuth } from '../../../shared/providers/AuthProvider';
 import { onboardingApi } from '../../users/api/onboarding.api';
 import type { PlacementTestResult } from '../../users/api/onboarding.api';
 import { normalizeQuizId } from '../utils/quiz-attempts';
+import { ExamReviewCard } from '../components/ExamReviewCard';
 
 interface QuizAttemptResultLocationState {
   quizId?: number | string | null;
@@ -217,17 +218,23 @@ export function QuizAttemptResultPage() {
               {currentReviewQuestion.questionText}
             </h3>
 
-            <div className="flex flex-col gap-3">
-              {currentReviewQuestion.options?.map((option: any) => {
-                let btnStyle = 'bg-[#F4F3EE] hover:bg-gray-200 text-[#1D2A3A]';
+            <div className="flex flex-col gap-3.5">
+              {currentReviewQuestion.options?.map((option: any, index: number) => {
+                const letter = String.fromCharCode(65 + index);
+                let btnStyle = 'bg-white hover:bg-[#F4F3EE] text-[#1D2A3A] border-black';
+                let badgeStyle = 'bg-[#F4F3EE] text-[#1D2A3A]';
+
                 if (reviewSelectedOption === option.id) {
                   if (option.isCorrect) {
-                    btnStyle = 'bg-[#2A8B9D] text-white';
+                    btnStyle = 'bg-[#2A8B9D] text-white border-black shadow-[3px_3px_0px_0px_#000]';
+                    badgeStyle = 'bg-white text-[#2A8B9D]';
                   } else {
-                    btnStyle = 'bg-[#F05A4A] text-white';
+                    btnStyle = 'bg-[#F05A4A] text-white border-black shadow-[3px_3px_0px_0px_#000]';
+                    badgeStyle = 'bg-white text-[#F05A4A]';
                   }
                 } else if (reviewFeedback && option.isCorrect) {
-                  btnStyle = 'bg-[#2A8B9D] text-white';
+                  btnStyle = 'bg-[#2A8B9D] text-white border-black shadow-[3px_3px_0px_0px_#000]';
+                  badgeStyle = 'bg-white text-[#2A8B9D]';
                 }
 
                 return (
@@ -235,9 +242,12 @@ export function QuizAttemptResultPage() {
                     key={option.id}
                     onClick={() => !reviewFeedback && handleCheckOption(option.id)}
                     disabled={!!reviewFeedback}
-                    className={`w-full p-4 border-[3px] border-black font-bold text-lg text-left transition-all brutal-shadow ${btnStyle}`}
+                    className={`w-full flex items-center gap-4 p-4 md:p-4.5 border-[3px] rounded-xl font-bold text-lg text-left transition-all ${btnStyle}`}
                   >
-                    {option.optionText}
+                    <div className={`w-9 h-9 border-[2px] border-black rounded-lg flex items-center justify-center font-black text-base shrink-0 ${badgeStyle}`}>
+                      {letter}
+                    </div>
+                    <span className="flex-1 leading-snug">{option.optionText}</span>
                   </button>
                 );
               })}
@@ -559,86 +569,14 @@ export function QuizAttemptResultPage() {
 
         {questions.map((question: any, index: number) => {
           const answer = getAnswerForQuestion(question.id);
-          const isCorrect = answer?.isCorrect;
 
           return (
-            <div key={question.id} className="brutal-card bg-white p-6 md:p-8 mb-6 border-[3px] border-black shadow-[4px_4px_0px_0px_#000]">
-              <div className="flex items-start justify-between gap-4 mb-6">
-                <h4 className="text-xl md:text-2xl font-bold leading-relaxed text-[#1D2A3A]">
-                  <span className="mr-2">Câu {index + 1}:</span>
-                  {question.questionText}
-                </h4>
-                <div>
-                  <Tag color={isCorrect ? '#2A8B9D' : '#F05A4A'} className="brutal-border font-bold px-3 py-1 text-base m-0">
-                    {isCorrect ? 'Đúng' : 'Sai'}
-                  </Tag>
-                </div>
-              </div>
-
-              {question.questionImageUrl && (
-                <img src={question.questionImageUrl} alt="Question" className="max-w-full h-auto mb-6 brutal-border border-[3px] border-black" />
-              )}
-
-              <div className="flex flex-col gap-4 w-full">
-                {question.questionType === 'FILL_BLANK' ? (
-                  <div className="flex flex-col gap-2">
-                    <div className={`p-4 border-[3px] border-black font-bold text-lg ${isCorrect ? 'bg-[#e6f4f1]' : 'bg-[#fdebea]'}`}>
-                      Bạn trả lời: <span className={isCorrect ? 'text-[#2A8B9D]' : 'text-[#F05A4A]'}>{answer?.answerText || '(Trống)'}</span>
-                    </div>
-                    {!isCorrect && (
-                      <div className="p-4 border-[3px] border-black font-bold text-lg bg-[#e6f4f1]">
-                        Đáp án đúng:{' '}
-                        <span className="text-[#2A8B9D]">
-                          {question.options?.filter((option: any) => option.isCorrect).map((option: any) => option.optionText).join(', ')}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  question.options?.map((option: any) => {
-                    const isSelected = answer?.selectedAttemptOptionId === option.id;
-                    const isCorrectOption = option.isCorrect === true;
-
-                    let optionClasses = 'bg-[#F4F3EE]';
-                    let textClasses = 'text-[#1D2A3A]';
-
-                    if (isCorrectOption) {
-                      optionClasses = 'bg-[#2A8B9D] text-white shadow-[2px_2px_0px_0px_#000]';
-                      textClasses = 'text-white';
-                    } else if (isSelected && !isCorrectOption) {
-                      optionClasses = 'bg-[#F05A4A] text-white shadow-[2px_2px_0px_0px_#000]';
-                      textClasses = 'text-white';
-                    }
-
-                    return (
-                      <div
-                        key={option.id}
-                        className={`
-                          flex items-center gap-4 p-4 md:p-5 border-[3px] border-black transition-all duration-200
-                          ${optionClasses}
-                        `}
-                      >
-                        <div className="w-8 h-8 border-[3px] border-black rounded-full flex items-center justify-center shrink-0 bg-white">
-                          {isSelected && <div className="w-4 h-4 bg-black rounded-full" />}
-                        </div>
-                        <span className={`text-xl font-bold flex-1 ${textClasses}`}>
-                          {option.optionText}
-                        </span>
-                        {isSelected && <span className={`font-bold ml-2 ${textClasses}`}>(Đã chọn)</span>}
-                        {isCorrectOption && !isSelected && <span className={`font-bold ml-2 ${textClasses}`}>(Đáp án đúng)</span>}
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-
-              {question.explanation && (
-                <div className="mt-6 p-4 bg-gray-100 border-[3px] border-black border-dashed">
-                  <h5 className="font-bold text-lg mb-2">Giải thích:</h5>
-                  <p className="text-gray-700">{question.explanation}</p>
-                </div>
-              )}
-            </div>
+            <ExamReviewCard
+              key={question.id}
+              questionNumber={index + 1}
+              question={question}
+              answer={answer}
+            />
           );
         })}
       </div>

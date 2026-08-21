@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { App, Button, Input, Skeleton } from 'antd';
+import { App, Button, Skeleton } from 'antd';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { quizAttemptsApi } from '../api/quiz-attempts.api';
 import { normalizeQuizId } from '../utils/quiz-attempts';
+import { ExamQuestionCard } from '../components/ExamQuestionCard';
 
 interface QuizAnswerSubmitRequest {
   attemptQuestionId: number;
@@ -198,51 +199,14 @@ export function QuizAttemptPage() {
           )}
         </div>
 
-        <div className="brutal-card bg-white p-6 md:p-10 mb-8 border-[3px] border-black shadow-[6px_6px_0px_0px_#000]">
-          <h2 className="text-2xl md:text-3xl font-black mb-8 leading-relaxed text-[#1D2A3A]">
-            {currentQuestion.questionText}
-          </h2>
-          {currentQuestion.questionImageUrl && (
-            <img src={currentQuestion.questionImageUrl} alt="Question" className="max-w-full h-auto mb-8 brutal-border border-[3px] border-black" />
-          )}
-
-          <div className="flex flex-col gap-4 w-full">
-            {currentQuestion.questionType === 'FILL_BLANK' ? (
-              <Input
-                size="large"
-                placeholder="Nhập câu trả lời của bạn..."
-                className="brutal-border border-[3px] border-black h-16 text-xl px-4 focus:ring-0 focus:border-black font-bold"
-                value={currentAnswer?.answerText || ''}
-                onChange={(event) => handleTextAnswer(currentQuestion.id, event.target.value)}
-              />
-            ) : (
-              currentQuestion.options?.map((option: any) => {
-                const isSelected = currentAnswer?.selectedAttemptOptionId === option.id;
-
-                return (
-                  <label
-                    key={option.id}
-                    className={`
-                      flex items-center gap-4 p-4 md:p-5 border-[3px] border-black cursor-pointer transition-all duration-200 select-none
-                      ${isSelected
-                        ? 'bg-[#2A8B9D] text-white shadow-[2px_2px_0px_0px_#000] translate-y-[-2px]'
-                        : 'bg-[#F4F3EE] hover:bg-gray-200 hover:-translate-y-1 hover:shadow-[4px_4px_0px_0px_#000]'
-                      }
-                    `}
-                    onClick={() => handleOptionSelect(currentQuestion.id, option.id)}
-                  >
-                    <div className="w-8 h-8 border-[3px] border-black rounded-full flex items-center justify-center shrink-0 bg-white">
-                      {isSelected && <div className="w-4 h-4 bg-black rounded-full" />}
-                    </div>
-                    <span className="text-xl font-bold flex-1">
-                      {option.optionText}
-                    </span>
-                  </label>
-                );
-              })
-            )}
-          </div>
-        </div>
+        <ExamQuestionCard
+          questionNumber={currentQuestionIndex + 1}
+          totalQuestions={totalQuestions}
+          question={currentQuestion}
+          currentAnswer={currentAnswer}
+          onOptionSelect={handleOptionSelect}
+          onTextAnswer={handleTextAnswer}
+        />
 
         <div className="flex flex-col-reverse sm:flex-row justify-between gap-4 mt-8">
           <Button
