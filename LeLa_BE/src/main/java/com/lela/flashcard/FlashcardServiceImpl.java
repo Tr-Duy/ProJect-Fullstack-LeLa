@@ -38,7 +38,11 @@ public class FlashcardServiceImpl implements FlashcardService {
         flashcard.setFrontText(request.getFrontText());
         flashcard.setBackText(request.getBackText());
         flashcard.setPhonetic(request.getPhonetic());
+        flashcard.setPartOfSpeech(request.getPartOfSpeech());
+        flashcard.setDefinition(request.getDefinition());
         flashcard.setExampleText(request.getExampleText());
+        flashcard.setExampleTranslation(request.getExampleTranslation());
+        flashcard.setRelatedWords(request.getRelatedWords());
         flashcard.setHint(request.getHint());
         flashcard.setNote(request.getNote());
         flashcard.setFrontImageUrl(request.getFrontImageUrl());
@@ -100,7 +104,11 @@ public class FlashcardServiceImpl implements FlashcardService {
         if (request.getFrontText() != null) flashcard.setFrontText(request.getFrontText());
         if (request.getBackText() != null) flashcard.setBackText(request.getBackText());
         if (request.getPhonetic() != null) flashcard.setPhonetic(request.getPhonetic());
+        if (request.getPartOfSpeech() != null) flashcard.setPartOfSpeech(request.getPartOfSpeech());
+        if (request.getDefinition() != null) flashcard.setDefinition(request.getDefinition());
         if (request.getExampleText() != null) flashcard.setExampleText(request.getExampleText());
+        if (request.getExampleTranslation() != null) flashcard.setExampleTranslation(request.getExampleTranslation());
+        if (request.getRelatedWords() != null) flashcard.setRelatedWords(request.getRelatedWords());
         if (request.getHint() != null) flashcard.setHint(request.getHint());
         if (request.getNote() != null) flashcard.setNote(request.getNote());
         if (request.getFrontImageUrl() != null) flashcard.setFrontImageUrl(request.getFrontImageUrl());

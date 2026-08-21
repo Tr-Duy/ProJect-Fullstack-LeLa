@@ -36,8 +36,20 @@ public class Flashcard extends AuditableEntity {
     @Column(length = 255)
     private String phonetic; // Phiên âm hoặc cách đọc.
 
+    @Column(name = "part_of_speech", length = 100)
+    private String partOfSpeech; // Từ loại (Danh từ, Tính từ, Động từ, Phó từ...).
+
+    @Column(columnDefinition = "text")
+    private String definition; // Định nghĩa / giải thích tiếng Việt.
+
     @Column(name = "example_text", length = 1000)
-    private String exampleText; // Câu ví dụ minh họa.
+    private String exampleText; // Câu ví dụ minh họa tiếng Anh.
+
+    @Column(name = "example_translation", columnDefinition = "text")
+    private String exampleTranslation; // Bản dịch tiếng Việt của câu ví dụ.
+
+    @Column(name = "related_words", length = 500)
+    private String relatedWords; // Các từ liên quan / từ đồng nghĩa.
 
     @Column(length = 500)
     private String hint; // Gợi ý khi học thẻ.

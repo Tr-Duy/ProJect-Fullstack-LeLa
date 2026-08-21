@@ -112,7 +112,11 @@ export interface FlashcardResponse {
   frontText: string;
   backText: string;
   phonetic?: string;
+  partOfSpeech?: string;
+  definition?: string;
   exampleText?: string;
+  exampleTranslation?: string;
+  relatedWords?: string;
   hint?: string;
   note?: string;
   frontImageUrl?: string;

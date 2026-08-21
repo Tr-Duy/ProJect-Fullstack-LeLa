@@ -9,7 +9,11 @@ public class FlashcardRequest {
     private String frontText; // Nội dung mặt trước
     private String backText; // Nội dung mặt sau
     private String phonetic; // Phiên âm hoặc cách đọc
+    private String partOfSpeech; // Từ loại
+    private String definition; // Định nghĩa tiếng Việt
     private String exampleText; // Câu ví dụ minh họa
+    private String exampleTranslation; // Dịch câu ví dụ
+    private String relatedWords; // Từ liên quan
     private String hint; // Gợi ý khi học thẻ
     private String note; // Ghi chú bổ sung
     private String frontImageUrl; // Đường dẫn ảnh mặt trước

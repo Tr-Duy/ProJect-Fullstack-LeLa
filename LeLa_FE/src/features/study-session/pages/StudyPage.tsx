@@ -121,10 +121,36 @@ export function StudyPage() {
 
   const labels = getButtonLabels();
 
+  const formatPhonetic = (phonetic?: string) => {
+    if (!phonetic) return '';
+    let p = phonetic.trim();
+    if (!p.startsWith('/')) p = '/' + p;
+    if (!p.endsWith('/')) p = p + '/';
+    return p;
+  };
+
+  const getPosTag = (pos?: string, backText?: string) => {
+    if (pos && pos.trim()) {
+      const p = pos.trim().toLowerCase();
+      if (p.includes('tính') || p.includes('adj')) return 'Adj';
+      if (p.includes('danh') || p.includes('noun')) return 'Noun';
+      if (p.includes('động') || p.includes('verb')) return 'Verb';
+      if (p.includes('trạng') || p.includes('phó') || p.includes('adv')) return 'Adv';
+      return pos;
+    }
+    if (backText) {
+      const b = backText.toLowerCase();
+      if (b.includes('tính') || b.includes('mới') || b.includes('đẹp') || b.includes('tốt')) return 'Adj';
+      if (b.includes('động') || b.includes('chạy') || b.includes('học')) return 'Verb';
+    }
+    return 'Noun';
+  };
+
   return (
-    <div className="min-h-screen bg-[#F4F3EE] flex flex-col items-center pt-8 md:pt-16 p-4">
-      <div className="w-full max-w-2xl">
-        <div className="flex justify-between items-center mb-6">
+    <div className="min-h-screen bg-[#F4F3EE] flex flex-col items-center pt-6 md:pt-12 p-4 pb-12 font-sans">
+      <div className="w-full max-w-xl md:max-w-2xl">
+        {/* Header Bar */}
+        <div className="flex justify-between items-center mb-4 sm:mb-6">
           <button
             onClick={() => {
               queryClient.invalidateQueries({ queryKey: ['deck-enrollments'] });
@@ -132,116 +158,176 @@ export function StudyPage() {
               queryClient.invalidateQueries({ queryKey: ['study-progress', deckId] });
               navigate('/my-decks');
             }}
-            className="brutal-pill bg-white hover:bg-gray-100 font-bold px-6 py-2 flex items-center gap-2 cursor-pointer transition-colors"
+            className="brutal-pill bg-white hover:bg-gray-100 font-black px-5 py-2 text-sm flex items-center gap-2 cursor-pointer transition-colors border-[2px] border-black shadow-[2px_2px_0px_0px_#000]"
           >
             &larr; THOÁT
           </button>
 
-          <div className="flex gap-4">
-            <div className="font-bold text-lg brutal-card bg-white px-4 py-1 border-[2px] shadow-[2px_2px_0px_0px_#000]">
-              Còn lại: {studyQueue.length} thẻ
+          <div className="flex items-center gap-3">
+            <div className="font-black text-sm md:text-base bg-white px-4 py-1.5 border-[2px] border-black shadow-[2px_2px_0px_0px_#000] rounded-xl text-[#1D2A3A]">
+              Còn lại: <span className="text-[#F05A4A]">{studyQueue.length}</span> thẻ
             </div>
           </div>
         </div>
 
-        <div className="relative h-[450px] w-full mb-8" style={{ perspective: 1000 }}>
+        {/* Flashcard Box */}
+        <div className="relative h-[500px] sm:h-[540px] w-full mb-6" style={{ perspective: 1000 }}>
           <motion.div
             key={currentCard.id}
             className="w-full h-full relative"
             style={{ transformStyle: 'preserve-3d' }}
             initial={{ rotateY: 0 }}
             animate={{ rotateY: showBack ? 180 : 0 }}
-            transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+            transition={{ type: 'spring', stiffness: 240, damping: 22 }}
             onClick={() => setShowBack(!showBack)}
           >
-            {/* FRONT */}
+            {/* FRONT CARD */}
             <div
-              className={`absolute inset-0 brutal-card bg-white flex flex-col items-center justify-center p-8 cursor-pointer border-[4px] border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 transition-transform ${showBack ? 'pointer-events-none' : ''}`}
+              className={`absolute inset-0 bg-white rounded-[28px] border-[3px] border-black shadow-[0_10px_0_0_#cbd5e1] flex flex-col items-center justify-center p-8 cursor-pointer select-none transition-transform hover:-translate-y-1 ${
+                showBack ? 'pointer-events-none' : ''
+              }`}
               style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}
             >
+              {/* Speaker Audio Button Top Right */}
               <button
-                className="absolute top-4 right-4 w-12 h-12 flex items-center justify-center bg-[#2A8B9D] hover:bg-[#1D2A3A] active:translate-y-1 active:shadow-[2px_2px_0px_0px_#000] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] text-white rounded-full transition-all cursor-pointer z-10"
+                className="absolute top-6 right-6 w-12 h-12 flex items-center justify-center bg-white hover:bg-gray-100 active:scale-95 border-[2px] border-black shadow-[2px_2px_0px_0px_#000] text-[#1D2A3A] rounded-full transition-all cursor-pointer z-20"
                 onClick={(e) => handleSpeak(e, currentCard.frontText)}
+                title="Nghe phát âm"
               >
                 <SoundOutlined className="text-xl" />
               </button>
 
-              <div className="text-3xl md:text-5xl font-black text-center mb-4 text-[#1D2A3A] break-words w-full px-4">{currentCard.frontText}</div>
+              {/* Word */}
+              <div className="text-4xl sm:text-6xl font-black text-center text-[#1D2A3A] tracking-tight break-words w-full px-4 mb-2">
+                {currentCard.frontText}
+              </div>
 
+              {/* IPA */}
               {currentCard.phonetic && (
-                <div className="text-xl md:text-2xl font-medium text-gray-500 mb-4">
-                  /{currentCard.phonetic}/
+                <div className="text-xl sm:text-2xl font-bold text-gray-500 tracking-wide mb-6">
+                  {formatPhonetic(currentCard.phonetic)}
                 </div>
               )}
 
+              {/* Optional Front Image */}
               {currentCard.frontImageUrl && (
-                <div className="w-full max-h-40 overflow-hidden rounded-xl border-[3px] border-black mt-2">
+                <div className="w-full max-h-36 overflow-hidden rounded-2xl border-[2px] border-black mt-2">
                   <img src={currentCard.frontImageUrl} alt="Front Visual" className="w-full h-full object-cover" />
                 </div>
               )}
 
-              <div className="absolute bottom-6 bg-[#1D2A3A] text-white px-6 py-2 border-[3px] border-black font-black uppercase text-sm tracking-widest animate-pulse">
+              {/* Bottom Flip Indicator */}
+              <div className="absolute bottom-6 bg-[#1D2A3A] text-white px-6 py-2 rounded-full border-[2px] border-black font-black uppercase text-xs tracking-widest animate-pulse shadow-[2px_2px_0px_0px_#000]">
                 [ NHẤN ĐỂ LẬT THẺ ]
               </div>
             </div>
 
-            {/* BACK */}
+            {/* BACK CARD */}
             <div
-              className={`absolute inset-0 brutal-card bg-white flex flex-col items-center justify-center p-8 border-[4px] border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] ${!showBack ? 'pointer-events-none' : ''}`}
+              className={`absolute inset-0 bg-white rounded-[28px] border-[3px] border-black shadow-[0_10px_0_0_#cbd5e1] flex flex-col p-6 sm:p-8 cursor-pointer select-none ${
+                !showBack ? 'pointer-events-none' : ''
+              }`}
               style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
             >
+              {/* Speaker Audio Button Top Right */}
               <button
-                className="absolute top-4 right-4 w-12 h-12 flex items-center justify-center bg-[#2A8B9D] hover:bg-[#1D2A3A] active:translate-y-1 active:shadow-[2px_2px_0px_0px_#000] border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] text-white rounded-full transition-all cursor-pointer z-10"
+                className="absolute top-6 right-6 w-12 h-12 flex items-center justify-center bg-white hover:bg-gray-100 active:scale-95 border-[2px] border-black shadow-[2px_2px_0px_0px_#000] text-[#1D2A3A] rounded-full transition-all cursor-pointer z-20"
                 onClick={(e) => handleSpeak(e, currentCard.frontText)}
+                title="Nghe phát âm"
               >
                 <SoundOutlined className="text-xl" />
               </button>
 
-              {currentCard.backImageUrl && (
-                <div className="w-full max-w-[200px] max-h-32 mb-4 overflow-hidden rounded-xl border-[3px] border-black">
-                  <img src={currentCard.backImageUrl} alt="Back Visual" className="w-full h-full object-cover" />
+              {/* Scrollable Container for Back Card Info */}
+              <div className="flex-1 overflow-y-auto pr-2 text-left space-y-3.5 scrollbar-thin">
+                {/* 1. Header: Word + IPA */}
+                <div>
+                  <h2 className="text-3xl sm:text-4xl font-extrabold text-[#F05A4A] tracking-tight leading-tight m-0 pr-14">
+                    {currentCard.frontText}
+                  </h2>
+                  {currentCard.phonetic && (
+                    <div className="text-lg sm:text-xl font-bold text-gray-400 mt-0.5">
+                      {formatPhonetic(currentCard.phonetic)}
+                    </div>
+                  )}
                 </div>
-              )}
 
-              <div className="text-2xl md:text-4xl font-black text-[#2A8B9D] mb-4 text-center break-words w-full px-4">{currentCard.backText}</div>
-
-              {currentCard.exampleText && (
-                <div className="text-xl italic font-medium text-gray-700 text-center bg-[#F4F3EE] p-4 border-[3px] border-black mt-2">
-                  "{currentCard.exampleText}"
+                {/* 2. Primary Meaning + POS Hint (Coral/Red Bold) */}
+                <div className="text-2xl sm:text-3xl font-black text-[#D9381E] leading-tight pt-1">
+                  {currentCard.backText} {`(${getPosTag(currentCard.partOfSpeech, currentCard.backText)})`}
                 </div>
-              )}
+
+                {/* 3. Part of Speech Name (Dark Bold) */}
+                <div className="text-base sm:text-lg font-black text-[#1D2A3A] uppercase tracking-wide">
+                  {currentCard.partOfSpeech || 'Tính từ'}
+                </div>
+
+                {/* 4. Definition / Explanation (Coral/Red) */}
+                {(currentCard.definition || currentCard.hint) && (
+                  <div className="text-base sm:text-lg font-bold text-[#D9381E] leading-relaxed">
+                    {currentCard.definition || currentCard.hint}
+                  </div>
+                )}
+
+                {/* 5. Example Sentence (English - Bright Blue) */}
+                {currentCard.exampleText && (
+                  <div className="text-base sm:text-lg font-bold text-[#007AFF] leading-snug pt-1">
+                    {currentCard.exampleText}
+                  </div>
+                )}
+
+                {/* 6. Example Translation (Vietnamese - Dark Gray) */}
+                {currentCard.exampleTranslation && (
+                  <div className="text-base font-medium text-[#2D3748] leading-snug">
+                    {currentCard.exampleTranslation}
+                  </div>
+                )}
+
+                {/* 7. Related Words Section */}
+                {currentCard.relatedWords && (
+                  <div className="pt-3 border-t border-gray-200">
+                    <div className="text-xs font-black uppercase text-gray-400 tracking-widest mb-1">
+                      TỪ LIÊN QUAN
+                    </div>
+                    <div className="text-sm font-bold text-gray-600 leading-normal">
+                      {currentCard.relatedWords}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </motion.div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-fade-in">
+        {/* Spaced Repetition Buttons */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 animate-fade-in">
           <button
             onClick={() => handleNext(1)}
-            className="h-[90px] brutal-border brutal-shadow rounded-2xl bg-[#ffcccc] hover:bg-[#ff9999] active:translate-y-1 active:shadow-[2px_2px_0px_0px_#000] text-[#cc0000] flex flex-col justify-center items-center transition-all cursor-pointer"
+            className="h-[84px] border-[2px] border-black rounded-2xl bg-[#ffcccc] hover:bg-[#ffb3b3] active:translate-y-1 active:shadow-[1px_1px_0px_0px_#000] text-[#cc0000] flex flex-col justify-center items-center transition-all cursor-pointer shadow-[3px_3px_0px_0px_#000]"
           >
-            <div className="text-2xl font-black">LẠI</div>
-            <div className="text-sm font-bold opacity-80 mt-1">{labels.again}</div>
+            <div className="text-xl font-black">LẠI</div>
+            <div className="text-xs font-bold opacity-80 mt-0.5">{labels.again}</div>
           </button>
           <button
             onClick={() => handleNext(2)}
-            className="h-[90px] brutal-border brutal-shadow rounded-2xl bg-[#ffe6cc] hover:bg-[#ffcc99] active:translate-y-1 active:shadow-[2px_2px_0px_0px_#000] text-[#cc6600] flex flex-col justify-center items-center transition-all cursor-pointer"
+            className="h-[84px] border-[2px] border-black rounded-2xl bg-[#ffe6cc] hover:bg-[#ffd9b3] active:translate-y-1 active:shadow-[1px_1px_0px_0px_#000] text-[#cc6600] flex flex-col justify-center items-center transition-all cursor-pointer shadow-[3px_3px_0px_0px_#000]"
           >
-            <div className="text-2xl font-black">KHÓ</div>
-            <div className="text-sm font-bold opacity-80 mt-1">{labels.hard}</div>
+            <div className="text-xl font-black">KHÓ</div>
+            <div className="text-xs font-bold opacity-80 mt-0.5">{labels.hard}</div>
           </button>
           <button
             onClick={() => handleNext(3)}
-            className="h-[90px] brutal-border brutal-shadow rounded-2xl bg-[#ccffcc] hover:bg-[#99ff99] active:translate-y-1 active:shadow-[2px_2px_0px_0px_#000] text-[#009900] flex flex-col justify-center items-center transition-all cursor-pointer"
+            className="h-[84px] border-[2px] border-black rounded-2xl bg-[#ccffcc] hover:bg-[#b3ffb3] active:translate-y-1 active:shadow-[1px_1px_0px_0px_#000] text-[#009900] flex flex-col justify-center items-center transition-all cursor-pointer shadow-[3px_3px_0px_0px_#000]"
           >
-            <div className="text-2xl font-black">TỐT</div>
-            <div className="text-sm font-bold opacity-80 mt-1">{labels.good}</div>
+            <div className="text-xl font-black">TỐT</div>
+            <div className="text-xs font-bold opacity-80 mt-0.5">{labels.good}</div>
           </button>
           <button
             onClick={() => handleNext(4)}
-            className="h-[90px] brutal-border brutal-shadow rounded-2xl bg-[#cce5ff] hover:bg-[#99ccff] active:translate-y-1 active:shadow-[2px_2px_0px_0px_#000] text-[#0066cc] flex flex-col justify-center items-center transition-all cursor-pointer"
+            className="h-[84px] border-[2px] border-black rounded-2xl bg-[#cce5ff] hover:bg-[#b3d9ff] active:translate-y-1 active:shadow-[1px_1px_0px_0px_#000] text-[#0066cc] flex flex-col justify-center items-center transition-all cursor-pointer shadow-[3px_3px_0px_0px_#000]"
           >
-            <div className="text-2xl font-black">DỄ</div>
-            <div className="text-sm font-bold opacity-80 mt-1">{labels.easy}</div>
+            <div className="text-xl font-black">DỄ</div>
+            <div className="text-xs font-bold opacity-80 mt-0.5">{labels.easy}</div>
           </button>
         </div>
       </div>
