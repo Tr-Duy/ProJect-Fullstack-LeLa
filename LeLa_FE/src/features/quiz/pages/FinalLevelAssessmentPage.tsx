@@ -49,11 +49,13 @@ export function FinalLevelAssessmentPage() {
   });
 
   const currentLevelName = overview?.currentLevelName || user?.currentLevel?.name || 'Chưa xác định';
-  const isEligible = overview?.isEligible ?? false;
   const quizzes = overview?.quizzes || [];
   const decks = overview?.decks || [];
   const completedDecksCount = overview?.completedDecks ?? 0;
   const totalDecksCount = overview?.totalDecks ?? 0;
+  const REQUIRED_DECKS = 15;
+  const requiredTarget = Math.min(REQUIRED_DECKS, totalDecksCount > 0 ? totalDecksCount : REQUIRED_DECKS);
+  const isEligible = overview?.isEligible ?? (completedDecksCount >= requiredTarget);
   const cycleStatus = overview?.cycleStatus || 'IN_PROGRESS';
   const isCooldownActive = !!(overview?.cooldownRemainingSeconds && overview.cooldownRemainingSeconds > 0);
 
@@ -76,14 +78,14 @@ export function FinalLevelAssessmentPage() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <div className="inline-block bg-[#2A8B9D] text-white font-black text-xs px-3 py-1 mb-2 uppercase border-2 border-black">
-              🏆 ĐÁNH GIÁ TỔNG HỢP LEVEL
+              🏆 THI KẾT THÚC LEVEL
             </div>
             <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tight text-[#1D2A3A] mb-2 flex items-center gap-3">
               <TrophyOutlined className="text-[#F59E0B]" />
-              BÀI KIỂM TRA KẾT THÚC MỨC ĐỘ
+              BÀI THI KẾT THÚC LEVEL
             </h1>
             <p className="text-gray-600 font-bold text-base md:text-lg">
-              Đánh giá tổng hợp kiến thức sau khi hoàn thành các bộ thẻ của trình độ hiện tại. Đạt ≥ 70% (14/20 câu) để nâng lên đúng 1 trình độ!
+              Đánh giá tổng hợp kiến thức sau khi hoàn thành các bộ thẻ của Level hiện tại. Đạt ≥ 70% (14/20 câu) để nâng lên Level tiếp theo!
             </p>
           </div>
 
@@ -99,31 +101,38 @@ export function FinalLevelAssessmentPage() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
           <div>
             <h2 className="text-xl font-black uppercase text-[#1D2A3A] flex items-center gap-2">
-              {isEligible ? '🎯 ĐÃ ĐỦ ĐIỀU KIỆN THI' : '⚠️ BẠN CHƯA ĐỦ ĐIỀU KIỆN THI'}
+              {isEligible ? '✅ BẠN ĐÃ ĐỦ ĐIỀU KIỆN THI' : '⚠️ BẠN CHƯA ĐỦ ĐIỀU KIỆN THI'}
             </h2>
-            <p className="text-gray-600 font-medium text-sm">
+            <p className="text-gray-600 font-medium text-sm mt-1">
               {isEligible
-                ? 'Bạn đã hoàn thành đủ các bộ thẻ của trình độ hiện tại. Bạn có thể thực hiện bài kiểm tra kết thúc mức độ bên dưới.'
-                : 'Bạn cần hoàn thành tất cả các bộ thẻ của trình độ hiện tại trước khi bắt đầu bài kiểm tra này.'}
+                ? `Bạn đã hoàn thành ${completedDecksCount >= requiredTarget ? requiredTarget : completedDecksCount} bộ thẻ và có thể tham gia Bài thi kết thúc Level.`
+                : `Bạn cần hoàn thành ít nhất ${requiredTarget} bộ thẻ của Level hiện tại để mở khóa Bài thi kết thúc Level.`}
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
-            <span className="font-black text-lg text-[#2A8B9D]">
-              {completedDecksCount} / {totalDecksCount} bộ thẻ
+          <div className="flex flex-col md:items-end gap-1">
+            <div className="flex items-center gap-3">
+              <span className="font-black text-lg text-[#2A8B9D]">
+                {completedDecksCount} / {totalDecksCount} bộ thẻ
+              </span>
+              <Button
+                size="small"
+                className="brutal-pill font-bold text-xs bg-gray-100 hover:bg-gray-200 border-2 border-black"
+                onClick={() => setShowDecksDetail(!showDecksDetail)}
+              >
+                {showDecksDetail ? 'Ẩn danh sách bộ thẻ ▲' : 'Xem danh sách bộ thẻ ▼'}
+              </Button>
+            </div>
+            <span className="text-xs font-bold text-gray-500">
+              {isEligible
+                ? 'Đã đạt điều kiện tối thiểu.'
+                : `Còn thiếu ${Math.max(0, requiredTarget - completedDecksCount)} bộ thẻ.`}
             </span>
-            <Button
-              size="small"
-              className="brutal-pill font-bold text-xs bg-gray-100 hover:bg-gray-200 border-2 border-black"
-              onClick={() => setShowDecksDetail(!showDecksDetail)}
-            >
-              {showDecksDetail ? 'Ẩn danh sách bộ thẻ ▲' : 'Xem danh sách bộ thẻ ▼'}
-            </Button>
           </div>
         </div>
 
         <Progress
-          percent={totalDecksCount > 0 ? Math.round((completedDecksCount / totalDecksCount) * 100) : 0}
+          percent={Math.min(100, Math.round((completedDecksCount / (requiredTarget || 1)) * 100))}
           strokeColor={isEligible ? '#22C55E' : '#F59E0B'}
           trailColor="#E5E7EB"
           strokeWidth={14}
@@ -321,7 +330,7 @@ export function FinalLevelAssessmentPage() {
         title={
           <div className="text-xl font-black uppercase text-[#1D2A3A] flex items-center gap-2">
             <TrophyOutlined className="text-[#F59E0B]" />
-            🎯 BÀI KIỂM TRA KẾT THÚC MỨC ĐỘ
+            🎯 BÀI THI KẾT THÚC LEVEL
           </div>
         }
         open={!!selectedQuizForModal}

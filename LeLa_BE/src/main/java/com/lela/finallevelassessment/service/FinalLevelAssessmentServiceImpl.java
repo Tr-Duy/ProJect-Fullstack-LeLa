@@ -116,7 +116,7 @@ public class FinalLevelAssessmentServiceImpl implements FinalLevelAssessmentServ
                     .build());
         }
 
-        int requiredDecks = Math.min(10, activeDecks.size());
+        int requiredDecks = activeDecks.isEmpty() ? 0 : Math.min(15, activeDecks.size());
         boolean isEligible = activeDecks.isEmpty() || completedCount >= requiredDecks;
 
         // 2. Quiz and attempt status check
@@ -218,7 +218,7 @@ public class FinalLevelAssessmentServiceImpl implements FinalLevelAssessmentServ
             } else if (!isEligible) {
                 res.setAttemptStatus("LOCKED");
                 res.setIsLocked(true);
-                res.setLockReason("Bạn chưa hoàn thành các bộ thẻ của trình độ hiện tại (" + completedCount + "/" + requiredDecks + " bộ thẻ).");
+                res.setLockReason("Bạn chưa hoàn thành đủ 15 bộ thẻ của Level hiện tại (Hiện tại: " + completedCount + "/" + requiredDecks + " bộ thẻ).");
             } else {
                 res.setAttemptStatus("AVAILABLE");
                 res.setIsLocked(false);
@@ -237,7 +237,7 @@ public class FinalLevelAssessmentServiceImpl implements FinalLevelAssessmentServ
                 .cycleStatus(cycleStatus)
                 .cooldownUntil(cooldownUntil)
                 .cooldownRemainingSeconds(cooldownRemainingSeconds)
-                .lockMessage(!isEligible ? "Bạn chưa đủ điều kiện thi. Cần hoàn thành " + completedCount + "/" + requiredDecks + " bộ thẻ hiện tại." : null)
+                .lockMessage(!isEligible ? "Bạn chưa đủ điều kiện thi. Cần hoàn thành ít nhất " + requiredDecks + " bộ thẻ của Level hiện tại (Hiện tại: " + completedCount + "/" + requiredDecks + ")." : null)
                 .quizzes(quizResponses)
                 .decks(deckItems)
                 .build();

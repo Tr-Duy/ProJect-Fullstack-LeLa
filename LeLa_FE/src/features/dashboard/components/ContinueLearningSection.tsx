@@ -74,6 +74,7 @@ export const ContinueLearningSection: React.FC<ContinueLearningSectionProps> = (
             const masteredCards = enrollment?.masteredCards || 0;
             const totalCards = deck.totalCards || 0;
             const progressPercent = totalCards > 0 ? Math.round((masteredCards / totalCards) * 100) : 0;
+            const isCompleted = totalCards > 0 && masteredCards >= totalCards;
 
             return (
               <div
@@ -82,9 +83,16 @@ export const ContinueLearningSection: React.FC<ContinueLearningSectionProps> = (
               >
                 <div>
                   <div className="flex justify-between items-start mb-2 gap-2">
-                    <span className="bg-[#2A8B9D] text-white text-xs font-bold px-2.5 py-1 brutal-border border-black">
-                      {deck.topic?.name || 'Chủ đề'}
-                    </span>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="bg-[#2A8B9D] text-white text-xs font-bold px-2.5 py-1 brutal-border border-black">
+                        {deck.topic?.name || 'Chủ đề'}
+                      </span>
+                      {isCompleted && (
+                        <span className="bg-[#4CAF50] text-white text-xs font-black px-2 py-0.5 brutal-border border-black shadow-[1px_1px_0px_0px_#000]">
+                          ✓ HOÀN THÀNH
+                        </span>
+                      )}
+                    </div>
                     <span className="text-xs font-bold text-gray-500">
                       {totalCards} thẻ
                     </span>
@@ -104,7 +112,7 @@ export const ContinueLearningSection: React.FC<ContinueLearningSectionProps> = (
                     </div>
                     <div className="h-3 w-full bg-[#F4F3EE] border-[2px] border-black overflow-hidden relative">
                       <div
-                        className="h-full bg-[#2A8B9D] transition-all duration-300"
+                        className={`h-full transition-all duration-300 ${isCompleted ? 'bg-[#4CAF50]' : 'bg-[#2A8B9D]'}`}
                         style={{ width: `${progressPercent}%` }}
                       />
                     </div>
@@ -112,10 +120,14 @@ export const ContinueLearningSection: React.FC<ContinueLearningSectionProps> = (
                 </div>
 
                 <Button
-                  className="w-full brutal-pill font-black uppercase h-11 !bg-[#1D2A3A] !text-white hover:!bg-[#2A8B9D] border-[2px] border-black"
+                  className={`w-full brutal-pill font-black uppercase h-11 border-[2px] border-black ${
+                    isCompleted
+                      ? '!bg-[#2A8B9D] !text-white hover:!bg-[#1D2A3A]'
+                      : '!bg-[#1D2A3A] !text-white hover:!bg-[#2A8B9D]'
+                  }`}
                   onClick={() => navigate(`/study/${deck.id}`)}
                 >
-                  HỌC TIẾP
+                  {isCompleted ? 'ÔN LẠI' : 'HỌC TIẾP'}
                 </Button>
               </div>
             );

@@ -32,4 +32,8 @@ public interface QuizAttemptRepository extends JpaRepository<QuizAttempt, Long> 
 
     @Query("SELECT a FROM QuizAttempt a JOIN FETCH a.quiz WHERE a.user.id = :userId")
     List<QuizAttempt> findAllByUserIdWithQuiz(@Param("userId") Long userId);
+
+    long countByUserId(Long userId);
+
+    long countByUserIdAndPassedTrue(Long userId);
 }

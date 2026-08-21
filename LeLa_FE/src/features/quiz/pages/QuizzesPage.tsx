@@ -79,7 +79,7 @@ export function QuizzesPage() {
               {category === 'PLACEMENT'
                 ? 'Bài kiểm tra đầu vào TOEIC'
                 : category === 'FINAL'
-                  ? 'Bài kiểm tra kết thúc'
+                  ? 'BÀI THI KẾT THÚC LEVEL'
                   : category === 'LEVEL_UP'
                     ? 'THAY ĐỔI TRÌNH ĐỘ'
                     : 'Danh sách Bài kiểm tra'}

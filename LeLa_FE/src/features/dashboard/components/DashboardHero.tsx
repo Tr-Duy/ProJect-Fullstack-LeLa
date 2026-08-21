@@ -10,6 +10,7 @@ interface DashboardHeroProps {
   dueTodayCount?: number;
   continueDeck?: { deck: DeckResponse; masteredCards: number } | null;
   hasCurrentLevel: boolean;
+  allCompleted?: boolean;
 }
 
 export const DashboardHero: React.FC<DashboardHeroProps> = ({
@@ -18,6 +19,7 @@ export const DashboardHero: React.FC<DashboardHeroProps> = ({
   dueTodayCount = 0,
   continueDeck,
   hasCurrentLevel,
+  allCompleted = false,
 }) => {
   const navigate = useNavigate();
 
@@ -32,7 +34,7 @@ export const DashboardHero: React.FC<DashboardHeroProps> = ({
     ctaSubtitle = 'Dành 5-10 phút để giữ vững ký ức từ vựng qua phương pháp SRS.';
     ctaButtonText = '▶ ÔN TẬP NGAY';
     ctaAction = () => navigate('/my-decks');
-  } else if (continueDeck) {
+  } else if (continueDeck && (continueDeck.deck.totalCards === 0 || continueDeck.masteredCards < continueDeck.deck.totalCards)) {
     const progressPercent = continueDeck.deck.totalCards > 0
       ? Math.round((continueDeck.masteredCards / continueDeck.deck.totalCards) * 100)
       : 0;
@@ -40,6 +42,11 @@ export const DashboardHero: React.FC<DashboardHeroProps> = ({
     ctaSubtitle = `Đã học ${continueDeck.masteredCards} / ${continueDeck.deck.totalCards} thẻ (${progressPercent}%)`;
     ctaButtonText = '▶ TIẾP TỤC HỌC';
     ctaAction = () => navigate(`/study/${continueDeck.deck.id}`);
+  } else if (allCompleted) {
+    ctaTitle = '🎉 Bạn đã hoàn thành tất cả bộ thẻ!';
+    ctaSubtitle = 'Tuyệt vời! Hãy ôn tập lại các bộ thẻ cũ hoặc khám phá bài học mới ở trình độ tiếp theo.';
+    ctaButtonText = 'KHÁM PHÁ BÀI HỌC MỚI';
+    ctaAction = () => navigate('/decks');
   } else if (!hasCurrentLevel) {
     ctaTitle = 'Chào mừng bạn đến với LeLa!';
     ctaSubtitle = 'Hãy chọn hoặc kiểm tra trình độ TOEIC đầu vào để nhận lộ trình phù hợp.';

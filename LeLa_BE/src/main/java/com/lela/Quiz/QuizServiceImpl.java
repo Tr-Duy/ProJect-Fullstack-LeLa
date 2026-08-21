@@ -116,7 +116,7 @@ public class QuizServiceImpl implements QuizService {
     }
 
     @Override
-    public Page<QuizResponse> findAll(Pageable pageable, QuizCategory category, Long examTypeId, Long levelId) {
+    public Page<QuizResponse> findAll(Pageable pageable, QuizCategory category, Long examTypeId, Long levelId, com.lela.Quiz.domain.QuizDifficulty difficulty, Long deckId, String search) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
             Users user = usersRepository.findByUsername(auth.getName()).orElse(null);
@@ -130,10 +130,7 @@ public class QuizServiceImpl implements QuizService {
                             .map(this::mapToResponse);
                 }
                 if (category == QuizCategory.NORMAL || category == QuizCategory.FINAL) {
-                    return quizRepository.findByLevelIdAndCategoriesForLearner(
-                                    currentLevelId,
-                                    List.of(category),
-                                    pageable)
+                    return quizRepository.findWithFilters(category, currentLevelId, difficulty, deckId, search, pageable)
                             .map(this::mapToResponse);
                 }
                 if (category == QuizCategory.LEVEL_UP) {
@@ -174,19 +171,8 @@ public class QuizServiceImpl implements QuizService {
             );
         }
 
-        if (category != null && levelId != null) {
-            return quizRepository.findByQuizCategoryAndLevelId(category, levelId, pageable)
-                    .map(this::mapToResponse);
-        }
-        if (category != null && examTypeId != null) {
-            return quizRepository.findByQuizCategoryAndExamTypeId(category, examTypeId, pageable)
-                    .map(this::mapToResponse);
-        }
-        if (category != null) {
-            return quizRepository.findByQuizCategory(category, pageable).map(this::mapToResponse);
-        }
-
-        return quizRepository.findAll(pageable).map(this::mapToResponse);
+        return quizRepository.findWithFilters(category, levelId, difficulty, deckId, search, pageable)
+                .map(this::mapToResponse);
     }
 
     private Users getCurrentUserOrNull() {

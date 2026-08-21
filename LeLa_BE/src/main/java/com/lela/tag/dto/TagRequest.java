@@ -13,4 +13,11 @@ public class TagRequest {
     @Size(max = 100, message = "Tên tag không được quá 100 ký tự")
     private String name;
 
+    private String slug;
+
+    @Size(max = 500, message = "Mô tả không được quá 500 ký tự")
+    private String description;
+
+    private Boolean isActive = true;
+
 }

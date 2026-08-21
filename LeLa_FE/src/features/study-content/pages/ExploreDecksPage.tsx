@@ -5,6 +5,7 @@ import { SearchOutlined, UserOutlined, SignalFilled, InfoCircleOutlined } from '
 import { useState, useMemo } from 'react';
 import { decksApi } from '../api/decks.api';
 import { deckEnrollmentsApi } from '../api/deck-enrollments.api';
+import { tagsApi } from '../../master-data/api/tags.api';
 import { useAuth } from '../../../shared/providers/AuthProvider';
 
 const difficultyColors = {
@@ -23,6 +24,14 @@ export function ExploreDecksPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedTag, setSelectedTag] = useState<string>('ALL');
+
+  const { data: tagsResponse } = useQuery({
+    queryKey: ['tags-for-explore'],
+    queryFn: () => tagsApi.getAll({ size: 100 }),
+  });
+
+  const availableTags = tagsResponse?.data?.content || [];
   
   const filterExamTypeId = user?.currentExamType?.id;
   const filterLevelId = user?.currentLevel?.id;
@@ -55,6 +64,14 @@ export function ExploreDecksPage() {
     // Exclude decks user has already enrolled / studied
     if (enrolledDeckIds.has(deck.id)) {
       return false;
+    }
+
+    // Check tag filter
+    if (selectedTag !== 'ALL') {
+      const matchTag = deck.title.toLowerCase().includes(selectedTag.toLowerCase()) ||
+        (deck.topic?.name && deck.topic.name.toLowerCase().includes(selectedTag.toLowerCase())) ||
+        (deck.description && deck.description.toLowerCase().includes(selectedTag.toLowerCase()));
+      if (!matchTag) match = false;
     }
 
     // Check search query
@@ -94,11 +111,27 @@ export function ExploreDecksPage() {
           <h1 className="text-4xl md:text-5xl font-black uppercase tracking-tighter text-[#1D2A3A] mb-2">Khám phá bộ thẻ</h1>
           <p className="text-gray-600 font-bold text-lg">Tìm kiếm hàng ngàn bộ flashcard chất lượng cao.</p>
         </div>
-        <form 
-          onSubmit={handleSearch}
-          className="w-full md:w-[450px] brutal-pill bg-white flex items-center h-14 focus-within:translate-y-[2px] transition-transform overflow-hidden cursor-text"
-          onClick={(e) => { const input = e.currentTarget.querySelector('input'); if (input) input.focus(); }}
-        >
+
+        <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+          {/* TOPIC TAG FILTER DROPDOWN */}
+          <select
+            value={selectedTag}
+            onChange={(e) => setSelectedTag(e.target.value)}
+            className="w-full sm:w-56 h-14 bg-white border-2 border-[#1D2A3A] rounded-2xl px-4 text-sm font-bold text-[#1D2A3A] shadow-[4px_4px_0px_0px_#1D2A3A] focus:outline-none cursor-pointer"
+          >
+            <option value="ALL">🏷️ Tất cả chủ đề (Tags)</option>
+            {availableTags.map((t) => (
+              <option key={t.id} value={t.name}>
+                🏷️ {t.name} ({t.deckCount ?? 0} decks)
+              </option>
+            ))}
+          </select>
+
+          <form 
+            onSubmit={handleSearch}
+            className="w-full md:w-[360px] brutal-pill bg-white flex items-center h-14 focus-within:translate-y-[2px] transition-transform overflow-hidden cursor-text"
+            onClick={(e) => { const input = e.currentTarget.querySelector('input'); if (input) input.focus(); }}
+          >
           <input 
             type="text"
             value={searchQuery}
@@ -115,6 +148,7 @@ export function ExploreDecksPage() {
           </button>
         </form>
       </div>
+    </div>
 
       {/* USER CONTEXT BANNERS */}
 

@@ -22,6 +22,9 @@ public class DeckResponse {
     private TopicDTO topic; // Nhóm chủ đề của deck.
     private Long examTypeId; // ID Hệ thi.
     private Long levelId; // ID Cấp độ.
+    private String levelName; // Tên cấp độ.
+    private String levelCode; // Mã cấp độ.
+    private java.util.List<com.lela.tag.dto.TagResponse> tags; // Danh sách thẻ.
     private DeckDifficulty difficulty; // Độ khó của deck.
     private DeckVisibility visibility; // Phạm vi hiển thị deck.
     private DeckStatus status; // Trạng thái kiểm duyệt deck.
@@ -71,6 +74,11 @@ public class DeckResponse {
         }
         if (deck.getLevel() != null) {
             response.setLevelId(deck.getLevel().getId());
+            response.setLevelName(deck.getLevel().getName());
+            response.setLevelCode(deck.getLevel().getCode());
+        }
+        if (deck.getTags() != null && !deck.getTags().isEmpty()) {
+            response.setTags(deck.getTags().stream().map(com.lela.tag.dto.TagResponse::fromEntity).collect(java.util.stream.Collectors.toList()));
         }
         response.setDifficulty(deck.getDifficulty());
         response.setVisibility(deck.getVisibility());

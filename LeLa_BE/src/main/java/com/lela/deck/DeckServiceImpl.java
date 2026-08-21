@@ -174,16 +174,26 @@ public class DeckServiceImpl implements DeckService {
 
     @Transactional(readOnly = true)
     @Override
-    public Page<DeckResponse> getAllDecks(Long examTypeId, Long levelId, Pageable pageable) {
+    public Page<DeckResponse> getAllDecks(
+            String search,
+            Long examTypeId,
+            Long levelId,
+            Long topicId,
+            Long tagId,
+            com.lela.deck.domain.DeckDifficulty difficulty,
+            com.lela.deck.domain.DeckStatus status,
+            com.lela.deck.domain.DeckVisibility visibility,
+            Pageable pageable) {
         Users currentUser = getOptionalCurrentUser();
         Page<Deck> page;
 
-        if (isUserAdmin(currentUser)) {
-            if (examTypeId != null && levelId != null) {
-                page = deckRepository.findByExamTypeIdAndLevelIdAndIsActiveTrue(examTypeId, levelId, pageable);
-            } else {
-                page = deckRepository.findByIsActiveTrue(pageable);
-            }
+        boolean hasFilters = search != null || levelId != null || topicId != null || tagId != null || difficulty != null || status != null || visibility != null;
+
+        if (isUserAdmin(currentUser) || hasFilters) {
+            org.springframework.data.jpa.domain.Specification<Deck> spec = DeckSpecification.filterDecks(
+                    search, levelId, topicId, tagId, difficulty, status, visibility
+            );
+            page = deckRepository.findAll(spec, pageable);
         } else if (currentUser == null || currentUser.getCurrentLevel() == null) {
             // Guest or Learner without selected level -> only get public non-level-gated decks
             page = deckRepository.findByIsActiveTrueAndExamTypeIsNullAndLevelIsNull(pageable);

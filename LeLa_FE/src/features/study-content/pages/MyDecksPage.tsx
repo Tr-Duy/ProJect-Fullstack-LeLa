@@ -14,12 +14,20 @@ function EnrolledDeckCard({ deck, masteredCards }: { deck: DeckResponse, mastere
 
   const progressPercent = deck.totalCards > 0 ? Math.round((masteredCards / deck.totalCards) * 100) : 0;
 
+  const isCompleted = deck.totalCards > 0 && masteredCards >= deck.totalCards;
+
   return (
     <div className="brutal-card brutal-shadow bg-white flex flex-col h-full overflow-hidden transition-transform duration-300 hover:-translate-y-2">
       <div
         className="h-32 bg-gray-200 border-b-[3px] border-black bg-cover bg-center relative"
         style={{ backgroundImage: `url(${deck.coverImageUrl || 'https://placehold.co/400x200/F4F3EE/1D2A3A?text=No+Image'})` }}
-      />
+      >
+        {isCompleted && (
+          <span className="absolute top-3 left-3 bg-[#4CAF50] text-white text-xs font-black px-2.5 py-1 brutal-border border-black shadow-[2px_2px_0px_0px_#000]">
+            ✓ HOÀN THÀNH
+          </span>
+        )}
+      </div>
       <div className="p-4 flex flex-col flex-1">
         <div className="flex justify-between items-start mb-2 gap-2">
           <h3
@@ -43,7 +51,7 @@ function EnrolledDeckCard({ deck, masteredCards }: { deck: DeckResponse, mastere
           </div>
           <div className="h-4 w-full bg-[#F4F3EE] border-[2px] border-black overflow-hidden relative shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
             <div
-              className="h-full bg-[#2A8B9D] border-r-[2px] border-black transition-all duration-500"
+              className={`h-full border-r-[2px] border-black transition-all duration-500 ${isCompleted ? 'bg-[#4CAF50]' : 'bg-[#2A8B9D]'}`}
               style={{ width: `${progressPercent}%` }}
             ></div>
           </div>
@@ -51,10 +59,14 @@ function EnrolledDeckCard({ deck, masteredCards }: { deck: DeckResponse, mastere
 
         <div className="mt-auto flex gap-2">
           <Button
-            className="flex-1 brutal-pill font-black uppercase h-10 !bg-[#1D2A3A] !text-white hover:!translate-y-[-2px]"
+            className={`flex-1 brutal-pill font-black uppercase h-10 border-[2px] border-black ${
+              isCompleted
+                ? '!bg-[#2A8B9D] !text-white hover:!bg-[#1D2A3A]'
+                : '!bg-[#1D2A3A] !text-white hover:!translate-y-[-2px]'
+            }`}
             onClick={() => navigate(`/study/${deck.id}`)}
           >
-            HỌC TIẾP
+            {isCompleted ? 'ÔN LẠI' : 'HỌC TIẾP'}
           </Button>
         </div>
       </div>

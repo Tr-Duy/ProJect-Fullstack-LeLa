@@ -115,4 +115,11 @@ public class Deck extends AuditableEntity {
     @Column(nullable = false)
     private Long version = 0L; // Phiên bản dùng cho optimistic locking.
 
+    @jakarta.persistence.ManyToMany(fetch = jakarta.persistence.FetchType.LAZY)
+    @jakarta.persistence.JoinTable(
+        name = "deck_tags",
+        joinColumns = @jakarta.persistence.JoinColumn(name = "deck_id"),
+        inverseJoinColumns = @jakarta.persistence.JoinColumn(name = "tag_id")
+    )
+    private java.util.Set<com.lela.tag.domain.Tag> tags = new java.util.HashSet<>();
 }

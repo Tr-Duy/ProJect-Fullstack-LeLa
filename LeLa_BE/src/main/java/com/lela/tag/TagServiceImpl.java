@@ -29,18 +29,21 @@ public class TagServiceImpl implements TagService {
     @Override
     @CacheEvict(value = "tags", allEntries = true)
     public TagResponse createTag(TagRequest request) {
-        String slug = generateSlug(request.getName());
+        String slug = (request.getSlug() != null && !request.getSlug().isBlank()) 
+                ? request.getSlug() : generateSlug(request.getName());
 
         if (tagRepository.existsBySlug(slug)) {
-            throw new ConflictException("Tag với tên này đã tồn tại");
+            throw new ConflictException("Tag với slug này đã tồn tại: " + slug);
         }
 
         Tag tag = new Tag();
         tag.setName(request.getName());
         tag.setSlug(slug);
+        tag.setDescription(request.getDescription());
+        tag.setActive(request.getIsActive() != null ? request.getIsActive() : true);
 
         Tag savedTag = tagRepository.save(tag);
-        return TagResponse.fromEntity(savedTag);
+        return mapToResponse(savedTag);
     }
 
     @Transactional
@@ -50,16 +53,23 @@ public class TagServiceImpl implements TagService {
         Tag tag = tagRepository.findById(id)
                 .orElseThrow(() -> new NotFoundExeception("Không tìm thấy Tag với id: " + id));
 
-        String newSlug = generateSlug(request.getName());
+        String newSlug = (request.getSlug() != null && !request.getSlug().isBlank()) 
+                ? request.getSlug() : generateSlug(request.getName());
         if (!tag.getSlug().equals(newSlug) && tagRepository.existsBySlug(newSlug)) {
-            throw new ConflictException("Tag với tên này đã tồn tại");
+            throw new ConflictException("Tag với slug này đã tồn tại: " + newSlug);
         }
 
         tag.setName(request.getName());
         tag.setSlug(newSlug);
+        if (request.getDescription() != null) {
+            tag.setDescription(request.getDescription());
+        }
+        if (request.getIsActive() != null) {
+            tag.setActive(request.getIsActive());
+        }
 
         Tag updatedTag = tagRepository.save(tag);
-        return TagResponse.fromEntity(updatedTag);
+        return mapToResponse(updatedTag);
     }
 
     @Transactional(readOnly = true)
@@ -67,14 +77,14 @@ public class TagServiceImpl implements TagService {
     public TagResponse getTagById(Long id) {
         Tag tag = tagRepository.findById(id)
                 .orElseThrow(() -> new NotFoundExeception("Không tìm thấy Tag với id: " + id));
-        return TagResponse.fromEntity(tag);
+        return mapToResponse(tag);
     }
 
     @Transactional(readOnly = true)
     @Override
     @Cacheable("tags")
     public Page<TagResponse> getAllTags(Pageable pageable) {
-        return tagRepository.findAll(pageable).map(TagResponse::fromEntity);
+        return tagRepository.findAll(pageable).map(this::mapToResponse);
     }
 
     @Transactional
@@ -83,9 +93,18 @@ public class TagServiceImpl implements TagService {
     public void deleteTag(Long id) {
         Tag tag = tagRepository.findById(id)
                 .orElseThrow(() -> new NotFoundExeception("Không tìm thấy Tag với id: " + id));
-        // Xoá mềm (soft delete), tạm thời chưa check các ràng buộc với Flashcard/Quiz
         tag.setActive(false);
         tagRepository.save(tag);
+    }
+
+    private TagResponse mapToResponse(Tag tag) {
+        TagResponse res = TagResponse.fromEntity(tag);
+        long deckCount = tagRepository.countDecksByTagId(tag.getId());
+        long cardCount = tagRepository.countCardsByTagId(tag.getId());
+        res.setDeckCount(deckCount);
+        res.setCardCount(cardCount);
+        res.setUsageCount(deckCount + cardCount);
+        return res;
     }
 
     private String generateSlug(String input) {

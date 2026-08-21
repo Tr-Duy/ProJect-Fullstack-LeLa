@@ -58,6 +58,7 @@ public class QuizAttemptServiceImpl implements QuizAttemptService {
     private final QuizAttemptOptionRepository quizAttemptOptionRepository;
     private final QuizQuestionOptionRepository quizQuestionOptionRepository;
     private final QuizAnswerRepository quizAnswerRepository;
+    private final com.lela.achievement.AchievementService achievementService;
     private final com.lela.deck.DeckRepository deckRepository;
     private final com.lela.deckenrollment.DeckEnrollmentRepository deckEnrollmentRepository;
     private final ModelMapper mapper;
@@ -275,9 +276,9 @@ public class QuizAttemptServiceImpl implements QuizAttemptService {
                                 || (e.getDeck().getTotalCards() != null && e.getDeck().getTotalCards() > 0 && e.getMasteredCards() >= e.getDeck().getTotalCards()))
                         .count();
 
-                int requiredDecks = Math.min(10, activeDecks.size());
+                int requiredDecks = activeDecks.isEmpty() ? 0 : Math.min(15, activeDecks.size());
                 if (!activeDecks.isEmpty() && completedDecks < requiredDecks) {
-                    throw new IllegalStateException("Bạn cần hoàn thành đủ " + requiredDecks + " bộ thẻ của trình độ hiện tại trước khi thực hiện bài kiểm tra kết thúc mức độ (Hiện tại: " + completedDecks + "/" + requiredDecks + ").");
+                    throw new IllegalStateException("Bạn cần hoàn thành ít nhất " + requiredDecks + " bộ thẻ của Level hiện tại trước khi thực hiện Bài thi kết thúc Level (Hiện tại: " + completedDecks + "/" + requiredDecks + ").");
                 }
 
                 // 2. 12-Hour Global Cooldown Check
@@ -576,6 +577,13 @@ public class QuizAttemptServiceImpl implements QuizAttemptService {
         }
 
         QuizAttempt savedAttempt = quizAttemptRepository.save(attempt);
+        if (user != null && user.getId() != null) {
+            try {
+                achievementService.evaluateAchievements(user.getId());
+            } catch (Exception e) {
+                // Log non-blocking evaluation error
+            }
+        }
         return buildDetailResponse(savedAttempt);
     }
 

@@ -10,11 +10,11 @@ export const tagsApi = {
     const res = await apiClient.get<ApiResponse<TagResponse>>(`/tags/${id}`);
     return res.data;
   },
-  create: async (data: { name: string }): Promise<ApiResponse<TagResponse>> => {
+  create: async (data: { name: string; slug?: string; description?: string; isActive?: boolean }): Promise<ApiResponse<TagResponse>> => {
     const res = await apiClient.post<ApiResponse<TagResponse>>('/tags', data);
     return res.data;
   },
-  update: async (id: number, data: { name: string }): Promise<ApiResponse<TagResponse>> => {
+  update: async (id: number, data: { name: string; slug?: string; description?: string; isActive?: boolean }): Promise<ApiResponse<TagResponse>> => {
     const res = await apiClient.patch<ApiResponse<TagResponse>>(`/tags/${id}`, data);
     return res.data;
   },

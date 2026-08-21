@@ -5,25 +5,67 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
-import java.util.Map;
-
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class AiContextDto {
-    private String fullName;
-    private String cefrLevel;
-    private Long xp;
-    private Integer streak;
-    private Integer dailyGoalCards;
-    
-    // Detailed learning stats
-    private List<String> weakVocabulary;
-    private List<String> weakGrammar;
-    private Integer totalVocabLearned;
-    private Integer totalQuizzesCompleted;
-    private Double averageQuizScore;
-    private Map<String, String> recentActivities;
+    private UserInfo user;
+    private LevelInfo level;
+    private TodayStats today;
+    private LearningProgress learning;
+    private ExamStatus exam;
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class UserInfo {
+        private String username;
+        private String fullName;
+        private Integer totalXp;
+        private Integer streakDays;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class LevelInfo {
+        private String name;
+        private String scoreRange;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class TodayStats {
+        private Integer xpEarned;
+        private Integer cardsLearned;
+        private Integer quizCount;
+        private Integer minutesSpent;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class LearningProgress {
+        private Integer completedDecks;
+        private Integer totalDecksInLevel;
+        private Integer masteredCards;
+        private String currentActiveDeck;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ExamStatus {
+        private Boolean isEligibleForExam;
+        private Integer requiredDecks;
+        private Integer recentScorePercent;
+        private String recentExamResult; // "PASSED" | "FAILED" | "NOT_TAKEN"
+    }
 }

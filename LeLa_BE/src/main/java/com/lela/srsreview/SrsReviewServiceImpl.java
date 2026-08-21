@@ -45,6 +45,7 @@ public class SrsReviewServiceImpl implements SrsReviewService {
     private final DailyLearningActivityService dailyLearningActivityService;
     private final SrsAlgorithmStrategy srsAlgorithmStrategy;
     private final ApplicationEventPublisher eventPublisher;
+    private final com.lela.achievement.AchievementService achievementService;
 
     private Long getCurrentUserId() {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -118,6 +119,12 @@ public class SrsReviewServiceImpl implements SrsReviewService {
         activityRequest.setXpEarned(saved.getXpAwarded());
         activityRequest.setActivityDate(LocalDate.now());
         dailyLearningActivityService.logActivity(activityRequest);
+
+        try {
+            achievementService.evaluateAchievements(user.getId());
+        } catch (Exception e) {
+            // Log non-blocking evaluation exception
+        }
 
         SrsReviewResponse response = modelMapper.map(saved, SrsReviewResponse.class);
         if (session != null) response.setReviewSessionId(session.getId());

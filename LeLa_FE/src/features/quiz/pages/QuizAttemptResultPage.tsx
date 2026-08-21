@@ -424,7 +424,7 @@ export function QuizAttemptResultPage() {
                 {attemptDetail.passed ? (
                   <div>
                     🎉 Chúc mừng! Bạn đã đạt {attemptDetail.totalQuestions > 0 ? Math.round((attemptDetail.correctAnswers / attemptDetail.totalQuestions) * 100) : 0}%!
-                    <div className="text-base font-normal mt-1">Bạn đã vượt qua bài kiểm tra kết thúc và được nâng lên trình độ kế tiếp.</div>
+                    <div className="text-base font-normal mt-1">Bạn đã vượt qua Bài thi kết thúc Level và được nâng lên Level tiếp theo.</div>
                   </div>
                 ) : (
                   <div>

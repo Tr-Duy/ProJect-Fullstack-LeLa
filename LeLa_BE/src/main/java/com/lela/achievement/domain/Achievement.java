@@ -38,4 +38,11 @@ public class Achievement extends AuditableEntity {
 
     @Column(name = "condition_value")
     private Integer conditionValue;
+
+    @Column(length = 50)
+    private String category;
+
+    @Column(name = "is_active", nullable = false)
+    @Builder.Default
+    private boolean isActive = true;
 }

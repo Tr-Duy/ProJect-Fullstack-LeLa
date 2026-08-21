@@ -8,5 +8,7 @@ import java.util.Optional;
 public interface UserAchievementRepository extends JpaRepository<UserAchievement, Long> {
     List<UserAchievement> findAllByUserId(Long userId);
     boolean existsByUserIdAndAchievementCode(Long userId, String code);
+    boolean existsByUserIdAndAchievementId(Long userId, Long achievementId);
     Optional<UserAchievement> findByUserIdAndAchievementCode(Long userId, String code);
+    long countByAchievementId(Long achievementId);
 }

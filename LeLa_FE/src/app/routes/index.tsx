@@ -15,7 +15,8 @@ const TransactionsAdminPage = lazy(() => import('../../features/subscription/pag
 const SubscriptionPlansAdminPage = lazy(() => import('../../features/subscription/pages/SubscriptionPlansAdminPage').then(module => ({ default: module.SubscriptionPlansAdminPage })));
 const NotificationsAdminPage = lazy(() => import('../../features/notifications/pages/NotificationsAdminPage').then(module => ({ default: module.NotificationsAdminPage })));
 const TopicsAdminPage = lazy(() => import('../../features/master-data/pages/TopicsAdminPage').then(module => ({ default: module.TopicsAdminPage })));
-const AchievementsAdminPage = lazy(() => import('../../features/gamification/pages/AchievementsAdminPage').then(module => ({ default: module.AchievementsAdminPage })));
+const AchievementsAdminPage = lazy(() => import('../../features/quiz/pages/AchievementsAdminPage').then(module => ({ default: module.AchievementsAdminPage })));
+const LearnerAchievementsPage = lazy(() => import('../../features/quiz/pages/LearnerAchievementsPage').then(module => ({ default: module.LearnerAchievementsPage })));
 const DecksAdminPage = lazy(() => import('../../features/study-content/pages/DecksAdminPage').then(module => ({ default: module.DecksAdminPage })));
 const FlashcardsAdminPage = lazy(() => import('../../features/study-content/pages/FlashcardsAdminPage').then(module => ({ default: module.FlashcardsAdminPage })));
 const ExploreDecksPage = lazy(() => import('../../features/study-content/pages/ExploreDecksPage').then(module => ({ default: module.ExploreDecksPage })));
@@ -81,6 +82,7 @@ export function AppRoutes() {
           <Route path="/quiz-attempts/:publicId/result" element={<QuizAttemptResultPage />} />
           <Route path="/my-quiz-attempts" element={<MyQuizAttemptsPage />} />
           <Route path="/leaderboard" element={<LeaderboardPage />} />
+          <Route path="/achievements" element={<LearnerAchievementsPage />} />
           <Route path="/ai-chat" element={<AiChatPage />} />
           <Route path="/profile" element={<ProfilePage />} />
         </Route>

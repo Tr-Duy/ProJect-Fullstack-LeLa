@@ -10,6 +10,7 @@ import { decksApi } from '../../study-content/api/decks.api';
 
 import { DashboardHero } from '../components/DashboardHero';
 import { CurrentLevelCard } from '../components/CurrentLevelCard';
+import { FinalLevelAssessmentCard } from '../components/FinalLevelAssessmentCard';
 import { ContinueLearningSection } from '../components/ContinueLearningSection';
 import { RecommendedDecksSection } from '../components/RecommendedDecksSection';
 import { StatsSection } from '../components/StatsSection';
@@ -123,9 +124,56 @@ export function LearnerDashboardPage() {
   const masteredPercent = srsStats?.data?.masteryPercentage || 0;
   const dueTodayCount = srsStats?.data?.dueTodayCount || srsStats?.data?.dueCount || 0;
 
-  const continueDeck = enrolledDecksData.length > 0
-    ? { deck: enrolledDecksData[0].deck, masteredCards: enrolledDecksData[0].enrollment?.masteredCards || 0 }
-    : null;
+  const sortedEnrolledDecks = useMemo(() => {
+    return [...enrolledDecksData].sort((a, b) => {
+      const aMastered = a.enrollment?.masteredCards || 0;
+      const aTotal = a.deck.totalCards || 0;
+      const aCompleted = aTotal > 0 && aMastered >= aTotal;
+      const aInProgress = aMastered > 0 && !aCompleted;
+
+      const bMastered = b.enrollment?.masteredCards || 0;
+      const bTotal = b.deck.totalCards || 0;
+      const bCompleted = bTotal > 0 && bMastered >= bTotal;
+      const bInProgress = bMastered > 0 && !bCompleted;
+
+      // Priority 1: In progress (0 < progress < 100%)
+      if (aInProgress && !bInProgress) return -1;
+      if (!aInProgress && bInProgress) return 1;
+
+      // Priority 3: Completed (100%) last
+      if (aCompleted && !bCompleted) return 1;
+      if (!aCompleted && bCompleted) return -1;
+
+      return 0;
+    });
+  }, [enrolledDecksData]);
+
+  const continueDeck = useMemo(() => {
+    if (sortedEnrolledDecks.length === 0) return null;
+
+    // Find the first deck that is NOT 100% completed
+    const uncompletedItem = sortedEnrolledDecks.find(({ deck, enrollment }) => {
+      const mastered = enrollment?.masteredCards || 0;
+      const total = deck.totalCards || 0;
+      return total === 0 || mastered < total;
+    });
+
+    if (!uncompletedItem) return null; // All decks are 100% completed!
+
+    return {
+      deck: uncompletedItem.deck,
+      masteredCards: uncompletedItem.enrollment?.masteredCards || 0,
+    };
+  }, [sortedEnrolledDecks]);
+
+  const allCompleted = useMemo(() => {
+    if (enrolledDecksData.length === 0) return false;
+    return enrolledDecksData.every(({ deck, enrollment }) => {
+      const mastered = enrollment?.masteredCards || 0;
+      const total = deck.totalCards || 0;
+      return total > 0 && mastered >= total;
+    });
+  }, [enrolledDecksData]);
 
   // Render Skeleton while initial profile is loading
   if (isProfileLoading) {
@@ -168,17 +216,24 @@ export function LearnerDashboardPage() {
           dueTodayCount={dueTodayCount}
           continueDeck={continueDeck}
           hasCurrentLevel={hasCurrentLevel}
+          allCompleted={allCompleted}
         />
 
-        {/* SECTION 2: CURRENT LEVEL & LEVEL-UP ACTION */}
+        {/* SECTION 2: CURRENT LEVEL */}
         <CurrentLevelCard
           currentLevelName={levelName}
           hasCurrentLevel={hasCurrentLevel}
         />
 
+        {/* SECTION 2B: FINAL LEVEL ASSESSMENT */}
+        <FinalLevelAssessmentCard
+          levelName={levelName}
+          hasCurrentLevel={hasCurrentLevel}
+        />
+
         {/* SECTION 3: CONTINUE LEARNING / MY DECKS */}
         <ContinueLearningSection
-          enrolledDecks={enrolledDecksData}
+          enrolledDecks={sortedEnrolledDecks}
           isLoading={isLoadingEnrollments || isLoadingDecks}
         />
 

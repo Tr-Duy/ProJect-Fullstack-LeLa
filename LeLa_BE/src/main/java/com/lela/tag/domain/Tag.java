@@ -24,6 +24,9 @@ public class Tag extends BaseEnity {
     @Column(nullable = false, unique = true, length = 120)
     private String slug; // Chuỗi định danh tag dùng trong URL hoặc lọc.
 
+    @Column(length = 500)
+    private String description; // Mô tả ngắn về chủ đề tag.
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt; // Thời điểm tạo tag.

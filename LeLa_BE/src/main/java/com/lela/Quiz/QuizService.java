@@ -7,7 +7,11 @@ import org.springframework.data.domain.Pageable;
 import java.util.List;
 
 public interface QuizService {
-    Page<QuizResponse> findAll(Pageable pageable, com.lela.Quiz.domain.QuizCategory category, Long examTypeId, Long levelId);
+    Page<QuizResponse> findAll(Pageable pageable, com.lela.Quiz.domain.QuizCategory category, Long examTypeId, Long levelId, com.lela.Quiz.domain.QuizDifficulty difficulty, Long deckId, String search);
+
+    default Page<QuizResponse> findAll(Pageable pageable, com.lela.Quiz.domain.QuizCategory category, Long examTypeId, Long levelId) {
+        return findAll(pageable, category, examTypeId, levelId, null, null, null);
+    }
 
     QuizResponse findById(Long id);
 

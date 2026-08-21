@@ -14,6 +14,11 @@ public class TagResponse {
     private Long id;
     private String name;
     private String slug;
+    private String description;
+    private Boolean isActive;
+    private Long deckCount;
+    private Long cardCount;
+    private Long usageCount;
     private LocalDateTime createdAt;
 
     public static TagResponse fromEntity(Tag tag) {
@@ -21,6 +26,8 @@ public class TagResponse {
                 .id(tag.getId())
                 .name(tag.getName())
                 .slug(tag.getSlug())
+                .description(tag.getDescription())
+                .isActive(tag.isActive())
                 .createdAt(tag.getCreatedAt())
                 .build();
     }

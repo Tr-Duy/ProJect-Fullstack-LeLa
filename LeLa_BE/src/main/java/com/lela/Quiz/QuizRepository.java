@@ -33,4 +33,17 @@ public interface QuizRepository extends JpaRepository<Quiz, Long> {
     Page<Quiz> findByLevelIdAndCategoriesForLearner(@Param("levelId") Long levelId,
                                                     @Param("categories") List<QuizCategory> categories,
                                                     Pageable pageable);
+
+    @Query("SELECT q FROM Quiz q WHERE q.deletedAt IS NULL AND " +
+           "(:category IS NULL OR q.quizCategory = :category) AND " +
+           "(:levelId IS NULL OR (q.level IS NOT NULL AND q.level.id = :levelId)) AND " +
+           "(:difficulty IS NULL OR q.difficulty = :difficulty) AND " +
+           "(:deckId IS NULL OR (q.deck IS NOT NULL AND q.deck.id = :deckId)) AND " +
+           "(:search IS NULL OR LOWER(q.title) LIKE LOWER(CONCAT('%', :search, '%')) OR LOWER(q.quizCode) LIKE LOWER(CONCAT('%', :search, '%')))")
+    Page<Quiz> findWithFilters(@Param("category") QuizCategory category,
+                               @Param("levelId") Long levelId,
+                               @Param("difficulty") com.lela.Quiz.domain.QuizDifficulty difficulty,
+                               @Param("deckId") Long deckId,
+                               @Param("search") String search,
+                               Pageable pageable);
 }

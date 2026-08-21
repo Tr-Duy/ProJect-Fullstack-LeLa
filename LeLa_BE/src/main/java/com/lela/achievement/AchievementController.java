@@ -20,6 +20,7 @@ public class AchievementController {
 
     private final UserAchievementRepository userAchievementRepository;
     private final com.lela.users.UsersRepository usersRepository;
+    private final AchievementService achievementService;
 
     @GetMapping("/me")
     public ResponseEntity<ApiResponse<List<UserAchievement>>> getMyAchievements() {
@@ -30,5 +31,17 @@ public class AchievementController {
 
         List<UserAchievement> achievements = userAchievementRepository.findAllByUserId(userId);
         return ResponseEntity.ok(ApiResponse.success(achievements, "Tải danh hiệu thành công"));
+    }
+
+    @GetMapping("/my-progress")
+    public ResponseEntity<ApiResponse<List<com.lela.achievement.dto.UserAchievementProgressResponse>>> getMyAchievementsProgress() {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        Long userId = usersRepository.findByUsername(username)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User không tồn tại"))
+                .getId();
+
+        achievementService.evaluateAchievements(userId);
+        List<com.lela.achievement.dto.UserAchievementProgressResponse> progress = achievementService.getUserAchievementsProgress(userId);
+        return ResponseEntity.ok(ApiResponse.success(progress, "Tải tiến trình thành tựu thành công"));
     }
 }

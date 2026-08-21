@@ -36,10 +36,16 @@ public class DeckController {
 
     @GetMapping
     public ResponseEntity<Page<DeckResponse>> getAllDecks(
+            @RequestParam(required = false) String search,
             @RequestParam(required = false) Long examTypeId,
             @RequestParam(required = false) Long levelId,
+            @RequestParam(required = false) Long topicId,
+            @RequestParam(required = false) Long tagId,
+            @RequestParam(required = false) com.lela.deck.domain.DeckDifficulty difficulty,
+            @RequestParam(required = false) com.lela.deck.domain.DeckStatus status,
+            @RequestParam(required = false) com.lela.deck.domain.DeckVisibility visibility,
             Pageable pageable) {
-        Page<DeckResponse> responses = deckService.getAllDecks(examTypeId, levelId, pageable);
+        Page<DeckResponse> responses = deckService.getAllDecks(search, examTypeId, levelId, topicId, tagId, difficulty, status, visibility, pageable);
         return ResponseEntity.ok(responses);
     }
 

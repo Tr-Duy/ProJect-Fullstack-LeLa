@@ -2,7 +2,20 @@ import { apiClient } from '../../../shared/lib/api';
 import type { DeckResponse, Page } from '../../../shared/types/lela';
 
 export const decksApi = {
-  getAll: async (params?: { page?: number; size?: number; sortBy?: string; direction?: string; examTypeId?: number; levelId?: number }): Promise<Page<DeckResponse>> => {
+  getAll: async (params?: {
+    search?: string;
+    levelId?: number;
+    topicId?: number;
+    tagId?: number;
+    difficulty?: string;
+    status?: string;
+    visibility?: string;
+    page?: number;
+    size?: number;
+    sortBy?: string;
+    direction?: string;
+    examTypeId?: number;
+  }): Promise<Page<DeckResponse>> => {
     const apiParams: any = { ...params };
     if (params?.sortBy) {
       apiParams.sort = `${params.sortBy},${params.direction || 'asc'}`;

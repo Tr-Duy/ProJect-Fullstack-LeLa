@@ -23,8 +23,11 @@ public class QuizController {
             Pageable pageable,
             @RequestParam(required = false) com.lela.Quiz.domain.QuizCategory category,
             @RequestParam(required = false) Long examTypeId,
-            @RequestParam(required = false) Long levelId) {
-        return ResponseEntity.ok(ApiResponse.success(quizService.findAll(pageable, category, examTypeId, levelId)));
+            @RequestParam(required = false) Long levelId,
+            @RequestParam(required = false) com.lela.Quiz.domain.QuizDifficulty difficulty,
+            @RequestParam(required = false) Long deckId,
+            @RequestParam(required = false) String search) {
+        return ResponseEntity.ok(ApiResponse.success(quizService.findAll(pageable, category, examTypeId, levelId, difficulty, deckId, search)));
     }
 
     @GetMapping("/deck/{deckId}")

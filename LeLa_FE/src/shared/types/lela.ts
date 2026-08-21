@@ -6,7 +6,7 @@ export interface ApiResponse<T = void> {
 }
 
 export type UserRole = 'ADMIN' | 'CONTENT_CREATOR' | 'MODERATOR' | 'LEARNER';
-export type DeckStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+export type DeckStatus = 'DRAFT' | 'PENDING_REVIEW' | 'PUBLISHED' | 'REJECTED' | 'ARCHIVED';
 export type CardProgressState = 'NEW' | 'LEARNING' | 'REVIEW' | 'RELEARNING';
 export type SrsGrade = 'AGAIN' | 'HARD' | 'GOOD' | 'EASY';
 
@@ -58,6 +58,11 @@ export interface TagResponse {
   id: number;
   name: string;
   slug: string;
+  description?: string;
+  isActive?: boolean;
+  deckCount?: number;
+  cardCount?: number;
+  usageCount?: number;
   createdAt: string;
 }
 
@@ -77,6 +82,9 @@ export interface TopicResponse {
 export interface DeckResponse {
   examTypeId?: number;
   levelId?: number;
+  levelName?: string;
+  levelCode?: string;
+  tags?: TagResponse[];
   id: number;
   deckCode: string;
   slug: string;
@@ -232,4 +240,34 @@ export interface SubscriptionPlanResponse {
   displayOrder: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface AchievementResponse {
+  id: number;
+  code: string;
+  title: string;
+  description?: string;
+  iconUrl?: string;
+  category?: string;
+  conditionType?: string;
+  conditionValue?: number;
+  xpReward?: number;
+  isActive?: boolean;
+  unlockedCount?: number;
+}
+
+export interface UserAchievementProgressResponse {
+  id: number;
+  code: string;
+  title: string;
+  description?: string;
+  iconUrl?: string;
+  category?: string;
+  conditionType?: string;
+  conditionValue?: number;
+  currentValue?: number;
+  progressPercent?: number;
+  xpReward?: number;
+  isUnlocked?: boolean;
+  unlockedAt?: string;
 }

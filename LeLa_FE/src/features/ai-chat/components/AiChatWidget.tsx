@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { X, Sparkles } from 'lucide-react';
+import { X, Sparkles, Maximize2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { AiChatWindow } from './AiChatWindow';
 import { useAiStream } from '../hooks/useAiStream';
 import { AiTutorMascotIcon } from './AiTutorMascotIcon';
@@ -8,6 +9,7 @@ export const AiChatWidget: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isBubbleDismissed, setIsBubbleDismissed] = useState(true);
   const [showTooltip, setShowTooltip] = useState(false);
+  const navigate = useNavigate();
   const streamState = useAiStream();
 
   useEffect(() => {
@@ -35,9 +37,9 @@ export const AiChatWidget: React.FC = () => {
     <div className="fixed bottom-[92px] right-4 md:bottom-[100px] md:right-6 z-50 flex flex-col items-end pointer-events-none">
       {/* AI Chat Window Panel */}
       {isOpen && (
-        <div className="pointer-events-auto mb-4 w-[calc(100vw-32px)] sm:w-[400px] h-[550px] max-h-[80vh] bg-white shadow-2xl rounded-2xl overflow-hidden border-[3px] border-black flex flex-col transition-all transform origin-bottom-right brutal-box">
+        <div className="pointer-events-auto mb-4 w-[calc(100vw-32px)] sm:w-[420px] h-[580px] max-h-[82vh] bg-white shadow-2xl rounded-2xl overflow-hidden border-[3px] border-black flex flex-col transition-all transform origin-bottom-right brutal-box">
           {/* Header */}
-          <div className="bg-[#1D2A3A] text-white p-4 flex items-center justify-between border-b-[3px] border-black">
+          <div className="bg-[#1D2A3A] text-white p-3.5 flex items-center justify-between border-b-[3px] border-black">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-[#FFD700] border-[2px] border-black flex items-center justify-center shrink-0">
                 <AiTutorMascotIcon size={26} />
@@ -47,17 +49,30 @@ export const AiChatWidget: React.FC = () => {
                   <span>AI Tutor</span>
                   <Sparkles className="w-4 h-4 text-[#FFD700]" />
                 </div>
-                <span className="text-xs font-bold text-gray-300">Trợ lý học tiếng Anh của bạn</span>
+                <span className="text-xs font-bold text-gray-300">Trợ lý học tiếng Anh LeLa</span>
               </div>
             </div>
 
-            <button
-              onClick={() => setIsOpen(false)}
-              className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors border border-white/20"
-              aria-label="Đóng AI Tutor"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  setIsOpen(false);
+                  navigate('/ai-chat');
+                }}
+                className="px-2.5 py-1 rounded-lg bg-[#2A8B9D] hover:bg-[#206f7e] text-white text-xs font-bold transition-colors border border-black flex items-center gap-1 shadow-[1px_1px_0px_0px_#000]"
+                title="Mở toàn màn hình AI Chat"
+              >
+                <span>Toàn màn hình</span>
+                <Maximize2 className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => setIsOpen(false)}
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors border border-white/20"
+                aria-label="Đóng AI Tutor"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
           </div>
 
           {/* Chat Window Body */}
