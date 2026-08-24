@@ -33,12 +33,38 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      - name: Start Spring Boot Backend
+      - name: Wait for MySQL Database Ready
         run: |
-          ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev \
-            -Dspring.datasource.url=jdbc:mysql://localhost:3306/lela_db \
-            -Dspring.datasource.username=root \
-            -Dspring.datasource.password=root &
+          echo "Waiting for MySQL database on 127.0.0.1:3306..."
+          for i in {1..30}; do
+            if mysqladmin ping -h 127.0.0.1 -uroot -proot --silent; then
+              echo "MySQL is ready and accepting connections!"
+              exit 0
+            fi
+            echo "Waiting for MySQL... (attempt $i/30)"
+            sleep 2
+          done
+          echo "MySQL failed to become ready in time"
+          exit 1
+
+      - name: Start Spring Boot Backend
+        env:
+          SPRING_PROFILES_ACTIVE: dev
+          SPRING_DATASOURCE_URL: jdbc:mysql://localhost:3306/lela_db
+          SPRING_DATASOURCE_USERNAME: root
+          SPRING_DATASOURCE_PASSWORD: root
+          YOEDU_JWT_SECRET: ci-test-jwt-secret-key-32-characters-minimum
+          GEMINI_API_KEY: ci-test-gemini-key
+          GOOGLE_CLIENT_ID: ci-test-google-client-id.apps.googleusercontent.com
+          GOOGLE_CLIENT_SECRET: ci-test-google-client-secret
+          SEPAY_API_KEY: ci-test-sepay-key
+          FRONTEND_URL: http://localhost:5173
+          CORS_ALLOWED_ORIGINS: http://localhost:5173,http://localhost:3000
+          PORT: 8080
+        run: |
+          nohup ./mvnw spring-boot:run > spring-boot.log 2>&1 &
+          echo $! > spring-boot.pid
+          echo "Spring Boot launched in background (PID: $(cat spring-boot.pid))"
         working-directory: LeLa_BE
 
       - name: Wait for Backend Ready
@@ -53,8 +79,16 @@ jobs:
             echo "Waiting... (attempt $i/30, status $STATUS)"
             sleep 4
           done
-          echo "Backend failed to start within timeout"
+          echo "=========================================="
+          echo "BACKEND FAILED TO START WITHIN TIMEOUT!"
+          echo "=========================================="
+          if [ -f spring-boot.log ]; then
+            echo "--- START OF spring-boot.log ---"
+            cat spring-boot.log
+            echo "--- END OF spring-boot.log ---"
+          fi
           exit 1
+        working-directory: LeLa_BE
 
       - uses: actions/setup-node@v4
         with:
@@ -77,10 +111,20 @@ jobs:
         run: npx playwright test
         working-directory: LeLa_FE
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload Playwright Report
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: playwright-report
           path: LeLa_FE/playwright-report/
           if-no-files-found: ignore
+
+      - name: Upload Spring Boot Log
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: spring-boot-log
+          path: LeLa_BE/spring-boot.log
+          if-no-files-found: ignore
+
 
