@@ -1,18 +1,29 @@
-#cau hinh moi truong prod
+# Cau hinh moi truong prod
 spring:
   datasource:
-    url: ${YOEDU_DB_URL:jdbc:mysql://e4XQFMeuMbogRQK.root:uy5LwcYamnRwU8a1@gateway01.ap-southeast-1.prod.alicloud.tidbcloud.com:4000/LeLa?sslMode=VERIFY_IDENTITY}
-    username: ${YOEDU_DB_USER:e4XQFMeuMbogRQK.root}
-    password: ${YOEDU_DB_PASSWORD:uy5LwcYamnRwU8a1}
+    url: ${YOEDU_DB_URL}
+    username: ${YOEDU_DB_USER}
+    password: ${YOEDU_DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   flyway:
-    validate-on-migrate: false
+    enabled: true
+    validate-on-migrate: true
+    baseline-on-migrate: true
 
   jpa:
     hibernate:
       ddl-auto: none
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
-        format_sql: true
+        format_sql: false
+
+app:
+  frontend-url: ${FRONTEND_URL}
+  cors:
+    allowed-origins: ${FRONTEND_URL}
+
+sepay:
+  api-key: ${SEPAY_API_KEY}
+

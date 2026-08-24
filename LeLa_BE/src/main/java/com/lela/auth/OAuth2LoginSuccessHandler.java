@@ -50,6 +50,9 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
     private final PasswordEncoder passwordEncoder;
     private final OAuth2Service oauth2Service;
 
+    @org.springframework.beans.factory.annotation.Value("${app.frontend-url:http://localhost:5173}")
+    private String frontendUrl;
+
     @Override
     @Transactional
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
@@ -60,7 +63,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
         String picture = oAuth2User.getAttribute("picture");
 
         if (email == null) {
-            response.sendRedirect("http://localhost:5173/login?error=email_not_found");
+            response.sendRedirect(frontendUrl + "/login?error=email_not_found");
             return;
         }
 
@@ -159,8 +162,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
         String exchangeCode = oauth2Service.cacheAuthResponse(authResponse);
 
         // 5. Redirect to frontend with exchange code
-        // Hardcoding frontend URL for now since it runs on 5173, could be moved to properties
-        getRedirectStrategy().sendRedirect(request, response, "http://localhost:5173/oauth2/redirect?code=" + exchangeCode);
+        getRedirectStrategy().sendRedirect(request, response, frontendUrl + "/oauth2/redirect?code=" + exchangeCode);
     }
 
     private String hashToken(String token) {

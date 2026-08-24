@@ -52,7 +52,13 @@ public class UserSubscriptionServiceImplTest {
     private UserSubscription entity;
     private UserSubscriptionResponse response;
 
+    @org.junit.jupiter.api.AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
+    }
+
     @BeforeEach
+
     void setUp() {
         SecurityContext securityContext = mock(SecurityContext.class);
         Authentication authentication = mock(Authentication.class);

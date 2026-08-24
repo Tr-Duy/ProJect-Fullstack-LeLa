@@ -147,9 +147,14 @@ export function LoginPage() {
             <Button
               type="default"
               icon={<GoogleOutlined />}
-              onClick={() => window.location.href = 'http://localhost:8080/api/v1/oauth2/authorization/google'}
+              onClick={() => {
+                const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
+                const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+                window.location.href = `${cleanBaseUrl}/oauth2/authorization/google`;
+              }}
               className="w-full brutal-pill h-14 font-bold text-lg mb-4 hover:!translate-y-[-2px] hover:!shadow-[4px_6px_0px_0px_rgba(0,0,0,1)] hover:!border-black transition-all flex items-center justify-center gap-2"
             >
+
               Đăng nhập bằng Google
             </Button>
 

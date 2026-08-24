@@ -64,8 +64,9 @@ public class DeckAccessControlIntegrationTest {
         Page<DeckResponse> result = deckService.getAllDecks(null, null, PageRequest.of(0, 100));
         
         assertThat(result.getContent()).isNotEmpty();
-        // 12 normal decks + 15 TOEIC U500 decks = 27 decks
-        assertThat(result.getTotalElements()).isEqualTo(27);
+        // 12 normal decks + 32 TOEIC U500 decks = 44 decks
+        assertThat(result.getTotalElements()).isEqualTo(44);
+
 
         // Verify none of the returned decks belong to 500-650, 650-800, or 800+
         boolean hasHigherToeic = result.getContent().stream()

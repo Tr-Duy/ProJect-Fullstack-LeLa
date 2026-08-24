@@ -55,4 +55,7 @@ QODER.md
 .qoder/
 .github/code-review-graph.instruction.md
 .code-review-graphignore
-global-error.log
+*.log
+hs_err_pid*
+replay_pid*
+.auth/

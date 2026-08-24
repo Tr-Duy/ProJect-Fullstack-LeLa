@@ -79,7 +79,13 @@ public class PlacementAndLevelSyncTest {
     private ProficiencyLevel level2;
     private Quiz placementQuiz;
 
+    @org.junit.jupiter.api.AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
+    }
+
     @BeforeEach
+
     void setUp() {
         toeicExamType = new ExamType();
         toeicExamType.setId(1L);

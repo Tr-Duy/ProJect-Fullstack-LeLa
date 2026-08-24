@@ -1,0 +1,43 @@
+name: Backend CI (LeLa_BE)
+
+on:
+  push:
+    branches: [ main, master ]
+    paths:
+      - 'LeLa_BE/**'
+      - '.github/workflows/backend-ci.yml'
+  pull_request:
+    branches: [ main, master ]
+    paths:
+      - 'LeLa_BE/**'
+      - '.github/workflows/backend-ci.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+          cache-dependency-path: LeLa_BE/pom.xml
+
+      - name: Make mvnw executable
+        run: chmod +x ./mvnw
+        working-directory: LeLa_BE
+
+      - name: Build and Package with Maven
+        run: ./mvnw clean package -DskipTests
+        working-directory: LeLa_BE
+        env:
+          APP_PROFILE: test
+          YOEDU_JWT_SECRET: ci-test-jwt-secret-key-32-characters-minimum
+          GEMINI_API_KEY: ci-test-gemini-key
+          GOOGLE_CLIENT_ID: ci-test-google-client-id.apps.googleusercontent.com
+          GOOGLE_CLIENT_SECRET: ci-test-google-client-secret

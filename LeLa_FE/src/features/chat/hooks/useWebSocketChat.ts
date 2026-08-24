@@ -6,7 +6,7 @@ import SockJS from 'sockjs-client/dist/sockjs.min.js';
 import type { ChatMessage, SendMessageRequest } from '../types/chat.types';
 import { chatApi } from '../api/chat.api';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
 export function useWebSocketChat(conversationId: number | null, guestToken?: string) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);

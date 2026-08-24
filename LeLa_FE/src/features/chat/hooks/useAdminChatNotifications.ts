@@ -4,7 +4,7 @@ import type { IMessage } from '@stomp/stompjs';
 // @ts-ignore
 import SockJS from 'sockjs-client/dist/sockjs.min.js';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
 export function useAdminChatNotifications(onNewConversation?: () => void) {
   const [isConnected, setIsConnected] = useState(false);

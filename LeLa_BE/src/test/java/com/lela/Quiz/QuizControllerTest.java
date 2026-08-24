@@ -65,7 +65,11 @@ public class QuizControllerTest {
                 any(Pageable.class),
                 org.mockito.ArgumentMatchers.nullable(com.lela.Quiz.domain.QuizCategory.class),
                 org.mockito.ArgumentMatchers.nullable(Long.class),
-                org.mockito.ArgumentMatchers.nullable(Long.class))).thenReturn(page);
+                org.mockito.ArgumentMatchers.nullable(Long.class),
+                org.mockito.ArgumentMatchers.nullable(com.lela.Quiz.domain.QuizDifficulty.class),
+                org.mockito.ArgumentMatchers.nullable(Long.class),
+                org.mockito.ArgumentMatchers.nullable(String.class))).thenReturn(page);
+
 
         mockMvc.perform(get("/quizzes")
                 .contentType(MediaType.APPLICATION_JSON))

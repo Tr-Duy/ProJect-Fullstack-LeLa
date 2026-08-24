@@ -63,7 +63,13 @@ public class ReviewSessionServiceImplTest {
 
     private ReviewSession session;
 
+    @org.junit.jupiter.api.AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
+    }
+
     @BeforeEach
+
     void setUp() {
         SecurityContext securityContext = mock(SecurityContext.class);
         Authentication authentication = mock(Authentication.class);

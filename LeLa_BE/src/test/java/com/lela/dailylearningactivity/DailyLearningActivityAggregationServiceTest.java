@@ -68,7 +68,13 @@ class DailyLearningActivityAggregationServiceTest {
     @InjectMocks
     private DailyLearningActivityServiceImpl service;
 
+    @org.junit.jupiter.api.AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
+    }
+
     @BeforeEach
+
     void setUp() {
         SecurityContext securityContext = mock(SecurityContext.class);
         Authentication authentication = mock(Authentication.class);
@@ -118,7 +124,8 @@ class DailyLearningActivityAggregationServiceTest {
         QuizAttempt yesterdayAttempt = new QuizAttempt();
         yesterdayAttempt.setQuiz(finalQuiz);
         yesterdayAttempt.setStatus(QuizAttemptStatus.SUBMITTED);
-        yesterdayAttempt.setSubmittedAt(LocalDateTime.of(2026, 8, 9, 8, 0, 0));
+        yesterdayAttempt.setSubmittedAt(LocalDate.now().minusDays(1).atTime(8, 0, 0));
+
 
         when(quizAttemptRepository.findAllByUserIdWithQuiz(12L)).thenReturn(List.of(yesterdayAttempt));
         when(repository.findByUserIdAndActivityDateBetween(12L, LocalDate.now(), LocalDate.now())).thenReturn(List.of());

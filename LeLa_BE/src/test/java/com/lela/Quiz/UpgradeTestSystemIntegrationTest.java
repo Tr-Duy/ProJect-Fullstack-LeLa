@@ -49,6 +49,9 @@ public class UpgradeTestSystemIntegrationTest {
     @Autowired
     private UsersRepository usersRepository;
 
+    @Autowired
+    private com.lela.common.ProficiencyLevelRepository levelRepository;
+
     private void authenticateUser(String username) {
         UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(username, null, List.of());
         SecurityContextHolder.getContext().setAuthentication(auth);
@@ -58,10 +61,20 @@ public class UpgradeTestSystemIntegrationTest {
     void setUp() {
         Users learner1 = usersRepository.findByUsername("learner1").orElse(null);
         if (learner1 != null) {
-            var attempts = quizAttemptRepository.findByUserId(learner1.getId(), PageRequest.of(0, 100)).getContent();
+            com.lela.common.domain.ProficiencyLevel level1 = levelRepository.findById(1L).orElse(null);
+            if (level1 != null) {
+                learner1.setCurrentLevel(level1);
+                usersRepository.saveAndFlush(learner1);
+            }
+            var attempts = quizAttemptRepository.findAllByUserIdWithQuiz(learner1.getId());
             quizAttemptRepository.deleteAll(attempts);
+            quizAttemptRepository.flush();
         }
     }
+
+
+
+
 
     @Test
     @DisplayName("1. Learner gets 10 Upgrade Tests: ONLY Test #01 is AVAILABLE, #02..#10 are LOCKED")

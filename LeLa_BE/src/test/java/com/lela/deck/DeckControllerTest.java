@@ -112,7 +112,7 @@ public class DeckControllerTest {
         List<DeckResponse> list = Arrays.asList(deckResponse);
         Page<DeckResponse> page = new PageImpl<>(list);
 
-        Mockito.when(deckService.getAllDecks(any(), any(), any(Pageable.class))).thenReturn(page);
+        Mockito.when(deckService.getAllDecks(any(), any(), any(), any(), any(), any(), any(), any(), any(Pageable.class))).thenReturn(page);
 
         mockMvc.perform(get("/decks")
                 .contentType(MediaType.APPLICATION_JSON))

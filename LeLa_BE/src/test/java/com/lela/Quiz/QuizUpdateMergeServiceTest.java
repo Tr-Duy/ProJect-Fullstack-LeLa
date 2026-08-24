@@ -16,6 +16,7 @@ import com.lela.common.domain.ProficiencyLevel;
 import com.lela.deck.DeckRepository;
 import com.lela.users.UsersRepository;
 import com.lela.users.domain.Users;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -76,8 +77,14 @@ class QuizUpdateMergeServiceTest {
     private ExamType toeic;
     private ProficiencyLevel level2;
 
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
+    }
+
     @BeforeEach
     void setUp() {
+
         SecurityContext securityContext = mock(SecurityContext.class);
         Authentication authentication = mock(Authentication.class);
         Mockito.lenient().when(securityContext.getAuthentication()).thenReturn(authentication);

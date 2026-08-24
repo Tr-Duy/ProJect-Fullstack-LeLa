@@ -62,7 +62,13 @@ public class MyDecksAndDiscoverTest {
     private Deck deckFruitLevel1;
     private Deck deckJobLevel3;
 
+    @org.junit.jupiter.api.AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
+    }
+
     @BeforeEach
+
     void setUp() {
         ExamType examType = new ExamType();
         examType.setId(1L);

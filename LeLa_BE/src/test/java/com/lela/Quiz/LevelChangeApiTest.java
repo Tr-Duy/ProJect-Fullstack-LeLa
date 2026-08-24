@@ -28,10 +28,34 @@ public class LevelChangeApiTest {
     @Autowired
     private UsersRepository usersRepository;
 
+    @Autowired
+    private com.lela.common.ProficiencyLevelRepository levelRepository;
+
+    @Autowired
+    private com.lela.QuizAttempt.QuizAttemptRepository quizAttemptRepository;
+
     private void authenticateUser(String username) {
         UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(username, null, List.of());
         SecurityContextHolder.getContext().setAuthentication(auth);
     }
+
+    @org.junit.jupiter.api.BeforeEach
+    void setUp() {
+        Users learner2 = usersRepository.findByUsername("learner2").orElse(null);
+        if (learner2 != null) {
+            com.lela.common.domain.ProficiencyLevel level3 = levelRepository.findById(3L).orElse(null);
+            if (level3 != null) {
+                learner2.setCurrentLevel(level3);
+                usersRepository.saveAndFlush(learner2);
+            }
+            var attempts = quizAttemptRepository.findAllByUserIdWithQuiz(learner2.getId());
+            quizAttemptRepository.deleteAll(attempts);
+            quizAttemptRepository.flush();
+        }
+    }
+
+
+
 
     @Test
     @DisplayName("Verify learner2 (Current Level = 3) gets 10 Upgrade/Level-Change Tests for EVERY Target Level 1, 2, 3, 4")

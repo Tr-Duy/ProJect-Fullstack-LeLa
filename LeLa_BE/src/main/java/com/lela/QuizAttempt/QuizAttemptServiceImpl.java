@@ -63,16 +63,22 @@ public class QuizAttemptServiceImpl implements QuizAttemptService {
     private final com.lela.deckenrollment.DeckEnrollmentRepository deckEnrollmentRepository;
     private final ModelMapper mapper;
 
-    private Long getCurrentUserId() {
+    private Users getCurrentUser() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
             throw new org.springframework.security.access.AccessDeniedException("User is not authenticated");
         }
         String username = auth.getName();
         return usersRepository.findByUsername(username)
-                .orElseThrow(() -> new NotFoundExeception("User not found: " + username))
-                .getId();
+                .orElseThrow(() -> new NotFoundExeception("User not found: " + username));
     }
+
+
+
+    private Long getCurrentUserId() {
+        return getCurrentUser().getId();
+    }
+
 
     @Override
     public Page<QuizAttemptReponse> findAll(Pageable pageable) {
@@ -176,24 +182,35 @@ public class QuizAttemptServiceImpl implements QuizAttemptService {
     @Transactional
     @Override
     public QuizAttemptDetailResponse startAttempt(Long quizId) {
-        Long userId = getCurrentUserId();
+        Users user = getCurrentUser();
+        Long userId = user.getId();
         Quiz quiz = quizRepository.findById(quizId)
                 .orElseThrow(() -> new NotFoundExeception("Quiz not found: " + quizId));
-        Users user = usersRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundExeception("User not found: " + userId));
+
 
         if (quiz.getQuizCategory() == com.lela.Quiz.domain.QuizCategory.PLACEMENT) {
-            // Placement tests are always unlocked for any learner to attempt level placement
+            boolean alreadyDone = quizAttemptRepository.existsByUserIdAndQuizQuizCategoryAndStatusIn(
+                    userId,
+                    com.lela.Quiz.domain.QuizCategory.PLACEMENT,
+                    List.of(com.lela.QuizAttemptQuestion.domain.QuizAttemptStatus.SUBMITTED)
+            );
+            if (alreadyDone || user.getCurrentLevel() != null) {
+                throw new IllegalStateException("Placement Test chỉ được thực hiện một lần.");
+            }
         }
 
+
         if (quiz.getQuizCategory() == com.lela.Quiz.domain.QuizCategory.FINAL
+                || quiz.getQuizCategory() == com.lela.Quiz.domain.QuizCategory.FINAL_LEVEL
                 || quiz.getQuizCategory() == com.lela.Quiz.domain.QuizCategory.LEVEL_UP) {
             com.lela.common.domain.ProficiencyLevel userLevel = user.getCurrentLevel();
             if (userLevel == null) {
                 throw new IllegalStateException("Bạn chưa hoàn thành thiết lập trình độ trước khi làm bài kiểm tra.");
             }
 
-            if (quiz.getQuizCategory() == com.lela.Quiz.domain.QuizCategory.FINAL && quiz.getLevel() != null) {
+
+
+            if ((quiz.getQuizCategory() == com.lela.Quiz.domain.QuizCategory.FINAL || quiz.getQuizCategory() == com.lela.Quiz.domain.QuizCategory.FINAL_LEVEL) && quiz.getLevel() != null) {
                 if (!quiz.getLevel().getId().equals(userLevel.getId())) {
                     throw new IllegalStateException("Bài kiểm tra FINAL không thuộc trình độ hiện tại của bạn.");
                 }
@@ -261,8 +278,11 @@ public class QuizAttemptServiceImpl implements QuizAttemptService {
                         throw new IllegalStateException("Chuỗi bài thi đang trong thời gian chờ 24 giờ sau lần làm chưa đạt trước đó. Vui lòng thử lại sau " + remainingTime + ".");
                     }
                 }
-            } else if (quiz.getQuizCategory() == com.lela.Quiz.domain.QuizCategory.FINAL_LEVEL && quiz.getLevel() != null) {
+            }
+
+            if (quiz.getQuizCategory() == com.lela.Quiz.domain.QuizCategory.FINAL_LEVEL && quiz.getLevel() != null) {
                 Long levelId = quiz.getLevel().getId();
+
                 // 1. Deck completion eligibility check
                 List<com.lela.deck.domain.Deck> activeDecks = deckRepository.findAll().stream()
                         .filter(d -> d.isActive && d.getLevel() != null && Objects.equals(d.getLevel().getId(), levelId))
@@ -293,6 +313,7 @@ public class QuizAttemptServiceImpl implements QuizAttemptService {
                         .filter(a -> Boolean.FALSE.equals(a.getPassed()) && a.getSubmittedAt() != null)
                         .max(java.util.Comparator.comparing(QuizAttempt::getSubmittedAt));
 
+
                 if (latestFailed.isPresent()) {
                     LocalDateTime cooldownEnd = latestFailed.get().getSubmittedAt().plusHours(12);
                     if (LocalDateTime.now().isBefore(cooldownEnd)) {
@@ -303,23 +324,9 @@ public class QuizAttemptServiceImpl implements QuizAttemptService {
                         throw new IllegalStateException("Hệ thống bài kiểm tra kết thúc mức độ đang trong thời gian tạm khóa 12 giờ sau lần thi chưa đạt. Vui lòng quay lại sau " + remainingTimeStr + ".");
                     }
                 }
-
-                // 3. Single attempt per cycle check
-                int maxCycle = allFinalAttempts.stream()
-                        .map(QuizAttempt::getCycleNumber)
-                        .filter(Objects::nonNull)
-                        .max(Integer::compareTo)
-                        .orElse(1);
-
-                boolean alreadyAttemptedThisCycle = allFinalAttempts.stream()
-                        .filter(a -> Objects.equals(a.getCycleNumber(), maxCycle))
-                        .anyMatch(a -> a.getQuiz() != null && a.getQuiz().getId().equals(quiz.getId()) && a.getSubmittedAt() != null);
-
-                if (alreadyAttemptedThisCycle) {
-                    throw new IllegalStateException("Bài kiểm tra này đã được thực hiện trong chu kỳ hiện tại và không thể làm lại.");
-                }
             }
         }
+
 
         QuizAttempt attempt = new QuizAttempt();
         attempt.setPublicId(UUID.randomUUID().toString());
@@ -527,12 +534,13 @@ public class QuizAttemptServiceImpl implements QuizAttemptService {
 
         Users user = attempt.getUser();
 
-        if (quiz != null && quiz.getQuizCategory() == com.lela.Quiz.domain.QuizCategory.FINAL) {
+        if (quiz != null && (quiz.getQuizCategory() == com.lela.Quiz.domain.QuizCategory.FINAL || quiz.getQuizCategory() == com.lela.Quiz.domain.QuizCategory.FINAL_LEVEL)) {
             if (user.getCurrentLevel() != null && quiz.getLevel() != null
                     && !quiz.getLevel().getId().equals(user.getCurrentLevel().getId())) {
                 throw new IllegalStateException("Bài kiểm tra FINAL không thuộc trình độ hiện tại của bạn.");
             }
         }
+
 
         if (quiz != null && quiz.getQuizCategory() == com.lela.Quiz.domain.QuizCategory.PLACEMENT) {
             if (Boolean.TRUE.equals(attempt.getPassed())) {

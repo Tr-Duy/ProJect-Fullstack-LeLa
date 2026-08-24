@@ -24,9 +24,15 @@ dist-ssr
 *.sw?
 .code-review-graphignore
 
-# Playwright
+# Playwright & Auth
 /test-results/
 /playwright-report/
 /blob-report/
 /playwright/.cache/
 /playwright/.auth/
+.auth/
+
+.env
+.env.*
+!.env.example
+

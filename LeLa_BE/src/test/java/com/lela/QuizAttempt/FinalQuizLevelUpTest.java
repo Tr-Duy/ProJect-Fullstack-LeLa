@@ -73,8 +73,16 @@ public class FinalQuizLevelUpTest {
     @Mock
     private ModelMapper mapper;
 
+    @Mock
+    private com.lela.deck.DeckRepository deckRepository;
+
+    @Mock
+    private com.lela.deckenrollment.DeckEnrollmentRepository deckEnrollmentRepository;
+
+
     @InjectMocks
     private QuizAttemptServiceImpl quizAttemptService;
+
 
     private Users userA;
     private Users userB;
@@ -86,7 +94,13 @@ public class FinalQuizLevelUpTest {
     private Quiz finalQuizLevel2;
     private Quiz finalQuizLevel3;
 
+    @org.junit.jupiter.api.AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
+    }
+
     @BeforeEach
+
     void setUp() {
         toeicExamType = new ExamType();
         toeicExamType.setId(1L);
@@ -134,14 +148,21 @@ public class FinalQuizLevelUpTest {
         finalQuizLevel2 = new Quiz();
         finalQuizLevel2.setId(1000L);
         finalQuizLevel2.setTitle("FINAL Level 2 Test");
-        finalQuizLevel2.setQuizCategory(QuizCategory.FINAL);
+        finalQuizLevel2.setQuizCategory(QuizCategory.FINAL_LEVEL);
         finalQuizLevel2.setLevel(level2);
+        finalQuizLevel2.setPassScore(new BigDecimal("80"));
 
         finalQuizLevel3 = new Quiz();
         finalQuizLevel3.setId(2000L);
         finalQuizLevel3.setTitle("FINAL Level 3 Test");
-        finalQuizLevel3.setQuizCategory(QuizCategory.FINAL);
+        finalQuizLevel3.setQuizCategory(QuizCategory.FINAL_LEVEL);
         finalQuizLevel3.setLevel(level3);
+        finalQuizLevel3.setPassScore(new BigDecimal("80"));
+
+
+
+        when(deckRepository.findAll()).thenReturn(Collections.emptyList());
+        when(deckEnrollmentRepository.findByUserId(any(), any())).thenReturn(org.springframework.data.domain.Page.empty());
 
         when(mapper.map(any(), eq(com.lela.QuizAttempt.dto.QuizAttemptDetailResponse.class)))
                 .thenReturn(new com.lela.QuizAttempt.dto.QuizAttemptDetailResponse());
@@ -150,6 +171,7 @@ public class FinalQuizLevelUpTest {
 
         mockAuthentication("userA");
     }
+
 
     private void mockAuthentication(String username) {
         Authentication auth = mock(Authentication.class);
@@ -273,7 +295,7 @@ public class FinalQuizLevelUpTest {
         verify(usersRepository, never()).save(userA);
     }
 
-    // TEST 5: Level 2 + FAIL -> Retry before 24h -> Throws Exception (Locked)
+    // TEST 5: Level 2 + FAIL -> Retry before 12h -> Throws Exception (Locked)
     @Test
     void test5_Level2_FAIL_RetryBefore24h_IsLocked() {
         when(usersRepository.findByUsername("userA")).thenReturn(Optional.of(userA));
@@ -281,18 +303,31 @@ public class FinalQuizLevelUpTest {
         when(quizRepository.findById(1000L)).thenReturn(Optional.of(finalQuizLevel2));
 
         QuizAttempt failedAttempt = new QuizAttempt();
+        failedAttempt.setUser(userA);
+        failedAttempt.setQuiz(finalQuizLevel2);
         failedAttempt.setPassed(false);
         failedAttempt.setSubmittedAt(LocalDateTime.now().minusHours(2));
 
-        when(quizAttemptRepository.findByUserIdAndQuizIdOrderByStartedAtDesc(100L, 1000L))
+        when(quizAttemptRepository.findByUserId(any(), any()))
+                .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(failedAttempt)));
+        when(quizAttemptRepository.findByUserIdAndQuizIdOrderByStartedAtDesc(any(), any()))
                 .thenReturn(List.of(failedAttempt));
+        when(quizAttemptRepository.findByUserIdAndQuizQuizCategoryAndQuizLevelIdOrderByStartedAtDesc(any(), any(), any()))
+                .thenReturn(List.of(failedAttempt));
+        when(quizAttemptRepository.findAllByUserIdWithQuiz(any()))
+                .thenReturn(List.of(failedAttempt));
+        when(quizAttemptRepository.save(any())).thenAnswer(i -> i.getArgument(0));
 
         IllegalStateException ex = assertThrows(IllegalStateException.class, () -> {
             quizAttemptService.startAttempt(1000L);
         });
 
-        assertTrue(ex.getMessage().contains("Vui lòng thử lại sau"));
+        assertTrue(ex.getMessage().contains("tạm khóa"));
     }
+
+
+
+
 
     // TEST 6: Level 2 + FAIL -> Retry after >= 24h -> Allowed
     @Test
@@ -302,11 +337,13 @@ public class FinalQuizLevelUpTest {
         when(quizRepository.findById(1000L)).thenReturn(Optional.of(finalQuizLevel2));
 
         QuizAttempt failedAttempt = new QuizAttempt();
+        failedAttempt.setUser(userA);
+        failedAttempt.setQuiz(finalQuizLevel2);
         failedAttempt.setPassed(false);
         failedAttempt.setSubmittedAt(LocalDateTime.now().minusHours(25));
 
-        when(quizAttemptRepository.findByUserIdAndQuizIdOrderByStartedAtDesc(100L, 1000L))
-                .thenReturn(List.of(failedAttempt));
+        when(quizAttemptRepository.findByUserId(eq(100L), any()))
+                .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(failedAttempt)));
         when(quizAttemptRepository.findMaxAttemptNumber(100L, 1000L)).thenReturn(1);
         when(quizAttemptRepository.save(any())).thenAnswer(i -> i.getArgument(0));
 
@@ -323,11 +360,13 @@ public class FinalQuizLevelUpTest {
         when(quizRepository.findById(1000L)).thenReturn(Optional.of(finalQuizLevel2));
 
         QuizAttempt passedAttempt = new QuizAttempt();
+        passedAttempt.setUser(userA);
+        passedAttempt.setQuiz(finalQuizLevel2);
         passedAttempt.setPassed(true);
         passedAttempt.setSubmittedAt(LocalDateTime.now().minusHours(1));
 
-        when(quizAttemptRepository.findByUserIdAndQuizIdOrderByStartedAtDesc(100L, 1000L))
-                .thenReturn(List.of(passedAttempt));
+        when(quizAttemptRepository.findByUserId(eq(100L), any()))
+                .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(passedAttempt)));
         when(quizAttemptRepository.findMaxAttemptNumber(100L, 1000L)).thenReturn(1);
         when(quizAttemptRepository.save(any())).thenAnswer(i -> i.getArgument(0));
 
@@ -364,11 +403,13 @@ public class FinalQuizLevelUpTest {
 
         QuizAttempt failedAttemptUserA = new QuizAttempt();
         failedAttemptUserA.setUser(userA);
+        failedAttemptUserA.setQuiz(finalQuizLevel2);
         failedAttemptUserA.setPassed(false);
         failedAttemptUserA.setSubmittedAt(LocalDateTime.now().minusHours(2));
 
-        when(quizAttemptRepository.findByUserIdAndQuizIdOrderByStartedAtDesc(100L, 1000L))
-                .thenReturn(List.of(failedAttemptUserA));
+        when(quizAttemptRepository.findByUserId(eq(100L), any()))
+                .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(failedAttemptUserA)));
+        when(quizAttemptRepository.save(any())).thenAnswer(i -> i.getArgument(0));
 
         assertThrows(IllegalStateException.class, () -> {
             quizAttemptService.startAttempt(1000L);
@@ -379,15 +420,18 @@ public class FinalQuizLevelUpTest {
         when(usersRepository.findByUsername("userB")).thenReturn(Optional.of(userB));
         when(usersRepository.findById(200L)).thenReturn(Optional.of(userB));
 
-        when(quizAttemptRepository.findByUserIdAndQuizIdOrderByStartedAtDesc(200L, 1000L))
-                .thenReturn(Collections.emptyList());
+        when(quizAttemptRepository.findByUserId(eq(200L), any()))
+                .thenReturn(new org.springframework.data.domain.PageImpl<>(Collections.emptyList()));
         when(quizAttemptRepository.findMaxAttemptNumber(200L, 1000L)).thenReturn(0);
-        when(quizAttemptRepository.save(any())).thenAnswer(i -> i.getArgument(0));
 
         assertDoesNotThrow(() -> {
             quizAttemptService.startAttempt(1000L);
         });
     }
+
+
+
+
 
     // TEST 11: Learner at Level 2 submits FINAL of Level 3 -> Rejected by backend
     @Test
