@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { useAuth } from '../../../shared/providers/AuthProvider';
 import { useState, useEffect, useRef } from 'react';
+import paymentQrImg from '../../../assets/payment-qr.png';
 
 export function PricingPage() {
   const navigate = useNavigate();
@@ -269,9 +270,9 @@ export function PricingPage() {
 
             <div className="flex justify-center mb-6">
               <img 
-                src={checkoutData.qrUrl}
+                src={paymentQrImg}
                 alt="Mã QR Thanh Toán"
-                className="w-64 h-64 object-contain border-4 border-[#1D2A3A] p-2 bg-white"
+                className="w-full max-w-[320px] sm:max-w-[360px] h-auto object-contain border-4 border-[#1D2A3A] p-2 bg-white rounded-lg shadow-sm block mx-auto"
               />
             </div>
 
