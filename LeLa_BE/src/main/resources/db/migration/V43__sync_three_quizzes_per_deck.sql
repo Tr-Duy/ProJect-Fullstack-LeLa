@@ -3,6 +3,21 @@
 -- ========================================================
 SET FOREIGN_KEY_CHECKS = 0;
 SET @admin_id = 2;
+SET @difficulty_column_exists = (
+    SELECT COUNT(*)
+    FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'quizzes'
+      AND COLUMN_NAME = 'difficulty'
+);
+SET @difficulty_column_ddl = IF(
+    @difficulty_column_exists = 0,
+    'ALTER TABLE quizzes ADD COLUMN difficulty VARCHAR(20) NULL AFTER level_id',
+    'SELECT 1'
+);
+PREPARE stmt_add_quiz_difficulty FROM @difficulty_column_ddl;
+EXECUTE stmt_add_quiz_difficulty;
+DEALLOCATE PREPARE stmt_add_quiz_difficulty;
 
 INSERT INTO quizzes (id, deck_id, quiz_code, title, description, quiz_type, pass_score, max_attempts, shuffle_questions, shuffle_options, total_questions, is_active, version, created_at, updated_at, quiz_category, level_id, difficulty, created_by) VALUES (40042, 1, 'DECK-1-EASY', '🟢 Luyện nhanh - Trái cây cơ bản (Fruits)', 'Bài kiểm tra cấp độ Dễ (5 câu, đạt 70%)', 'MULTIPLE_CHOICE', 70.00, 3, 1, 1, 5, 1, 0, NOW(), NOW(), 'NORMAL', NULL, 'EASY', 2);
 DELETE FROM quiz_question_options WHERE question_id IN (SELECT id FROM quiz_questions WHERE quiz_id = 40042);
