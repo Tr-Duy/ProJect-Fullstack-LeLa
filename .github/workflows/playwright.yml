@@ -12,24 +12,62 @@ jobs:
   test:
     timeout-minutes: 60
     runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: lela_db
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=5
+
     steps:
       - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Start Spring Boot Backend
+        run: |
+          ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev \
+            -Dspring.datasource.url=jdbc:mysql://localhost:3306/lela_db \
+            -Dspring.datasource.username=root \
+            -Dspring.datasource.password=root &
+        working-directory: LeLa_BE
+
+      - name: Wait for Backend Ready
+        run: |
+          echo "Waiting for Spring Boot backend at http://localhost:8080/api/v1/swagger-ui/index.html..."
+          for i in {1..30}; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/api/v1/swagger-ui/index.html || true)
+            if [ "$STATUS" = "200" ]; then
+              echo "Backend is ready! (HTTP status $STATUS)"
+              exit 0
+            fi
+            echo "Waiting... (attempt $i/30, status $STATUS)"
+            sleep 4
+          done
+          echo "Backend failed to start within timeout"
+          exit 1
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
           cache-dependency-path: LeLa_FE/package-lock.json
 
-      - name: Install dependencies
+      - name: Install Frontend dependencies
         run: npm ci
         working-directory: LeLa_FE
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
-        working-directory: LeLa_FE
-
-      - name: Start Vite app
-        run: npm run dev -- --host 0.0.0.0 &
         working-directory: LeLa_FE
 
       - name: Run Playwright tests
@@ -45,3 +83,4 @@ jobs:
           name: playwright-report
           path: LeLa_FE/playwright-report/
           if-no-files-found: ignore
+
