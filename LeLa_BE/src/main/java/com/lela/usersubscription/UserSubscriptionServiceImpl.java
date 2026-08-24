@@ -54,8 +54,15 @@ public class UserSubscriptionServiceImpl implements UserSubscriptionService {
         UserSubscription entity = repository.findById(id)
                 .orElseThrow(() -> new NotFoundExeception("Không tìm thấy đăng ký gói với ID: " + id));
 
-        if (!entity.getUser().getId().equals(getCurrentUserId())) {
-            throw new RuntimeException("Bạn không có quyền truy cập thông tin này.");
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        Users currentUser = usersRepository.findByUsername(username)
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.UNAUTHORIZED, "User không tồn tại"));
+
+        boolean isAdmin = currentUser.getRoleAssignments().stream()
+                .anyMatch(role -> "ADMIN".equals(role.getRole().getRoleCode()));
+
+        if (!isAdmin && !entity.getUser().getId().equals(currentUser.getId())) {
+            throw new org.springframework.security.access.AccessDeniedException("Bạn không có quyền truy cập thông tin này.");
         }
         return mapToResponse(entity);
     }
@@ -77,9 +84,15 @@ public class UserSubscriptionServiceImpl implements UserSubscriptionService {
         UserSubscription entity = repository.findById(id)
                 .orElseThrow(() -> new NotFoundExeception("Không tìm thấy đăng ký với ID: " + id));
 
-        // Bảo mật: Kiểm tra quyền sở hữu
-        if (!entity.getUser().getId().equals(getCurrentUserId())) {
-            throw new RuntimeException("Bạn không có quyền chỉnh sửa gói đăng ký này.");
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        Users currentUser = usersRepository.findByUsername(username)
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.UNAUTHORIZED, "User không tồn tại"));
+
+        boolean isAdmin = currentUser.getRoleAssignments().stream()
+                .anyMatch(role -> "ADMIN".equals(role.getRole().getRoleCode()));
+
+        if (!isAdmin && !entity.getUser().getId().equals(currentUser.getId())) {
+            throw new org.springframework.security.access.AccessDeniedException("Bạn không có quyền chỉnh sửa gói đăng ký này.");
         }
 
         if (request.getPlanId() != null) {
@@ -96,8 +109,15 @@ public class UserSubscriptionServiceImpl implements UserSubscriptionService {
         UserSubscription entity = repository.findById(id)
                 .orElseThrow(() -> new NotFoundExeception("Không tìm thấy đăng ký để xóa."));
 
-        if (!entity.getUser().getId().equals(getCurrentUserId())) {
-            throw new RuntimeException("Bạn không có quyền xóa gói đăng ký này.");
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        Users currentUser = usersRepository.findByUsername(username)
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.UNAUTHORIZED, "User không tồn tại"));
+
+        boolean isAdmin = currentUser.getRoleAssignments().stream()
+                .anyMatch(role -> "ADMIN".equals(role.getRole().getRoleCode()));
+
+        if (!isAdmin && !entity.getUser().getId().equals(currentUser.getId())) {
+            throw new org.springframework.security.access.AccessDeniedException("Bạn không có quyền xóa gói đăng ký này.");
         }
         repository.delete(entity);
     }

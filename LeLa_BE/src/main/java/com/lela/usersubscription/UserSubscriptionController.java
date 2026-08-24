@@ -26,16 +26,19 @@ public class UserSubscriptionController {
     }
 
     @PostMapping
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<UserSubscriptionResponse> create(@RequestBody UserSubscriptionRequest request) {
         return ApiResponse.success(service.create(request), "Created");
     }
 
     @PatchMapping("/{id}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<UserSubscriptionResponse> update(@PathVariable Long id, @RequestBody UserSubscriptionRequest request) {
         return ApiResponse.success(service.update(id, request), "Updated");
     }
 
     @DeleteMapping("/{id}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<Void> delete(@PathVariable Long id) {
         service.delete(id);
         return ApiResponse.successMessage("Deleted");

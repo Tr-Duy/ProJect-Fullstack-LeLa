@@ -100,7 +100,7 @@ export function LandingPage() {
                   onClick={() => handleNav('/register')}
                   className="font-black brutal-pill border-[2px] border-black bg-[#F05A4A] hover:!bg-[#d94f41] text-white shadow-[2px_2px_0px_0px_#000]"
                 >
-                  Bắt Đầu Học
+                  Đăng Ký
                 </Button>
               </>
             )}

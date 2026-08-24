@@ -26,6 +26,7 @@ import org.springframework.data.domain.Pageable;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -120,7 +121,7 @@ public class UsersServiceImplTest {
         nativeLang.setId(10L);
 
         when(modelMapper.map(request, Users.class)).thenReturn(userEntity);
-        when(passwordEncoder.encode("password")).thenReturn("encoded_password");
+        when(passwordEncoder.encode(anyString())).thenReturn("encoded_password");
         when(languageRepository.findById(10L)).thenReturn(Optional.of(nativeLang));
         when(repository.save(any(Users.class))).thenReturn(userEntity);
         when(modelMapper.map(userEntity, UsersResponse.class)).thenReturn(userResponse);
@@ -131,7 +132,7 @@ public class UsersServiceImplTest {
         // Assert
         assertNotNull(result);
         assertEquals(1L, result.getId());
-        verify(passwordEncoder).encode("password");
+        verify(passwordEncoder).encode("Abc@1234");
         verify(languageRepository).findById(10L);
         verify(repository).save(userEntity);
     }
@@ -146,7 +147,7 @@ public class UsersServiceImplTest {
         request.setNativeLanguageId(99L);
 
         when(modelMapper.map(request, Users.class)).thenReturn(userEntity);
-        when(passwordEncoder.encode("password")).thenReturn("encoded_password");
+        when(passwordEncoder.encode(anyString())).thenReturn("encoded_password");
         when(languageRepository.findById(99L)).thenReturn(Optional.empty());
 
         // Act & Assert

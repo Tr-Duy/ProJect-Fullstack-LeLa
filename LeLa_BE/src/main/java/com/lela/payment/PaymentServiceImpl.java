@@ -70,6 +70,18 @@ public class PaymentServiceImpl implements PaymentService {
     public PaymentResponse getById(Long id) {
         Payment entity = repository.findById(id)
                 .orElseThrow(() -> new NotFoundExeception("Không tìm thấy giao dịch với ID: " + id));
+
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        Users currentUser = usersRepository.findByUsername(username)
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.UNAUTHORIZED, "User không tồn tại"));
+
+        boolean isAdmin = currentUser.getRoleAssignments().stream()
+                .anyMatch(role -> "ADMIN".equals(role.getRole().getRoleCode()));
+
+        if (!isAdmin && (entity.getUser() == null || !entity.getUser().getId().equals(currentUser.getId()))) {
+            throw new org.springframework.security.access.AccessDeniedException("Truy cập bị từ chối: Giao dịch này không thuộc về bạn");
+        }
+
         return mapToResponse(entity);
     }
 

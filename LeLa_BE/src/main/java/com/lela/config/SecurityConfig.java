@@ -53,6 +53,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
 
                         // ── Auth ──────────────────────────────────────────
+                        .requestMatchers(HttpMethod.GET, "/auth/check-username").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/auth/check-email").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/register").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/refresh").permitAll()
@@ -78,15 +80,15 @@ public class SecurityConfig {
                                 "/swagger-ui/**"
                         ).permitAll()
 
-                        // ── Quiz (tạm thời cho phép test) ───────────────
-                        .requestMatchers("/api/quiz/**").permitAll()
-
-                        // ── Chat ───────────────────────────────
+                        // ── Chat & WebSocket ───────────────────────────────
                         .requestMatchers("/ws/**").permitAll()
                         .requestMatchers("/chat/guest/**").permitAll()
 
+                        // ── Admin Endpoints ───────────────────────────────
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
+
                         // ── Tất cả còn lại phải login ─────────────────────
-                        .anyRequest().permitAll()
+                        .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth2 -> oauth2
                         .successHandler(oAuth2LoginSuccessHandler)
