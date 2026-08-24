@@ -2,6 +2,7 @@ package com.lela.users;
 
 import com.lela.common.dto.ExamTypeDTO;
 import com.lela.common.dto.ProficiencyLevelDTO;
+import com.lela.common.exception.ConflictException;
 import com.lela.common.exception.NotFoundExeception;
 import com.lela.language.domain.Language;
 import com.lela.language.LanguageRepository;
@@ -44,15 +45,32 @@ public class UsersServiceImpl implements UsersService {
 
     @Override
     public Optional<UsersResponse> findById(Long id) {
-        // Tìm thực thể người dùng theo ID, nếu tồn tại thì ánh xạ sang DTO phản hồi
         return repository.findById(id)
                 .map(this::mapToResponse);
     }
 
     @Override
     public UsersResponse create(UsersCreateRequest request) {
-        // Ánh xạ dữ liệu từ request DTO sang thực thể người dùng (Users)
+        String normalizedUsername = request.getUsername() != null ? request.getUsername().trim() : null;
+        String normalizedEmail = request.getEmail() != null ? request.getEmail().trim().toLowerCase() : null;
+
+        if (normalizedUsername != null && repository.existsByUsername(normalizedUsername)) {
+            throw new ConflictException("Tên đăng nhập đã được sử dụng");
+        }
+        if (normalizedEmail != null && repository.existsByEmail(normalizedEmail)) {
+            throw new ConflictException("Email đã được đăng ký");
+        }
+
         Users entity = modelMapper.map(request, Users.class);
+        if (normalizedUsername != null) {
+            entity.setUsername(normalizedUsername);
+        }
+        if (normalizedEmail != null) {
+            entity.setEmail(normalizedEmail);
+        }
+        if (request.getFullName() != null) {
+            entity.setFullName(request.getFullName().trim());
+        }
 
         // Hash password
         entity.setPasswordHash(passwordEncoder.encode(request.getPassword()));
@@ -62,8 +80,6 @@ public class UsersServiceImpl implements UsersService {
         entity.setStreakCurrent(0);
         entity.setStreakLongest(0);
 
-        // Nếu request có truyền nativeLanguageId, tiến hành kiểm tra tồn tại và gán vào
-        // entity
         if (request.getNativeLanguageId() != null) {
             Language nativeLang = languageRepository.findById(request.getNativeLanguageId())
                     .orElseThrow(() -> new NotFoundExeception(
@@ -71,8 +87,6 @@ public class UsersServiceImpl implements UsersService {
             entity.setNativeLanguage(nativeLang);
         }
 
-        // Nếu request có truyền targetLanguageId, tiến hành kiểm tra tồn tại và gán vào
-        // entity
         if (request.getTargetLanguageId() != null) {
             Language targetLang = languageRepository.findById(request.getTargetLanguageId())
                     .orElseThrow(() -> new NotFoundExeception(
@@ -80,29 +94,33 @@ public class UsersServiceImpl implements UsersService {
             entity.setTargetLanguage(targetLang);
         }
 
-        // Lưu thông tin người dùng mới vào cơ sở dữ liệu
         entity = repository.save(entity);
-        // Trả về thông tin chi tiết người dùng dưới dạng DTO phản hồi
         return mapToResponse(entity);
     }
 
     @Override
     public UsersResponse patch(Long id, UsersPatchRequest request) {
-        // Tìm kiếm thông tin người dùng hiện tại trong cơ sở dữ liệu, ném ngoại lệ nếu
-        // không tìm thấy
         Users entity = repository.findById(id)
                 .orElseThrow(() -> new NotFoundExeception("Not found Users with id " + id));
 
-        // Cập nhật từng trường thông tin nếu giá trị trong request khác null (Null-safe
-        // partial update)
-        if (request.getUsername() != null)
-            entity.setUsername(request.getUsername());
-        if (request.getEmail() != null)
-            entity.setEmail(request.getEmail());
+        if (request.getUsername() != null) {
+            String newUsername = request.getUsername().trim();
+            if (!newUsername.equalsIgnoreCase(entity.getUsername()) && repository.existsByUsername(newUsername)) {
+                throw new ConflictException("Tên đăng nhập đã được sử dụng");
+            }
+            entity.setUsername(newUsername);
+        }
+        if (request.getEmail() != null) {
+            String newEmail = request.getEmail().trim().toLowerCase();
+            if (!newEmail.equalsIgnoreCase(entity.getEmail()) && repository.existsByEmail(newEmail)) {
+                throw new ConflictException("Email đã được đăng ký");
+            }
+            entity.setEmail(newEmail);
+        }
         if (request.getPassword() != null)
             entity.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         if (request.getFullName() != null)
-            entity.setFullName(request.getFullName());
+            entity.setFullName(request.getFullName().trim());
         if (request.getAvatarUrl() != null)
             entity.setAvatarUrl(request.getAvatarUrl());
         if (request.getStatus() != null)

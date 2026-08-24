@@ -112,7 +112,8 @@ public class UsersServiceImplTest {
         // Arrange
         UsersCreateRequest request = new UsersCreateRequest();
         request.setUsername("testuser");
-        request.setPassword("password");
+        request.setEmail("test@example.com");
+        request.setPassword("Abc@1234");
         request.setNativeLanguageId(10L);
 
         Language nativeLang = new Language();
@@ -140,7 +141,8 @@ public class UsersServiceImplTest {
         // Arrange
         UsersCreateRequest request = new UsersCreateRequest();
         request.setUsername("testuser");
-        request.setPassword("password");
+        request.setEmail("test@example.com");
+        request.setPassword("Abc@1234");
         request.setNativeLanguageId(99L);
 
         when(modelMapper.map(request, Users.class)).thenReturn(userEntity);

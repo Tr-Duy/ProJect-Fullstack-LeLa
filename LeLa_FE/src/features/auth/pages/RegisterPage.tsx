@@ -119,17 +119,25 @@ export function RegisterPage() {
                 hasFeedback
                 rules={[
                   { required: true, message: 'Vui lòng nhập tên đăng nhập!' },
-                  { min: 3, message: 'Tên đăng nhập tối thiểu 3 ký tự!' },
                   {
                     validator: async (_, value) => {
-                      if (!value || value.length < 3) return Promise.resolve();
+                      if (!value) return Promise.resolve();
+                      const trimmed = value.trim();
+                      if (trimmed.length < 3 || trimmed.length > 30) {
+                        return Promise.reject(new Error('Tên đăng nhập phải từ 3 đến 30 ký tự!'));
+                      }
+                      if (/^\d+$/.test(trimmed)) {
+                        return Promise.reject(new Error('Tên đăng nhập không được chỉ gồm toàn chữ số!'));
+                      }
+                      if (!/^[a-zA-Z][a-zA-Z0-9._]{2,29}$/.test(trimmed)) {
+                        return Promise.reject(new Error('Tên đăng nhập phải bắt đầu bằng chữ cái và chỉ chứa chữ cái, số, dấu gạch dưới, dấu chấm!'));
+                      }
                       try {
-                        const exists = await authApi.checkUsername(value);
+                        const exists = await authApi.checkUsername(trimmed);
                         if (exists) {
                           return Promise.reject(new Error('Tên đăng nhập này đã có người sử dụng.'));
                         }
                       } catch (err) {
-                        // Ignore backend validation errors (e.g. 403, 500) and let submit handle it
                         return Promise.resolve();
                       }
                       return Promise.resolve();
@@ -153,7 +161,7 @@ export function RegisterPage() {
                     validator: async (_, value) => {
                       if (!value || !/^\S+@\S+\.\S+$/.test(value)) return Promise.resolve();
                       try {
-                        const exists = await authApi.checkEmail(value);
+                        const exists = await authApi.checkEmail(value.trim().toLowerCase());
                         if (exists) {
                           return Promise.reject(new Error('Email này đã được đăng ký.'));
                         }
@@ -173,7 +181,16 @@ export function RegisterPage() {
                 label={<span className="font-bold uppercase text-brand-navy">Mật khẩu</span>}
                 rules={[
                   { required: true, message: 'Vui lòng nhập mật khẩu!' },
-                  { min: 6, message: 'Mật khẩu phải từ 6 ký tự!' }
+                  {
+                    validator: (_, value) => {
+                      if (!value) return Promise.resolve();
+                      const pattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^()_+\-=\[\]{};':"\\|,.<>/?])(?=\S+$).{8,100}$/;
+                      if (!pattern.test(value)) {
+                        return Promise.reject(new Error('Mật khẩu phải từ 8-100 ký tự, gồm chữ hoa, chữ thường, số, ký tự đặc biệt và không chứa khoảng trắng!'));
+                      }
+                      return Promise.resolve();
+                    }
+                  }
                 ]}
               >
                 <Input.Password prefix={<LockOutlined className="text-gray-400" />} className="brutal-border brutal-shadow-sm h-14 font-bold text-lg" />
@@ -201,7 +218,22 @@ export function RegisterPage() {
               <Form.Item
                 name="fullName"
                 label={<span className="font-bold uppercase text-brand-navy">Họ và Tên</span>}
-                rules={[{ required: true, message: 'Vui lòng nhập họ tên!' }]}
+                rules={[
+                  { required: true, message: 'Vui lòng nhập họ tên!' },
+                  {
+                    validator: (_, value) => {
+                      if (!value) return Promise.resolve();
+                      const trimmed = value.trim();
+                      if (trimmed.length < 2 || trimmed.length > 150) {
+                        return Promise.reject(new Error('Họ và tên phải từ 2 đến 150 ký tự!'));
+                      }
+                      if (/^\d+$/.test(trimmed)) {
+                        return Promise.reject(new Error('Họ và tên không được chỉ gồm toàn chữ số!'));
+                      }
+                      return Promise.resolve();
+                    }
+                  }
+                ]}
               >
                 <Input prefix={<UserOutlined className="text-gray-400" />} className="brutal-border brutal-shadow-sm h-14 font-bold text-lg" />
               </Form.Item>

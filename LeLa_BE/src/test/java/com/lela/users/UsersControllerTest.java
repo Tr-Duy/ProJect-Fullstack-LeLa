@@ -97,7 +97,7 @@ public class UsersControllerTest {
         UsersCreateRequest request = new UsersCreateRequest();
         request.setUsername("newuser");
         request.setEmail("new@example.com");
-        request.setPassword("password123");
+        request.setPassword("Abc@1234");
         request.setFullName("New User");
         request.setAvatarUrl("http://example.com/avatar.png");
         request.setNativeLanguageId(1L);

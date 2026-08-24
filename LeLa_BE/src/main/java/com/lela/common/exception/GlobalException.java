@@ -30,39 +30,60 @@ public class GlobalException {
         logError(e);
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(e.getMessage()));
     }
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<ApiResponse<Void>> handleConflict(ConflictException e) {
+        logError(e);
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.error(e.getMessage()));
+    }
+
     @ExceptionHandler(BadRequestException.class)
     public ResponseEntity<ApiResponse<Void>> handleBadRequest(BadRequestException e){
         logError(e);
         return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
     }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidation(MethodArgumentNotValidException ex) {
         logError(ex);
         Map<String, String> errors = new LinkedHashMap<>();
+        String primaryMessage = "Dữ liệu nhập vào không hợp lệ";
+        if (!ex.getBindingResult().getFieldErrors().isEmpty()) {
+            FieldError firstError = ex.getBindingResult().getFieldErrors().get(0);
+            primaryMessage = firstError.getDefaultMessage();
+        }
         for (FieldError fieldError : ex.getBindingResult().getFieldErrors()) {
             errors.put(fieldError.getField(), fieldError.getDefaultMessage());
         }
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("success", false);
-        payload.put("message", "Validation failed");
+        payload.put("message", primaryMessage);
         payload.put("errors", errors);
         return ResponseEntity.badRequest().body(payload);
     }
 
+    @ExceptionHandler(jakarta.validation.ConstraintViolationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleConstraintViolation(jakarta.validation.ConstraintViolationException ex) {
+        logError(ex);
+        String msg = ex.getConstraintViolations().isEmpty() ? "Dữ liệu không hợp lệ" 
+                : ex.getConstraintViolations().iterator().next().getMessage();
+        return ResponseEntity.badRequest().body(ApiResponse.error(msg));
+    }
+
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ApiResponse<Void>> handleBadCredentials(BadCredentialsException ex) {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error("Username or password is invalid"));
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error("Tên đăng nhập/email hoặc mật khẩu không chính xác"));
     }
-// kiểm tra tài khoản mật khẩu (cấp quyên)
+
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ApiResponse<Void>> handleAccessDenied(AccessDeniedException ex) {
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.error("Access denied"));
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.error("Truy cập bị từ chối"));
     }
-// kiểm tra tính hợp lệ của dữ liệu
+
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ApiResponse<Void>> handleDataIntegrity(DataIntegrityViolationException ex) {
         logError(ex);
-        return ResponseEntity.badRequest().body(ApiResponse.error("Data integrity violation. Please check duplicate or foreign key values."));
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiResponse.error("Dữ liệu đã tồn tại hoặc vi phạm ràng buộc cơ sở dữ liệu."));
     }
 
     @ExceptionHandler(com.lela.ai.exception.AiException.class)

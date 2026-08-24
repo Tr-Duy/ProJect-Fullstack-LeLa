@@ -2,6 +2,7 @@ package com.lela.auth;
 
 import com.lela.common.ApiResponse;
 import com.lela.common.exception.BadRequestException;
+import com.lela.common.exception.ConflictException;
 import com.lela.common.exception.NotFoundExeception;
 import com.lela.role.domain.Role;
 import com.lela.role.RoleRepository;
@@ -99,11 +100,14 @@ public class AuthController {
                         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Yêu cầu không hợp lệ hoặc tên đăng nhập/email đã được sử dụng")
         })
         public ResponseEntity<ApiResponse<Void>> register(@RequestBody @Valid RegisterRequest request) {
-                if (usersRepository.existsByUsername(request.getUsername())) {
-                        throw new BadRequestException("Tên đăng nhập đã được sử dụng");
+                String normalizedUsername = request.getUsername().trim();
+                String normalizedEmail = request.getEmail().trim().toLowerCase();
+
+                if (usersRepository.existsByUsername(normalizedUsername)) {
+                        throw new ConflictException("Tên đăng nhập đã được sử dụng");
                 }
-                if (usersRepository.existsByEmail(request.getEmail())) {
-                        throw new BadRequestException("Email đã được đăng ký");
+                if (usersRepository.existsByEmail(normalizedEmail)) {
+                        throw new ConflictException("Email đã được đăng ký");
                 }
 
                 Language nativeLang = null;
@@ -117,10 +121,10 @@ public class AuthController {
                 }
 
                 Users user = Users.builder()
-                                .username(request.getUsername())
-                                .email(request.getEmail())
+                                .username(normalizedUsername)
+                                .email(normalizedEmail)
                                 .passwordHash(passwordEncoder.encode(request.getPassword()))
-                                .fullName(request.getFullName())
+                                .fullName(request.getFullName() != null ? request.getFullName().trim() : null)
                                 .status(UserStatus.ACTIVE)
                                 .timezone(request.getTimezone() != null ? request.getTimezone() : "UTC")
                                 .dailyGoalCards(request.getDailyGoalCards() != null ? request.getDailyGoalCards() : 20)

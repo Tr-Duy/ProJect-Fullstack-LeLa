@@ -4,7 +4,7 @@ import com.lela.ai.dto.AiChatRequest;
 import com.lela.ai.dto.AiContextDto;
 import com.lela.ai.prompt.LearningContextBuilder;
 import com.lela.ai.service.AiService;
-import com.lela.common.dto.ApiResponse;
+import com.lela.common.ApiResponse;
 import com.lela.users.UsersRepository;
 import com.lela.users.domain.Users;
 import lombok.RequiredArgsConstructor;
