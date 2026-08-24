@@ -47,6 +47,10 @@ jobs:
           echo "MySQL failed to become ready in time"
           exit 1
 
+      - name: Make Maven wrapper executable
+        run: chmod +x ./mvnw
+        working-directory: LeLa_BE
+
       - name: Start Spring Boot Backend
         env:
           SPRING_PROFILES_ACTIVE: dev
