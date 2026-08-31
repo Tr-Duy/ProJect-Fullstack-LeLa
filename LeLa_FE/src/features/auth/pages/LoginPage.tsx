@@ -5,6 +5,8 @@ import { apiClient } from '../../../shared/lib/api';
 import { Button, Form, Input, App, Checkbox, Divider } from 'antd';
 import { MailOutlined, LockOutlined, ArrowLeftOutlined, GoogleOutlined } from '@ant-design/icons';
 import { BackgroundPattern } from '../../landing/components/BackgroundPattern';
+import { useGoogleLoginWithWake } from '../hooks/useGoogleLoginWithWake';
+import { GoogleLoginWakeModal } from '../components/GoogleLoginWakeModal';
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -13,6 +15,14 @@ export function LoginPage() {
   const { message } = App.useApp();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const {
+    isWaking,
+    isOpen: isWakeModalOpen,
+    status: wakeStatus,
+    elapsedSeconds: wakeElapsedSeconds,
+    startWakeAndLogin,
+    handleClose: handleCloseWakeModal,
+  } = useGoogleLoginWithWake();
 
   useEffect(() => {
     if (location.state?.registeredUsername) {
@@ -147,17 +157,13 @@ export function LoginPage() {
             <Button
               type="default"
               icon={<GoogleOutlined />}
-              onClick={() => {
-                const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
-                const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
-                window.location.href = `${cleanBaseUrl}/oauth2/authorization/google`;
-              }}
+              loading={isWaking}
+              disabled={loading || isWaking}
+              onClick={startWakeAndLogin}
               className="w-full brutal-pill h-14 font-bold text-lg mb-4 hover:!translate-y-[-2px] hover:!shadow-[4px_6px_0px_0px_rgba(0,0,0,1)] hover:!border-black transition-all flex items-center justify-center gap-2"
             >
-
               Đăng nhập bằng Google
             </Button>
-
 
             <div className="text-center mt-6 font-bold text-gray-600">
               Chưa có tài khoản?{' '}
@@ -168,6 +174,14 @@ export function LoginPage() {
           </Form>
         </div>
       </div>
+
+      <GoogleLoginWakeModal
+        isOpen={isWakeModalOpen}
+        status={wakeStatus}
+        elapsedSeconds={wakeElapsedSeconds}
+        onRetry={startWakeAndLogin}
+        onClose={handleCloseWakeModal}
+      />
     </div>
   );
 }

@@ -58,7 +58,8 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(auth -> auth
 
-                        // ── Auth ──────────────────────────────────────────
+                        // ── Health & Auth ──────────────────────────────────
+                        .requestMatchers(HttpMethod.GET, "/health").permitAll()
                         .requestMatchers(HttpMethod.GET, "/auth/check-username").permitAll()
                         .requestMatchers(HttpMethod.GET, "/auth/check-email").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
