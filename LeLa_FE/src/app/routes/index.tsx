@@ -5,6 +5,7 @@ import { LearnerLayout } from '../../shared/components/layout/LearnerLayout';
 import { AdminLayout } from '../../shared/components/layout/AdminLayout';
 import { LearnerThemeProvider } from '../../shared/providers/LearnerThemeProvider';
 import { ThemeProvider } from '../../shared/providers/ThemeProvider';
+import { usePageTitle } from '../../shared/hooks/usePageTitle';
 
 // Lazy loading for all pages to optimize initial bundle size
 const LandingPage = lazy(() => import('../../features/landing/pages/LandingPage').then(module => ({ default: module.LandingPage })));
@@ -54,6 +55,8 @@ const PageLoader = () => (
 );
 
 export function AppRoutes() {
+  usePageTitle();
+
   return (
     <Suspense fallback={<PageLoader />}>
       <Routes>
