@@ -166,4 +166,40 @@ public class GoogleOAuthIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
     }
+
+    @Test
+    @DisplayName("6. OAuth2 Authorization Request behind Reverse Proxy generates production HTTPS redirect_uri")
+    void test6_OAuth2AuthorizationRedirectUriWithForwardedHeaders() throws Exception {
+        mockMvc.perform(get("/api/v1/oauth2/authorization/google")
+                .contextPath("/api/v1")
+                .header("X-Forwarded-Proto", "https")
+                .header("X-Forwarded-Host", "project-fullstack-lela.onrender.com")
+                .header("X-Forwarded-Port", "443"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(result -> {
+                    String redirectUrl = result.getResponse().getRedirectedUrl();
+                    assertNotNull(redirectUrl);
+                    assertTrue(redirectUrl.contains("accounts.google.com/o/oauth2/v2/auth"));
+                    assertTrue(redirectUrl.contains("redirect_uri=https%3A%2F%2Fproject-fullstack-lela.onrender.com%2Fapi%2Fv1%2Flogin%2Foauth2%2Fcode%2Fgoogle")
+                            || redirectUrl.contains("redirect_uri=https://project-fullstack-lela.onrender.com/api/v1/login/oauth2/code/google"),
+                            "Redirect URL must contain the HTTPS production domain and /api/v1 context-path. Actual: " + redirectUrl);
+                });
+    }
+
+    @Test
+    @DisplayName("7. OAuth2 Authorization Request locally generates localhost redirect_uri")
+    void test7_OAuth2AuthorizationRedirectUriLocal() throws Exception {
+        mockMvc.perform(get("/api/v1/oauth2/authorization/google")
+                .header("Host", "localhost:8080")
+                .contextPath("/api/v1"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(result -> {
+                    String redirectUrl = result.getResponse().getRedirectedUrl();
+                    assertNotNull(redirectUrl);
+                    assertTrue(redirectUrl.contains("accounts.google.com/o/oauth2/v2/auth"));
+                    assertTrue(redirectUrl.contains("redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fapi%2Fv1%2Flogin%2Foauth2%2Fcode%2Fgoogle")
+                            || redirectUrl.contains("redirect_uri=http://localhost:8080/api/v1/login/oauth2/code/google"),
+                            "Redirect URL for local dev must contain http://localhost:8080/api/v1. Actual: " + redirectUrl);
+                });
+    }
 }
