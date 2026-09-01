@@ -9,9 +9,14 @@ export interface PlacementTestResult {
   correctRate?: number;
   equivalentCorrect30?: number;
   estimatedToeicScore?: number;
-  examType: ExamTypeDTO;
-  suggestedLevel: ProficiencyLevelDTO;
-  message: string;
+  isLowestLevel?: boolean;
+  passed?: boolean;
+  placementCompleted?: boolean;
+  examType?: ExamTypeDTO;
+  suggestedLevel?: ProficiencyLevelDTO;
+  assignedLevel?: ProficiencyLevelDTO;
+  lowerLevels?: ProficiencyLevelDTO[];
+  message?: string;
 }
 
 export const onboardingApi = {

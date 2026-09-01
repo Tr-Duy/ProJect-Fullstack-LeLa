@@ -65,6 +65,10 @@ public class OnboardingService {
         }
 
         ExamType examType = attempt.getQuiz().getExamType();
+        ProficiencyLevel quizLevel = attempt.getQuiz().getLevel();
+        if (examType == null && quizLevel != null) {
+            examType = quizLevel.getExamType();
+        }
         if (examType == null) {
             throw new IllegalStateException("Placement quiz does not have an exam type");
         }
@@ -86,31 +90,58 @@ public class OnboardingService {
         double estimatedScoreValue = calculateEstimatedToeicScore(equivalentCorrect30);
         BigDecimal estimatedToeicScore = BigDecimal.valueOf(estimatedScoreValue).setScale(2, RoundingMode.HALF_UP);
 
-        List<ProficiencyLevel> levels = levelRepository.findByExamTypeIdOrderByDisplayOrderAsc(examType.getId());
-        ProficiencyLevel matchedLevel = null;
+        List<ProficiencyLevel> allLevels = levelRepository.findByExamTypeIdOrderByDisplayOrderAsc(examType.getId());
+        ProficiencyLevel lowestLevel = !allLevels.isEmpty() ? allLevels.get(0) : null;
         
-        for (ProficiencyLevel level : levels) {
-            if (estimatedToeicScore.compareTo(level.getMinScore()) >= 0 && estimatedToeicScore.compareTo(level.getMaxScore()) <= 0) {
-                matchedLevel = level;
-                break;
-            }
+        boolean isLowestLevel = false;
+        if (quizLevel != null && lowestLevel != null) {
+            isLowestLevel = quizLevel.getId().equals(lowestLevel.getId())
+                    || (quizLevel.getDisplayOrder() != null && quizLevel.getDisplayOrder().equals(lowestLevel.getDisplayOrder()));
         }
 
-        if (matchedLevel == null && !levels.isEmpty()) {
-            if (estimatedToeicScore.compareTo(levels.get(0).getMinScore()) < 0) {
-                matchedLevel = levels.get(0);
+        boolean passed = Boolean.TRUE.equals(attempt.getPassed());
+        ProficiencyLevel assignedLevel = null;
+        boolean placementCompleted = false;
+        String message;
+        java.util.List<ProficiencyLevelDTO> lowerLevels = new java.util.ArrayList<>();
+
+        if (passed) {
+            assignedLevel = quizLevel != null ? quizLevel : lowestLevel;
+            placementCompleted = true;
+            if (assignedLevel != null) {
+                currentUser.setCurrentExamType(examType);
+                currentUser.setCurrentLevel(assignedLevel);
+                usersRepository.save(currentUser);
+
+                attempt.setLevelAtAttempt(assignedLevel);
+                quizAttemptRepository.save(attempt);
+            }
+            message = "Chúc mừng! Bạn đã đạt yêu cầu và được xếp vào trình độ " + (assignedLevel != null ? assignedLevel.getName() : "");
+        } else {
+            if (isLowestLevel) {
+                // RULE ABSOLUTE: If selectedLevel == LOWEST_LEVEL AND FAIL -> assign LOWEST_LEVEL & complete placement
+                assignedLevel = quizLevel != null ? quizLevel : lowestLevel;
+                placementCompleted = true;
+                if (assignedLevel != null) {
+                    currentUser.setCurrentExamType(examType);
+                    currentUser.setCurrentLevel(assignedLevel);
+                    usersRepository.save(currentUser);
+
+                    attempt.setLevelAtAttempt(assignedLevel);
+                    quizAttemptRepository.save(attempt);
+                }
+                message = "Bạn được xếp vào trình độ " + (assignedLevel != null ? assignedLevel.getName() : "Cơ bản (Dưới 500)")
+                        + ". Đây là trình độ thấp nhất nên bạn có thể bắt đầu học ngay.";
             } else {
-                matchedLevel = levels.get(levels.size() - 1);
+                // Higher level failed -> DO NOT assign higher level
+                placementCompleted = false;
+                int currentRank = getLevelRank(quizLevel, allLevels);
+                for (int i = 0; i < currentRank - 1; i++) {
+                    lowerLevels.add(mapper.map(allLevels.get(i), ProficiencyLevelDTO.class));
+                }
+                message = "Bạn chưa đạt yêu cầu cho trình độ " + (quizLevel != null ? quizLevel.getName() : "")
+                        + ". Bạn có thể chọn làm bài kiểm tra ở trình độ thấp hơn hoặc ôn tập thêm.";
             }
-        }
-
-        if (matchedLevel != null) {
-            currentUser.setCurrentExamType(examType);
-            currentUser.setCurrentLevel(matchedLevel);
-            usersRepository.save(currentUser);
-
-            attempt.setLevelAtAttempt(matchedLevel);
-            quizAttemptRepository.save(attempt);
         }
 
         PlacementTestResult result = new PlacementTestResult();
@@ -120,14 +151,20 @@ public class OnboardingService {
         result.setCorrectRate(BigDecimal.valueOf(correctRate).setScale(4, RoundingMode.HALF_UP));
         result.setEquivalentCorrect30(BigDecimal.valueOf(equivalentCorrect30).setScale(4, RoundingMode.HALF_UP));
         result.setEstimatedToeicScore(estimatedToeicScore);
-        
+        result.setPassed(passed);
+        result.setIsLowestLevel(isLowestLevel);
+        result.setPlacementCompleted(placementCompleted);
         result.setExamType(mapper.map(examType, ExamTypeDTO.class));
-        if (matchedLevel != null) {
-            result.setSuggestedLevel(mapper.map(matchedLevel, ProficiencyLevelDTO.class));
-            result.setMessage("Chúc mừng! Trình độ của bạn là " + matchedLevel.getName());
-        } else {
-            result.setMessage("Không xác định được trình độ.");
+
+        if (assignedLevel != null) {
+            result.setAssignedLevel(mapper.map(assignedLevel, ProficiencyLevelDTO.class));
+            result.setSuggestedLevel(mapper.map(assignedLevel, ProficiencyLevelDTO.class));
+        } else if (quizLevel != null) {
+            result.setSuggestedLevel(mapper.map(quizLevel, ProficiencyLevelDTO.class));
         }
+
+        result.setLowerLevels(lowerLevels);
+        result.setMessage(message);
 
         return result;
     }

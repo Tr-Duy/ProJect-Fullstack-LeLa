@@ -480,90 +480,152 @@ export function QuizAttemptResultPage() {
           </div>
         )}
 
-          {isPlacement && (
-            <div className="w-full mt-6 flex flex-col items-center border-[3px] border-black p-6 bg-[#f4f3ee]">
-              <h3 className="text-2xl font-black mb-6 uppercase text-[#1D2A3A]">TỔNG KẾT KIỂM TRA TRÌNH ĐỘ TOEIC</h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full mb-8">
-                <div className="flex flex-col items-center p-4 bg-white border-[2px] border-black brutal-shadow">
-                  <span className="text-gray-500 font-bold mb-2">Số câu đúng</span>
-                  <span className="text-4xl font-black text-[#1D2A3A]">
-                    {attemptDetail.correctAnswers} / {attemptDetail.totalQuestions}
-                  </span>
-                </div>
-                <div className="flex flex-col items-center p-4 bg-white border-[2px] border-black brutal-shadow">
-                  <span className="text-gray-500 font-bold mb-2">Tỷ lệ đúng</span>
-                  <span className="text-4xl font-black text-[#2A8B9D]">
-                    {attemptDetail.totalQuestions > 0 ? Number(((attemptDetail.correctAnswers / attemptDetail.totalQuestions) * 100).toFixed(0)) : 0}%
-                  </span>
-                </div>
-                <div className="flex flex-col items-center p-4 bg-white border-[2px] border-black brutal-shadow">
-                  <span className="text-gray-500 font-bold mb-2">Quy đổi chuẩn hóa</span>
-                  <span className="text-4xl font-black text-[#1D2A3A]">
-                    {attemptDetail.totalQuestions > 0 ? Number(((attemptDetail.correctAnswers / attemptDetail.totalQuestions) * 30).toFixed(2)) : 0} / 30
-                  </span>
-                </div>
-                <div className="flex flex-col items-center p-4 bg-white border-[2px] border-black brutal-shadow">
-                  <span className="text-gray-500 font-bold mb-2">ĐIỂM TOEIC ƯỚC LƯỢNG</span>
-                  <span className="text-4xl font-black text-[#2A8B9D]">
-                    {attemptDetail.maxScore != null ? (attemptDetail.estimatedToeicScore != null ? `${attemptDetail.estimatedToeicScore} / ${attemptDetail.maxScore}` : `${placementResult?.estimatedToeicScore || 0} / ${attemptDetail.maxScore}`) : (attemptDetail.estimatedToeicScore != null ? `${attemptDetail.estimatedToeicScore}` : `${placementResult?.estimatedToeicScore || 0}`)}
-                  </span>
-                </div>
-              </div>
+          {isPlacement && (() => {
+            const isLowest = Boolean(
+              placementResult?.isLowestLevel ||
+              attemptDetail?.levelAtAttempt?.displayOrder === 1 ||
+              (attemptDetail?.levelAtAttempt?.name && attemptDetail.levelAtAttempt.name.includes('Dưới 500')) ||
+              (quizRes?.data?.quizCode === 'PLACEMENT-TOEIC-U500')
+            );
+            const isPassed = Boolean(attemptDetail?.passed);
+            const targetLevelName = placementResult?.assignedLevel?.name ||
+              placementResult?.suggestedLevel?.name ||
+              attemptDetail?.levelAtAttempt?.name ||
+              'Cơ bản (Dưới 500)';
 
-              {attemptDetail.levelAtAttempt && (
-                <div className="mt-4 p-4 text-center">
-                   <span className="text-gray-500 font-bold">Trình độ lúc làm bài: </span>
-                   <span className="font-black text-[#1D2A3A]">{attemptDetail.levelAtAttempt.name}</span>
+            return (
+              <div className="w-full mt-6 flex flex-col items-center border-[3px] border-black p-6 bg-[#f4f3ee]">
+                <h3 className="text-2xl font-black mb-6 uppercase text-[#1D2A3A]">TỔNG KẾT XÁC ĐỊNH TRÌNH ĐỘ TOEIC</h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full mb-8">
+                  <div className="flex flex-col items-center p-4 bg-white border-[2px] border-black brutal-shadow">
+                    <span className="text-gray-500 font-bold mb-2">Số câu đúng</span>
+                    <span className="text-4xl font-black text-[#1D2A3A]">
+                      {attemptDetail.correctAnswers} / {attemptDetail.totalQuestions}
+                    </span>
+                  </div>
+                  <div className="flex flex-col items-center p-4 bg-white border-[2px] border-black brutal-shadow">
+                    <span className="text-gray-500 font-bold mb-2">Tỷ lệ đúng</span>
+                    <span className="text-4xl font-black text-[#2A8B9D]">
+                      {attemptDetail.totalQuestions > 0 ? Number(((attemptDetail.correctAnswers / attemptDetail.totalQuestions) * 100).toFixed(0)) : 0}%
+                    </span>
+                  </div>
+                  <div className="flex flex-col items-center p-4 bg-white border-[2px] border-black brutal-shadow">
+                    <span className="text-gray-500 font-bold mb-2">Quy đổi chuẩn hóa</span>
+                    <span className="text-4xl font-black text-[#1D2A3A]">
+                      {attemptDetail.totalQuestions > 0 ? Number(((attemptDetail.correctAnswers / attemptDetail.totalQuestions) * 30).toFixed(2)) : 0} / 30
+                    </span>
+                  </div>
+                  <div className="flex flex-col items-center p-4 bg-white border-[2px] border-black brutal-shadow">
+                    <span className="text-gray-500 font-bold mb-2">ĐIỂM TOEIC ƯỚC LƯỢNG</span>
+                    <span className="text-4xl font-black text-[#2A8B9D]">
+                      {attemptDetail.maxScore != null ? (attemptDetail.estimatedToeicScore != null ? `${attemptDetail.estimatedToeicScore} / ${attemptDetail.maxScore}` : `${placementResult?.estimatedToeicScore || 0} / ${attemptDetail.maxScore}`) : (attemptDetail.estimatedToeicScore != null ? `${attemptDetail.estimatedToeicScore}` : `${placementResult?.estimatedToeicScore || 0}`)}
+                    </span>
+                  </div>
                 </div>
-              )}
 
-              {attemptDetail && (
-                <div className={`w-full mb-6 p-4 border-2 rounded font-bold text-center text-lg ${
-                  attemptDetail.passed
-                    ? 'bg-green-100 border-green-600 text-green-800'
-                    : 'bg-red-100 border-red-500 text-red-700'
-                }`}>
-                  {attemptDetail.passed ? (
-                    <div>
+                {/* Case 1: PASSED AT ANY LEVEL */}
+                {isPassed && (
+                  <>
+                    <div className="w-full mb-6 p-4 border-2 rounded font-bold text-center text-lg bg-green-100 border-green-600 text-green-800">
                       🎉 Chúc mừng! Bạn đã đạt {attemptDetail.scorePercent != null ? Number(attemptDetail.scorePercent).toFixed(0) : 0}% ở bài kiểm tra xác định trình độ!
                       <div className="text-base font-normal mt-1">Trình độ của bạn đã được cập nhật thành công!</div>
                     </div>
-                  ) : (
-                    <div>
-                      ❌ Bạn chưa đạt 80% ở bài kiểm tra trình độ này ({attemptDetail.scorePercent != null ? Number(attemptDetail.scorePercent).toFixed(0) : 0}%).
-                      <div className="text-base font-normal mt-1">Trình độ hiện tại của bạn vẫn giữ nguyên. Bạn có thể ôn tập và thử lại bất cứ lúc nào!</div>
-                    </div>
-                  )}
-                </div>
-              )}
 
-              {placementResult && attemptDetail.passed && (
-                <div className="w-full flex flex-col items-center bg-[#2A8B9D] text-white p-6 border-[3px] border-black brutal-shadow mb-6">
-                  <span className="font-bold text-lg mb-2">TRÌNH ĐỘ ĐỀ XUẤT MỚI</span>
-                  <span className="text-3xl font-black uppercase text-center">
-                    {placementResult.suggestedLevel?.name}
-                  </span>
-                </div>
-              )}
-              
-              <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
-                <Button
-                  className="brutal-border font-black text-lg h-14 px-8 !bg-[#1D2A3A] !text-white shadow-[4px_4px_0px_0px_#000] hover:!translate-y-[-2px] transition-transform"
-                  onClick={handlePlacementConfirm}
-                >
-                  {attemptDetail.passed ? 'BẮT ĐẦU HỌC TẠI TRÌNH ĐỘ MỚI ➔' : 'VỀ BẢNG ĐIỀU KHIỂN HỌC ➔'}
-                </Button>
-                
-                <Button
-                  className="brutal-border font-black text-lg h-14 px-8 !bg-[#F05A4A] !text-white shadow-[4px_4px_0px_0px_#000] hover:!translate-y-[-2px] transition-transform"
-                  onClick={() => navigate('/onboarding')}
-                >
-                  CHỌN TRÌNH ĐỘ KHÁC ➔
-                </Button>
+                    <div className="w-full flex flex-col items-center bg-[#2A8B9D] text-white p-6 border-[3px] border-black brutal-shadow mb-6">
+                      <span className="font-bold text-base mb-1 tracking-wider uppercase">TRÌNH ĐỘ ĐẠT ĐƯỢC</span>
+                      <span className="text-3xl font-black uppercase text-center">
+                        {targetLevelName}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+                      <Button
+                        className="brutal-border font-black text-lg h-14 px-8 !bg-[#1D2A3A] !text-white shadow-[4px_4px_0px_0px_#000] hover:!translate-y-[-2px] transition-transform"
+                        onClick={handlePlacementConfirm}
+                      >
+                        BẮT ĐẦU HỌC TẠI TRÌNH ĐỘ MỚI ➔
+                      </Button>
+                    </div>
+                  </>
+                )}
+
+                {/* Case 2: FAILED AT LOWEST LEVEL (DƯỚI 500) -> AUTOMATICALLY ASSIGN LOWEST LEVEL */}
+                {!isPassed && isLowest && (
+                  <>
+                    <div className="w-full mb-6 p-4 border-2 rounded font-bold text-center text-lg bg-blue-50 border-blue-500 text-[#1D2A3A]">
+                      <div className="text-xl font-black text-[#1D2A3A] mb-1">
+                        🎯 KẾT QUẢ XÁC ĐỊNH TRÌNH ĐỘ
+                      </div>
+                      <div className="text-base font-normal mt-1 text-gray-700">
+                        Số câu đúng: <span className="font-black">{attemptDetail.correctAnswers} / {attemptDetail.totalQuestions}</span> ({attemptDetail.scorePercent != null ? Number(attemptDetail.scorePercent).toFixed(0) : 0}%)
+                      </div>
+                      <div className="mt-3 p-3 bg-white border-2 border-black rounded text-sm text-gray-800 font-semibold">
+                        Vì <span className="font-black text-[#2A8B9D]">Cơ bản (Dưới 500)</span> là trình độ thấp nhất trong hệ thống, hệ thống đã xếp bạn vào trình độ Cơ bản để có thể bắt đầu học ngay!
+                      </div>
+                    </div>
+
+                    <div className="w-full flex flex-col items-center bg-[#2A8B9D] text-white p-6 border-[3px] border-black brutal-shadow mb-6">
+                      <span className="font-bold text-base mb-1 tracking-wider uppercase">TRÌNH ĐỘ ĐƯỢC XẾP</span>
+                      <span className="text-3xl font-black uppercase text-center">
+                        Cơ bản (Dưới 500)
+                      </span>
+                      <span className="text-xs text-white/90 mt-2 font-medium">Bạn có thể bắt đầu lộ trình học từ vựng và bài tập ngay bây giờ!</span>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+                      <Button
+                        className="brutal-border font-black text-lg h-14 px-8 !bg-[#1D2A3A] !text-white shadow-[4px_4px_0px_0px_#000] hover:!translate-y-[-2px] transition-transform"
+                        onClick={handlePlacementConfirm}
+                      >
+                        BẮT ĐẦU HỌC ➔
+                      </Button>
+                      <Button
+                        className="brutal-border font-bold text-lg h-14 px-8 !bg-white !text-black border-2 border-black shadow-[4px_4px_0px_0px_#000] hover:!translate-y-[-2px] transition-transform"
+                        onClick={() => {
+                          window.scrollTo({ top: 700, behavior: 'smooth' });
+                        }}
+                      >
+                        XEM KẾT QUẢ CHI TIẾT ➔
+                      </Button>
+                    </div>
+                  </>
+                )}
+
+                {/* Case 3: FAILED AT HIGHER LEVEL (500-700, 700-850, 850-990) -> SHOW LOWER LEVEL OPTIONS */}
+                {!isPassed && !isLowest && (
+                  <>
+                    <div className="w-full mb-6 p-4 border-2 rounded font-bold text-center text-lg bg-amber-50 border-amber-500 text-amber-900">
+                      ❌ Bạn chưa đạt 80% ở bài kiểm tra trình độ {targetLevelName} ({attemptDetail.scorePercent != null ? Number(attemptDetail.scorePercent).toFixed(0) : 0}%).
+                      <div className="text-base font-normal mt-2 text-gray-700">
+                        Trình độ {targetLevelName} chưa được gán. Bạn có thể chọn làm bài kiểm tra ở trình độ thấp hơn hoặc thử lại.
+                      </div>
+                    </div>
+
+                    <div className="w-full p-4 bg-white border-2 border-black mb-6">
+                      <div className="text-center font-black text-sm uppercase text-gray-600 mb-3">
+                        GỢI Ý LỰA CHỌN TRÌNH ĐỘ PHÙ HỢP
+                      </div>
+                      <div className="flex flex-wrap justify-center gap-3">
+                        <Button
+                          className="brutal-pill font-black bg-[#2A8B9D] text-white border-2 border-black h-11 px-5 text-sm shadow-[2px_2px_0px_0px_#000]"
+                          onClick={() => navigate('/placement-tests')}
+                        >
+                          📋 XEM DANH SÁCH BÀI KIỂM TRA TRÌNH ĐỘ ➔
+                        </Button>
+                        <Button
+                          className="brutal-pill font-bold bg-gray-100 text-gray-800 border-2 border-black h-11 px-5 text-sm"
+                          onClick={() => navigate('/dashboard')}
+                        >
+                          VỀ BẢNG ĐIỀU KHIỂN HỌC ➔
+                        </Button>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
-            </div>
-          )}
+            );
+          })()}
 
         <h3 className="text-2xl font-black mb-6 uppercase text-[#1D2A3A]">Chi tiết đáp án</h3>
 

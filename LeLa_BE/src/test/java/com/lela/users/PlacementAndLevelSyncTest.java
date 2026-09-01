@@ -158,74 +158,262 @@ public class PlacementAndLevelSyncTest {
         assertEquals(toeicExamType, userA.getCurrentExamType());
     }
 
-    // TEST 7 & TEST 8: User already completed PLACEMENT -> cannot start PLACEMENT 2nd time
+    // TEST 1: selectedLevel = Dưới 500 (Level 1), score = 13/30 -> FAIL -> currentLevel = Dưới 500, placementCompleted = true
     @Test
-    void test7_8_CompletedPlacement_BlocksSecondAttempt() {
+    void test1_SelectedLowestLevel_Failed_AssignsLowestLevelAndCompletesPlacement() {
+        placementQuiz.setLevel(level1);
+
+        QuizAttempt attempt = new QuizAttempt();
+        attempt.setId(1001L);
+        attempt.setPublicId("att-u500-fail");
+        attempt.setUser(userA);
+        attempt.setQuiz(placementQuiz);
+        attempt.setStatus(QuizAttemptStatus.SUBMITTED);
+        attempt.setTotalQuestions(30);
+        attempt.setCorrectAnswers(13);
+        attempt.setScorePercent(new BigDecimal("43.33"));
+        attempt.setPassed(false);
+
         when(usersRepository.findByUsername("userA")).thenReturn(Optional.of(userA));
-        when(usersRepository.findById(100L)).thenReturn(Optional.of(userA));
-        when(quizRepository.findById(5000L)).thenReturn(Optional.of(placementQuiz));
+        when(quizAttemptRepository.findByPublicId("att-u500-fail")).thenReturn(Optional.of(attempt));
+        when(levelRepository.findByExamTypeIdOrderByDisplayOrderAsc(1L)).thenReturn(List.of(level1, level2));
+        when(usersRepository.save(any(Users.class))).thenAnswer(i -> i.getArgument(0));
+        when(quizAttemptRepository.save(any(QuizAttempt.class))).thenAnswer(i -> i.getArgument(0));
 
-        when(quizAttemptRepository.existsByUserIdAndQuizQuizCategoryAndStatusIn(
-                100L, QuizCategory.PLACEMENT, List.of(QuizAttemptStatus.SUBMITTED)))
-                .thenReturn(true);
+        com.lela.users.dto.PlacementTestResult result = onboardingService.processPlacementResult("att-u500-fail");
 
-        IllegalStateException ex = assertThrows(IllegalStateException.class, () -> {
-            quizAttemptService.startAttempt(5000L);
-        });
-
-        assertEquals("Placement Test chỉ được thực hiện một lần.", ex.getMessage());
+        assertFalse(result.getPassed());
+        assertTrue(result.getIsLowestLevel());
+        assertTrue(result.getPlacementCompleted());
+        assertEquals(level1, userA.getCurrentLevel());
+        assertEquals(level1, attempt.getLevelAtAttempt());
     }
 
-    // TEST 7 & TEST 8 (variant): User already HAS a level -> cannot start PLACEMENT
+    // TEST 2: selectedLevel = Dưới 500 (Level 1), score = 24/30 -> PASS -> currentLevel = Dưới 500, placementCompleted = true
     @Test
-    void test7_8_UserWithLevel_BlocksPlacementAttempt() {
+    void test2_SelectedLowestLevel_Passed_AssignsLowestLevelAndCompletesPlacement() {
+        placementQuiz.setLevel(level1);
+
+        QuizAttempt attempt = new QuizAttempt();
+        attempt.setId(1002L);
+        attempt.setPublicId("att-u500-pass");
+        attempt.setUser(userA);
+        attempt.setQuiz(placementQuiz);
+        attempt.setStatus(QuizAttemptStatus.SUBMITTED);
+        attempt.setTotalQuestions(30);
+        attempt.setCorrectAnswers(24);
+        attempt.setScorePercent(new BigDecimal("80.00"));
+        attempt.setPassed(true);
+
+        when(usersRepository.findByUsername("userA")).thenReturn(Optional.of(userA));
+        when(quizAttemptRepository.findByPublicId("att-u500-pass")).thenReturn(Optional.of(attempt));
+        when(levelRepository.findByExamTypeIdOrderByDisplayOrderAsc(1L)).thenReturn(List.of(level1, level2));
+        when(usersRepository.save(any(Users.class))).thenAnswer(i -> i.getArgument(0));
+        when(quizAttemptRepository.save(any(QuizAttempt.class))).thenAnswer(i -> i.getArgument(0));
+
+        com.lela.users.dto.PlacementTestResult result = onboardingService.processPlacementResult("att-u500-pass");
+
+        assertTrue(result.getPassed());
+        assertTrue(result.getIsLowestLevel());
+        assertTrue(result.getPlacementCompleted());
+        assertEquals(level1, userA.getCurrentLevel());
+    }
+
+    // TEST 3: selectedLevel = 500-700 (Level 2), FAIL -> currentLevel != Level 2, offers fallback to Level 1
+    @Test
+    void test3_SelectedLevel2_Failed_DoesNotAssignLevel2() {
+        placementQuiz.setLevel(level2);
+
+        QuizAttempt attempt = new QuizAttempt();
+        attempt.setId(1003L);
+        attempt.setPublicId("att-500-700-fail");
+        attempt.setUser(userA);
+        attempt.setQuiz(placementQuiz);
+        attempt.setStatus(QuizAttemptStatus.SUBMITTED);
+        attempt.setTotalQuestions(30);
+        attempt.setCorrectAnswers(15);
+        attempt.setScorePercent(new BigDecimal("50.00"));
+        attempt.setPassed(false);
+
+        when(usersRepository.findByUsername("userA")).thenReturn(Optional.of(userA));
+        when(quizAttemptRepository.findByPublicId("att-500-700-fail")).thenReturn(Optional.of(attempt));
+        when(levelRepository.findByExamTypeIdOrderByDisplayOrderAsc(1L)).thenReturn(List.of(level1, level2));
+
+        com.lela.users.dto.PlacementTestResult result = onboardingService.processPlacementResult("att-500-700-fail");
+
+        assertFalse(result.getPassed());
+        assertFalse(result.getIsLowestLevel());
+        assertFalse(result.getPlacementCompleted());
+        assertNull(userA.getCurrentLevel());
+        assertFalse(result.getLowerLevels().isEmpty());
+    }
+
+    // TEST 4: selectedLevel = 500-700 (Level 2), PASS -> currentLevel = Level 2
+    @Test
+    void test4_SelectedLevel2_Passed_AssignsLevel2() {
+        placementQuiz.setLevel(level2);
+
+        QuizAttempt attempt = new QuizAttempt();
+        attempt.setId(1004L);
+        attempt.setPublicId("att-500-700-pass");
+        attempt.setUser(userA);
+        attempt.setQuiz(placementQuiz);
+        attempt.setStatus(QuizAttemptStatus.SUBMITTED);
+        attempt.setTotalQuestions(30);
+        attempt.setCorrectAnswers(26);
+        attempt.setScorePercent(new BigDecimal("86.67"));
+        attempt.setPassed(true);
+
+        when(usersRepository.findByUsername("userA")).thenReturn(Optional.of(userA));
+        when(quizAttemptRepository.findByPublicId("att-500-700-pass")).thenReturn(Optional.of(attempt));
+        when(levelRepository.findByExamTypeIdOrderByDisplayOrderAsc(1L)).thenReturn(List.of(level1, level2));
+        when(usersRepository.save(any(Users.class))).thenAnswer(i -> i.getArgument(0));
+        when(quizAttemptRepository.save(any(QuizAttempt.class))).thenAnswer(i -> i.getArgument(0));
+
+        com.lela.users.dto.PlacementTestResult result = onboardingService.processPlacementResult("att-500-700-pass");
+
+        assertTrue(result.getPassed());
+        assertTrue(result.getPlacementCompleted());
+        assertEquals(level2, userA.getCurrentLevel());
+    }
+
+    // TEST 5 & TEST 6: selectedLevel = 700-850 (Level 3) PASS -> assigns Level 3; FAIL -> does not assign Level 3
+    @Test
+    void test5_6_SelectedLevel3_PassAndFailCases() {
+        ProficiencyLevel level3 = new ProficiencyLevel();
+        level3.setId(30L);
+        level3.setName("Khá - Giỏi");
+        level3.setDisplayOrder(3);
+        level3.setExamType(toeicExamType);
+
+        placementQuiz.setLevel(level3);
+
+        // FAIL case
+        QuizAttempt failAttempt = new QuizAttempt();
+        failAttempt.setId(1005L);
+        failAttempt.setPublicId("att-700-850-fail");
+        failAttempt.setUser(userA);
+        failAttempt.setQuiz(placementQuiz);
+        failAttempt.setStatus(QuizAttemptStatus.SUBMITTED);
+        failAttempt.setTotalQuestions(30);
+        failAttempt.setCorrectAnswers(18);
+        failAttempt.setScorePercent(new BigDecimal("60.00"));
+        failAttempt.setPassed(false);
+
+        when(usersRepository.findByUsername("userA")).thenReturn(Optional.of(userA));
+        when(quizAttemptRepository.findByPublicId("att-700-850-fail")).thenReturn(Optional.of(failAttempt));
+        when(levelRepository.findByExamTypeIdOrderByDisplayOrderAsc(1L)).thenReturn(List.of(level1, level2, level3));
+
+        com.lela.users.dto.PlacementTestResult failResult = onboardingService.processPlacementResult("att-700-850-fail");
+        assertFalse(failResult.getPassed());
+        assertFalse(failResult.getPlacementCompleted());
+        assertNull(userA.getCurrentLevel());
+        assertEquals(2, failResult.getLowerLevels().size()); // Level 1 and Level 2 available
+
+        // PASS case
+        QuizAttempt passAttempt = new QuizAttempt();
+        passAttempt.setId(1006L);
+        passAttempt.setPublicId("att-700-850-pass");
+        passAttempt.setUser(userA);
+        passAttempt.setQuiz(placementQuiz);
+        passAttempt.setStatus(QuizAttemptStatus.SUBMITTED);
+        passAttempt.setTotalQuestions(30);
+        passAttempt.setCorrectAnswers(28);
+        passAttempt.setScorePercent(new BigDecimal("93.33"));
+        passAttempt.setPassed(true);
+
+        when(quizAttemptRepository.findByPublicId("att-700-850-pass")).thenReturn(Optional.of(passAttempt));
+        when(usersRepository.save(any(Users.class))).thenAnswer(i -> i.getArgument(0));
+        when(quizAttemptRepository.save(any(QuizAttempt.class))).thenAnswer(i -> i.getArgument(0));
+
+        com.lela.users.dto.PlacementTestResult passResult = onboardingService.processPlacementResult("att-700-850-pass");
+        assertTrue(passResult.getPassed());
+        assertTrue(passResult.getPlacementCompleted());
+        assertEquals(level3, userA.getCurrentLevel());
+    }
+
+    // TEST 7 & TEST 8: selectedLevel = 850-990 (Level 4) PASS -> assigns Level 4; FAIL -> does not assign Level 4
+    @Test
+    void test7_8_SelectedLevel4_PassAndFailCases() {
+        ProficiencyLevel level4 = new ProficiencyLevel();
+        level4.setId(40L);
+        level4.setName("Xuất sắc");
+        level4.setDisplayOrder(4);
+        level4.setExamType(toeicExamType);
+
+        placementQuiz.setLevel(level4);
+
+        // FAIL case
+        QuizAttempt failAttempt = new QuizAttempt();
+        failAttempt.setId(1007L);
+        failAttempt.setPublicId("att-850-990-fail");
+        failAttempt.setUser(userA);
+        failAttempt.setQuiz(placementQuiz);
+        failAttempt.setStatus(QuizAttemptStatus.SUBMITTED);
+        failAttempt.setTotalQuestions(30);
+        failAttempt.setCorrectAnswers(20);
+        failAttempt.setScorePercent(new BigDecimal("66.67"));
+        failAttempt.setPassed(false);
+
+        when(usersRepository.findByUsername("userA")).thenReturn(Optional.of(userA));
+        when(quizAttemptRepository.findByPublicId("att-850-990-fail")).thenReturn(Optional.of(failAttempt));
+        when(levelRepository.findByExamTypeIdOrderByDisplayOrderAsc(1L)).thenReturn(List.of(level1, level2, level4));
+
+        com.lela.users.dto.PlacementTestResult failResult = onboardingService.processPlacementResult("att-850-990-fail");
+        assertFalse(failResult.getPassed());
+        assertFalse(failResult.getPlacementCompleted());
+
+        // PASS case
+        QuizAttempt passAttempt = new QuizAttempt();
+        passAttempt.setId(1008L);
+        passAttempt.setPublicId("att-850-990-pass");
+        passAttempt.setUser(userA);
+        passAttempt.setQuiz(placementQuiz);
+        passAttempt.setStatus(QuizAttemptStatus.SUBMITTED);
+        passAttempt.setTotalQuestions(30);
+        passAttempt.setCorrectAnswers(29);
+        passAttempt.setScorePercent(new BigDecimal("96.67"));
+        passAttempt.setPassed(true);
+
+        when(quizAttemptRepository.findByPublicId("att-850-990-pass")).thenReturn(Optional.of(passAttempt));
+        when(usersRepository.save(any(Users.class))).thenAnswer(i -> i.getArgument(0));
+        when(quizAttemptRepository.save(any(QuizAttempt.class))).thenAnswer(i -> i.getArgument(0));
+
+        com.lela.users.dto.PlacementTestResult passResult = onboardingService.processPlacementResult("att-850-990-pass");
+        assertTrue(passResult.getPassed());
+        assertTrue(passResult.getPlacementCompleted());
+        assertEquals(level4, userA.getCurrentLevel());
+    }
+
+    // EDGE CASE: User already Level 1, takes Level 1 test and fails -> remains Level 1
+    @Test
+    void test9_EdgeCase_UserAlreadyLevel1_FailsLevel1_RemainsLevel1() {
         userA.setCurrentLevel(level1);
+        placementQuiz.setLevel(level1);
+
+        QuizAttempt attempt = new QuizAttempt();
+        attempt.setId(1009L);
+        attempt.setPublicId("att-u500-repeat-fail");
+        attempt.setUser(userA);
+        attempt.setQuiz(placementQuiz);
+        attempt.setStatus(QuizAttemptStatus.SUBMITTED);
+        attempt.setTotalQuestions(30);
+        attempt.setCorrectAnswers(10);
+        attempt.setScorePercent(new BigDecimal("33.33"));
+        attempt.setPassed(false);
 
         when(usersRepository.findByUsername("userA")).thenReturn(Optional.of(userA));
-        when(usersRepository.findById(100L)).thenReturn(Optional.of(userA));
-        when(quizRepository.findById(5000L)).thenReturn(Optional.of(placementQuiz));
+        when(quizAttemptRepository.findByPublicId("att-u500-repeat-fail")).thenReturn(Optional.of(attempt));
+        when(levelRepository.findByExamTypeIdOrderByDisplayOrderAsc(1L)).thenReturn(List.of(level1, level2));
+        when(usersRepository.save(any(Users.class))).thenAnswer(i -> i.getArgument(0));
+        when(quizAttemptRepository.save(any(QuizAttempt.class))).thenAnswer(i -> i.getArgument(0));
 
-        when(quizAttemptRepository.existsByUserIdAndQuizQuizCategoryAndStatusIn(
-                100L, QuizCategory.PLACEMENT, List.of(QuizAttemptStatus.SUBMITTED)))
-                .thenReturn(false);
+        com.lela.users.dto.PlacementTestResult result = onboardingService.processPlacementResult("att-u500-repeat-fail");
 
-        IllegalStateException ex = assertThrows(IllegalStateException.class, () -> {
-            quizAttemptService.startAttempt(5000L);
-        });
-
-        assertEquals("Placement Test chỉ được thực hiện một lần.", ex.getMessage());
-    }
-
-    // TEST 9: User A completed Placement -> User B can still attempt Placement if User B hasn't done it
-    @Test
-    void test9_UserACompletedPlacement_UserBNotBlocked() {
-        // User A check -> blocked
-        when(usersRepository.findByUsername("userA")).thenReturn(Optional.of(userA));
-        when(usersRepository.findById(100L)).thenReturn(Optional.of(userA));
-        when(quizRepository.findById(5000L)).thenReturn(Optional.of(placementQuiz));
-        when(quizAttemptRepository.existsByUserIdAndQuizQuizCategoryAndStatusIn(
-                100L, QuizCategory.PLACEMENT, List.of(QuizAttemptStatus.SUBMITTED)))
-                .thenReturn(true);
-
-        assertThrows(IllegalStateException.class, () -> {
-            quizAttemptService.startAttempt(5000L);
-        });
-
-        // User B check -> allowed
-        mockAuthentication("userB");
-        when(usersRepository.findByUsername("userB")).thenReturn(Optional.of(userB));
-        when(usersRepository.findById(200L)).thenReturn(Optional.of(userB));
-        when(quizAttemptRepository.existsByUserIdAndQuizQuizCategoryAndStatusIn(
-                200L, QuizCategory.PLACEMENT, List.of(QuizAttemptStatus.SUBMITTED)))
-                .thenReturn(false);
-        when(quizAttemptRepository.findMaxAttemptNumber(200L, 5000L)).thenReturn(0);
-        when(quizAttemptRepository.save(any())).thenAnswer(i -> i.getArgument(0));
-        when(mapper.map(any(), eq(com.lela.QuizAttempt.dto.QuizAttemptDetailResponse.class)))
-                .thenReturn(new com.lela.QuizAttempt.dto.QuizAttemptDetailResponse());
-
-        assertDoesNotThrow(() -> {
-            quizAttemptService.startAttempt(5000L);
-        });
+        assertFalse(result.getPassed());
+        assertTrue(result.getIsLowestLevel());
+        assertTrue(result.getPlacementCompleted());
+        assertEquals(level1, userA.getCurrentLevel());
     }
 
     // TEST 10: Manual level downgrade from Level 2 to Level 1

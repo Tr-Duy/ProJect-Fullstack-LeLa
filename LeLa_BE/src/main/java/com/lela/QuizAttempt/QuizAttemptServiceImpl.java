@@ -43,6 +43,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Map;
 
 @Service
@@ -188,16 +189,8 @@ public class QuizAttemptServiceImpl implements QuizAttemptService {
                 .orElseThrow(() -> new NotFoundExeception("Quiz not found: " + quizId));
 
 
-        if (quiz.getQuizCategory() == com.lela.Quiz.domain.QuizCategory.PLACEMENT) {
-            boolean alreadyDone = quizAttemptRepository.existsByUserIdAndQuizQuizCategoryAndStatusIn(
-                    userId,
-                    com.lela.Quiz.domain.QuizCategory.PLACEMENT,
-                    List.of(com.lela.QuizAttemptQuestion.domain.QuizAttemptStatus.SUBMITTED)
-            );
-            if (alreadyDone || user.getCurrentLevel() != null) {
-                throw new IllegalStateException("Placement Test chỉ được thực hiện một lần.");
-            }
-        }
+        // PLACEMENT quizzes can be attempted to determine or change proficiency level anytime
+
 
 
         if (quiz.getQuizCategory() == com.lela.Quiz.domain.QuizCategory.FINAL
@@ -543,22 +536,43 @@ public class QuizAttemptServiceImpl implements QuizAttemptService {
 
 
         if (quiz != null && quiz.getQuizCategory() == com.lela.Quiz.domain.QuizCategory.PLACEMENT) {
+            com.lela.common.domain.ProficiencyLevel quizLevel = quiz.getLevel();
+            com.lela.common.domain.ExamType examType = quiz.getExamType();
+            if (examType == null && quizLevel != null) {
+                examType = quizLevel.getExamType();
+            }
+
+            List<com.lela.common.domain.ProficiencyLevel> allLevels = (examType != null)
+                    ? levelRepository.findByExamTypeIdOrderByDisplayOrderAsc(examType.getId())
+                    : (quizLevel != null ? List.of(quizLevel) : Collections.emptyList());
+
+            com.lela.common.domain.ProficiencyLevel lowestLevel = !allLevels.isEmpty() ? allLevels.get(0) : null;
+            boolean isLowest = false;
+            if (quizLevel != null && lowestLevel != null) {
+                isLowest = quizLevel.getId().equals(lowestLevel.getId())
+                        || (quizLevel.getDisplayOrder() != null && quizLevel.getDisplayOrder().equals(lowestLevel.getDisplayOrder()));
+            }
+
+            attempt.setLevelAtAttempt(quizLevel);
+
             if (Boolean.TRUE.equals(attempt.getPassed())) {
-                if (quiz.getLevel() != null) {
-                    com.lela.common.domain.ProficiencyLevel currentLevel = user.getCurrentLevel();
-                    if (currentLevel == null || (quiz.getLevel().getDisplayOrder() != null && currentLevel.getDisplayOrder() != null && quiz.getLevel().getDisplayOrder() > currentLevel.getDisplayOrder())) {
-                        user.setCurrentLevel(quiz.getLevel());
-                    }
+                if (quizLevel != null) {
+                    user.setCurrentLevel(quizLevel);
                 }
-                if (quiz.getExamType() != null) {
-                    user.setCurrentExamType(quiz.getExamType());
+                if (examType != null) {
+                    user.setCurrentExamType(examType);
                 }
                 usersRepository.save(user);
             } else {
-                if (user.getCurrentLevel() == null && quiz.getLevel() != null && "PLACEMENT-TOEIC-U500".equalsIgnoreCase(quiz.getQuizCode())) {
-                    user.setCurrentLevel(quiz.getLevel());
-                    if (quiz.getExamType() != null) {
-                        user.setCurrentExamType(quiz.getExamType());
+                if (isLowest) {
+                    // RULE ABSOLUTE: Lowest level failed -> assign lowest level
+                    com.lela.common.domain.ProficiencyLevel targetLowest = quizLevel != null ? quizLevel : lowestLevel;
+                    if (targetLowest != null) {
+                        user.setCurrentLevel(targetLowest);
+                        attempt.setLevelAtAttempt(targetLowest);
+                    }
+                    if (examType != null) {
+                        user.setCurrentExamType(examType);
                     }
                     usersRepository.save(user);
                 }

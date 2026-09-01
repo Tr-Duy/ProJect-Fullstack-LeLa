@@ -70,7 +70,7 @@ export const PlacementTestsPage = () => {
             Đổi Trình Độ Học TOEIC
           </h1>
           <p className="text-gray-600 font-bold text-base md:text-lg">
-            Bạn có thể thử sức bài kiểm tra ở bất kỳ trình độ nào. Nếu đạt từ 80% (24/30 câu), hệ thống sẽ nâng trình độ của bạn tương ứng!
+            Bạn có thể thử sức bài kiểm tra ở bất kỳ trình độ nào để xác định hoặc thay đổi trình độ học TOEIC phù hợp. Đạt từ 80% (24/30 câu) sẽ xác nhận trình độ tương ứng!
           </p>
         </div>
 
@@ -107,6 +107,7 @@ export const PlacementTestsPage = () => {
               const isDone = !!attempt;
               const isPassed = attempt?.passed;
               const isCurrentLearnerLevel = quiz.level?.id && currentLevelId && quiz.level.id === currentLevelId;
+              const isLowest = idx === 0 || quiz.quizCode === 'PLACEMENT-TOEIC-U500' || (quiz.level?.displayOrder === 1);
 
               return (
                 <div 
@@ -149,8 +150,8 @@ export const PlacementTestsPage = () => {
 
                       {/* Attempt Status Info */}
                       {isDone && (
-                        <div className={`inline-flex items-center gap-3 p-3 border-2 border-black rounded-lg mt-2 ${isPassed ? 'bg-green-100 text-green-900' : 'bg-red-100 text-red-900'}`}>
-                          {isPassed ? (
+                        <div className={`inline-flex items-center gap-3 p-3 border-2 border-black rounded-lg mt-2 ${isPassed || isLowest ? 'bg-green-100 text-green-900' : 'bg-red-100 text-red-900'}`}>
+                          {isPassed || isLowest ? (
                             <CheckCircleOutlined className="text-xl text-green-700" />
                           ) : (
                             <CloseCircleOutlined className="text-xl text-red-700" />
@@ -159,12 +160,14 @@ export const PlacementTestsPage = () => {
                             <span className="font-black text-sm">
                               LẦN THI TRƯỚC: {attempt.correctAnswers || Math.round((attempt.scorePercent || 0) * 0.3)} / 30 CÂU ({Math.round(attempt.scorePercent || 0)}%)
                             </span>
-                            <span className={`ml-3 font-black text-xs px-2 py-0.5 border border-black ${isPassed ? 'bg-green-400 text-black' : 'bg-red-500 text-white'}`}>
-                              {isPassed ? '✅ ĐÃ ĐẠT' : '❌ KHÔNG ĐẠT'}
+                            <span className={`ml-3 font-black text-xs px-2 py-0.5 border border-black ${isPassed ? 'bg-green-400 text-black' : isLowest ? 'bg-blue-300 text-blue-900' : 'bg-red-500 text-white'}`}>
+                              {isPassed ? '✅ ĐÃ ĐẠT' : isLowest ? '🎯 ĐÃ XẾP TRÌNH ĐỘ' : '❌ CHƯA ĐẠT'}
                             </span>
                             {!isPassed && (
-                              <p className="text-xs font-bold text-red-700 mt-1">
-                                Trình độ của bạn vẫn giữ nguyên ở TOEIC {currentLevelName}. Bạn có thể ôn tập và thử lại bất cứ lúc nào.
+                              <p className="text-xs font-bold text-gray-700 mt-1">
+                                {isLowest
+                                  ? 'Bạn đã được xếp vào Cơ bản (Dưới 500) để bắt đầu học ngay.'
+                                  : `Trình độ của bạn vẫn giữ nguyên ở TOEIC ${currentLevelName}. Bạn có thể ôn tập hoặc chọn bài kiểm tra ở trình độ thấp hơn.`}
                               </p>
                             )}
                           </div>

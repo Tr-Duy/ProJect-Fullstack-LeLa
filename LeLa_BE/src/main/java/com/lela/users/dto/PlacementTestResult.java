@@ -16,5 +16,10 @@ public class PlacementTestResult {
     
     private ExamTypeDTO examType;
     private ProficiencyLevelDTO suggestedLevel;
+    private ProficiencyLevelDTO assignedLevel;
+    private Boolean isLowestLevel;
+    private Boolean passed;
+    private Boolean placementCompleted;
+    private java.util.List<ProficiencyLevelDTO> lowerLevels;
     private String message;
 }
