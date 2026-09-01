@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -170,25 +171,37 @@ public class FlashcardServiceImpl implements FlashcardService {
     @Transactional(readOnly = true)
     @Override
     public Page<FlashcardResponse> getFlashcardsByDeck(Long deckId, Pageable pageable) {
-        return flashcardRepository.findByDeckIdAndIsActiveTrue(deckId, pageable)
-                .map(flashcard -> {
-                    List<Long> tagIds = flashcardTagRepository.findByFlashcardId(flashcard.getId()).stream()
-                            .map(ft -> ft.getTag().getId())
-                            .collect(Collectors.toList());
-                    return FlashcardResponse.fromEntity(flashcard, tagIds);
-                });
+        Page<Flashcard> cardsPage = flashcardRepository.findByDeckIdAndIsActiveTrue(deckId, pageable);
+        List<Long> cardIds = cardsPage.getContent().stream().map(Flashcard::getId).collect(Collectors.toList());
+        java.util.Map<Long, List<Long>> tagIdsByCardId = new java.util.HashMap<>();
+        if (!cardIds.isEmpty()) {
+            List<FlashcardTag> allTags = flashcardTagRepository.findByFlashcardIdIn(cardIds);
+            for (FlashcardTag ft : allTags) {
+                tagIdsByCardId.computeIfAbsent(ft.getFlashcard().getId(), k -> new ArrayList<>()).add(ft.getTag().getId());
+            }
+        }
+        return cardsPage.map(flashcard -> {
+            List<Long> tagIds = tagIdsByCardId.getOrDefault(flashcard.getId(), Collections.emptyList());
+            return FlashcardResponse.fromEntity(flashcard, tagIds);
+        });
     }
 
     @Transactional(readOnly = true)
     @Override
     public Page<FlashcardResponse> getFlashcardsByTag(Long tagId, Pageable pageable) {
-        return flashcardRepository.findByTagIdAndIsActiveTrue(tagId, pageable)
-                .map(flashcard -> {
-                    List<Long> tagIds = flashcardTagRepository.findByFlashcardId(flashcard.getId()).stream()
-                            .map(ft -> ft.getTag().getId())
-                            .collect(Collectors.toList());
-                    return FlashcardResponse.fromEntity(flashcard, tagIds);
-                });
+        Page<Flashcard> cardsPage = flashcardRepository.findByTagIdAndIsActiveTrue(tagId, pageable);
+        List<Long> cardIds = cardsPage.getContent().stream().map(Flashcard::getId).collect(Collectors.toList());
+        java.util.Map<Long, List<Long>> tagIdsByCardId = new java.util.HashMap<>();
+        if (!cardIds.isEmpty()) {
+            List<FlashcardTag> allTags = flashcardTagRepository.findByFlashcardIdIn(cardIds);
+            for (FlashcardTag ft : allTags) {
+                tagIdsByCardId.computeIfAbsent(ft.getFlashcard().getId(), k -> new ArrayList<>()).add(ft.getTag().getId());
+            }
+        }
+        return cardsPage.map(flashcard -> {
+            List<Long> tagIds = tagIdsByCardId.getOrDefault(flashcard.getId(), Collections.emptyList());
+            return FlashcardResponse.fromEntity(flashcard, tagIds);
+        });
     }
 
     @Transactional

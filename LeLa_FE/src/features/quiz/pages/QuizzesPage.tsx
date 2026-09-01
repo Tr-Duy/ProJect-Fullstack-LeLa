@@ -31,6 +31,7 @@ export function QuizzesPage() {
       }
       return quizzesApi.getAll({ size: 100 });
     },
+    placeholderData: (prev) => prev,
   });
 
   const rawQuizzes = category

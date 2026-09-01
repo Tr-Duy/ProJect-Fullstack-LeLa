@@ -1,11 +1,9 @@
-import { useQuery, useQueries } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Card, Button, Skeleton } from 'antd';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useMemo } from 'react';
-import { useAuth } from '../../../shared/providers/AuthProvider';
 import { deckEnrollmentsApi } from '../api/deck-enrollments.api';
-import { decksApi } from '../api/decks.api';
 import type { DeckResponse } from '../../../shared/types/lela';
 
 // Mapped Component to display the Deck details for each enrollment
@@ -77,47 +75,42 @@ function EnrolledDeckCard({ deck, masteredCards }: { deck: DeckResponse, mastere
 export function MyDecksPage() {
   const navigate = useNavigate();
 
-  // 1. Fetch all enrollments
+  // 1. Fetch all enrollments with embedded deck details (1 single fast query)
   const { data: enrollmentsResponse, isLoading: isLoadingEnrollments } = useQuery({
     queryKey: ['my-enrollments'],
     queryFn: () => deckEnrollmentsApi.getMyList({ size: 50 }),
   });
 
   const enrollments = enrollmentsResponse?.data?.content || [];
+  const isReady = !isLoadingEnrollments;
 
-  // 2. Fetch all corresponding deck details in parallel
-  const deckQueries = useQueries({
-    queries: enrollments.map(enrollment => ({
-      queryKey: ['deck', enrollment.deckId],
-      queryFn: () => decksApi.getById(enrollment.deckId),
-      staleTime: 5 * 60 * 1000,
-    })),
-  });
-
-  const isLoadingDecks = deckQueries.some(q => q.isLoading);
-  const isReady = !isLoadingEnrollments && !isLoadingDecks;
-
-  const { user: currentUser } = useAuth();
-  
-  // 3. Group by topic
+  // 2. Group by level or default
   const groupedDecks = useMemo(() => {
     if (!isReady) return {};
 
-    const groups: Record<string, { deck: DeckResponse, enrollment: any }[]> = {};
+    const groups: Record<string, { deck: any; enrollment: any }[]> = {};
 
-    enrollments.forEach((enrollment, index) => {
-      const deck = deckQueries[index].data;
-      if (!deck) return; // Ignore if failed to fetch
-      
-      const topicName = deck.topic?.name || 'Chủ đề khác';
-      if (!groups[topicName]) {
-        groups[topicName] = [];
+    enrollments.forEach((enrollment) => {
+      const deck: any = {
+        id: enrollment.deckId,
+        title: enrollment.deckTitle || `Bộ thẻ #${enrollment.deckId}`,
+        slug: enrollment.deckSlug || `deck-${enrollment.deckId}`,
+        coverImageUrl: enrollment.deckCoverImageUrl,
+        totalCards: enrollment.deckTotalCards || 0,
+        difficulty: enrollment.deckDifficulty || 'BEGINNER',
+        levelName: enrollment.deckLevelName,
+        levelCode: enrollment.deckLevelCode,
+      };
+
+      const groupName = deck.levelName || 'Bộ thẻ đã tham gia';
+      if (!groups[groupName]) {
+        groups[groupName] = [];
       }
-      groups[topicName].push({ deck, enrollment });
+      groups[groupName].push({ deck, enrollment });
     });
 
     return groups;
-  }, [enrollments, deckQueries, isReady, currentUser]);
+  }, [enrollments, isReady]);
 
   return (
     <div className="p-8 max-w-7xl mx-auto min-h-screen bg-[#F4F3EE]">

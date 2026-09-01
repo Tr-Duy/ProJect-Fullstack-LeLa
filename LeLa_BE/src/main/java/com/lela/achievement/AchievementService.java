@@ -66,11 +66,13 @@ public class AchievementService {
         int currentStreak = calculateStreak(allActivities);
         int toeicLevelOrder = user.getCurrentLevel() != null ? user.getCurrentLevel().getDisplayOrder() : 0;
 
+        Set<String> unlockedCodes = new HashSet<>(userAchievementRepository.findAchievementCodesByUserId(userId));
+
         for (Achievement achievement : allAchievements) {
             if (!achievement.isActive()) continue;
 
             // Skip if already unlocked
-            if (userAchievementRepository.existsByUserIdAndAchievementCode(userId, achievement.getCode())) {
+            if (unlockedCodes.contains(achievement.getCode())) {
                 continue;
             }
 
@@ -260,9 +262,16 @@ public class AchievementService {
 
     @Transactional(readOnly = true)
     public List<AchievementResponse> getAllAchievementsForAdmin() {
+        Map<Long, Long> countsMap = new HashMap<>();
+        List<Object[]> groupedCounts = userAchievementRepository.countGroupedByAchievementId();
+        for (Object[] row : groupedCounts) {
+            if (row != null && row.length >= 2 && row[0] != null && row[1] != null) {
+                countsMap.put((Long) row[0], ((Number) row[1]).longValue());
+            }
+        }
         return achievementRepository.findAll().stream()
                 .map(a -> {
-                    long count = userAchievementRepository.countByAchievementId(a.getId());
+                    long count = countsMap.getOrDefault(a.getId(), 0L);
                     return AchievementResponse.fromEntity(a, count);
                 })
                 .collect(Collectors.toList());

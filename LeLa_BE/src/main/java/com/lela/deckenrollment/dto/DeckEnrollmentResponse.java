@@ -22,4 +22,11 @@ public class DeckEnrollmentResponse {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private Long id;
+    private String deckTitle;
+    private String deckSlug;
+    private String deckCoverImageUrl;
+    private Integer deckTotalCards;
+    private com.lela.deck.domain.DeckDifficulty deckDifficulty;
+    private String deckLevelName;
+    private String deckLevelCode;
 }

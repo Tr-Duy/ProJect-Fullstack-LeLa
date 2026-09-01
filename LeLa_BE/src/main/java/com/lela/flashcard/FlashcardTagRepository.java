@@ -9,6 +9,8 @@ import java.util.List;
 public interface FlashcardTagRepository extends JpaRepository<FlashcardTag, FlashcardTagId> {
     
     List<FlashcardTag> findByFlashcardId(Long flashcardId);
+
+    List<FlashcardTag> findByFlashcardIdIn(List<Long> flashcardIds);
     
     void deleteByFlashcardId(Long flashcardId);
 }

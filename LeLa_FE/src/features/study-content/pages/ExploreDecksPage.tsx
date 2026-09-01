@@ -29,6 +29,7 @@ export function ExploreDecksPage() {
   const { data: tagsResponse } = useQuery({
     queryKey: ['tags-for-explore'],
     queryFn: () => tagsApi.getAll({ size: 100 }),
+    staleTime: 10 * 60 * 1000,
   });
 
   const availableTags = tagsResponse?.data?.content || [];
@@ -54,6 +55,7 @@ export function ExploreDecksPage() {
       ...(filterExamTypeId ? { examTypeId: filterExamTypeId } : {}),
       ...(filterLevelId ? { levelId: filterLevelId } : {}),
     }),
+    placeholderData: (prev) => prev,
   });
 
   const decks = data?.content || [];

@@ -57,8 +57,26 @@ public class QuizServiceImpl implements QuizService {
                 .getId();
     }
 
-    private QuizResponse mapToResponse(Quiz q) {
-        QuizResponse res = mapper.map(q, QuizResponse.class);
+    private QuizResponse mapToSummaryResponse(Quiz q) {
+        QuizResponse res = QuizResponse.builder()
+                .id(q.getId())
+                .quizCode(q.getQuizCode())
+                .title(q.getTitle())
+                .description(q.getDescription())
+                .quizType(q.getQuizType())
+                .quizCategory(q.getQuizCategory())
+                .difficulty(q.getDifficulty())
+                .passScore(q.getPassScore())
+                .timeLimitSeconds(q.getTimeLimitSeconds())
+                .maxAttempts(q.getMaxAttempts())
+                .shuffleQuestions(q.getShuffleQuestions())
+                .shuffleOptions(q.getShuffleOptions())
+                .totalQuestions(q.getTotalQuestions() != null ? q.getTotalQuestions() : 0)
+                .isActive(q.getIsActive())
+                .version(q.getVersion())
+                .createdAt(q.getCreatedAt() != null ? q.getCreatedAt().toString() : null)
+                .updatedAt(q.getUpdatedAt() != null ? q.getUpdatedAt().toString() : null)
+                .build();
         if (q.getDeck() != null) {
             res.setDeckId(q.getDeck().getId());
         }
@@ -68,8 +86,11 @@ public class QuizServiceImpl implements QuizService {
         if (q.getLevel() != null) {
             res.setLevelId(q.getLevel().getId());
         }
-        res.setDifficulty(q.getDifficulty());
-        res.setPassScore(q.getPassScore());
+        return res;
+    }
+
+    private QuizResponse mapToResponse(Quiz q) {
+        QuizResponse res = mapToSummaryResponse(q);
 
         if (q.getQuizCategory() == QuizCategory.FINAL || q.getQuizCategory() == QuizCategory.LEVEL_UP) {
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -193,13 +214,19 @@ public class QuizServiceImpl implements QuizService {
         java.time.LocalDateTime lastFailedSubmitTime = null;
         java.util.Map<Long, com.lela.QuizAttempt.domain.QuizAttempt> latestAttemptByQuizId = new java.util.HashMap<>();
 
+        List<Long> quizIds = quizzes.stream().map(Quiz::getId).collect(Collectors.toList());
+        List<com.lela.QuizAttempt.domain.QuizAttempt> allAttempts = quizAttemptRepository
+                .findByUserIdAndQuizIdInOrderByStartedAtDesc(user.getId(), quizIds);
+        for (com.lela.QuizAttempt.domain.QuizAttempt a : allAttempts) {
+            if (a.getQuiz() != null && !latestAttemptByQuizId.containsKey(a.getQuiz().getId())) {
+                latestAttemptByQuizId.put(a.getQuiz().getId(), a);
+            }
+        }
+
         for (int i = 0; i < quizzes.size(); i++) {
             Quiz q = quizzes.get(i);
-            List<com.lela.QuizAttempt.domain.QuizAttempt> attempts = quizAttemptRepository
-                    .findByUserIdAndQuizIdOrderByStartedAtDesc(user.getId(), q.getId());
-            if (!attempts.isEmpty()) {
-                com.lela.QuizAttempt.domain.QuizAttempt latest = attempts.get(0);
-                latestAttemptByQuizId.put(q.getId(), latest);
+            com.lela.QuizAttempt.domain.QuizAttempt latest = latestAttemptByQuizId.get(q.getId());
+            if (latest != null) {
                 if (Boolean.TRUE.equals(latest.getPassed())) {
                     anyPassed = true;
                 } else if (firstUnattemptedIdx == -1) {
@@ -221,10 +248,7 @@ public class QuizServiceImpl implements QuizService {
         List<QuizResponse> responses = new ArrayList<>();
         for (int i = 0; i < quizzes.size(); i++) {
             Quiz q = quizzes.get(i);
-            QuizResponse res = mapper.map(q, QuizResponse.class);
-            if (q.getDeck() != null) res.setDeckId(q.getDeck().getId());
-            if (q.getExamType() != null) res.setExamTypeId(q.getExamType().getId());
-            if (q.getLevel() != null) res.setLevelId(q.getLevel().getId());
+            QuizResponse res = mapToSummaryResponse(q);
 
             com.lela.QuizAttempt.domain.QuizAttempt latest = latestAttemptByQuizId.get(q.getId());
 
@@ -279,6 +303,22 @@ public class QuizServiceImpl implements QuizService {
         return new org.springframework.data.domain.PageImpl<>(responses, pageable, responses.size());
     }
 
+    private QuizResponse mapToFullResponse(Quiz q) {
+        QuizResponse res = mapper.map(q, QuizResponse.class);
+        if (q.getDeck() != null) {
+            res.setDeckId(q.getDeck().getId());
+        }
+        if (q.getExamType() != null) {
+            res.setExamTypeId(q.getExamType().getId());
+        }
+        if (q.getLevel() != null) {
+            res.setLevelId(q.getLevel().getId());
+        }
+        res.setDifficulty(q.getDifficulty());
+        res.setPassScore(q.getPassScore());
+        return res;
+    }
+
     @Override
     public QuizResponse findById(Long id) {
         Quiz quiz = quizRepository.findById(id)
@@ -299,7 +339,7 @@ public class QuizServiceImpl implements QuizService {
             }
         }
 
-        return mapToResponse(quiz);
+        return mapToFullResponse(quiz);
     }
 
     @Transactional
@@ -322,7 +362,7 @@ public class QuizServiceImpl implements QuizService {
             });
         }
 
-        return mapToResponse(quizRepository.save(quiz));
+        return mapToFullResponse(quizRepository.save(quiz));
     }
 
     @Transactional

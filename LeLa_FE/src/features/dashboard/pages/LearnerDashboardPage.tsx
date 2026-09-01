@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useQuery, useQueries } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Skeleton, Button } from 'antd';
 import { ReloadOutlined } from '@ant-design/icons';
 import { dailyActivitiesApi } from '../../gamification/api/daily-activities.api';
@@ -65,26 +65,23 @@ export function LearnerDashboardPage() {
 
   const enrollments = enrollmentsResponse?.data?.content || [];
 
-  // Parallel queries for deck details
-  const deckQueries = useQueries({
-    queries: enrollments.map((enrollment) => ({
-      queryKey: ['deck', enrollment.deckId],
-      queryFn: () => decksApi.getById(enrollment.deckId),
-      staleTime: 5 * 60 * 1000,
-    })),
-  });
-
-  const isLoadingDecks = deckQueries.some((q) => q.isLoading);
-
   const enrolledDecksData = useMemo(() => {
-    return enrollments
-      .map((enrollment, index) => {
-        const deck = deckQueries[index]?.data;
-        if (!deck) return null;
-        return { deck, enrollment };
-      })
-      .filter(Boolean) as { deck: any; enrollment: any }[];
-  }, [enrollments, deckQueries]);
+    return enrollments.map((enrollment) => {
+      const deck: any = {
+        id: enrollment.deckId,
+        title: enrollment.deckTitle || `Bộ thẻ #${enrollment.deckId}`,
+        slug: enrollment.deckSlug || `deck-${enrollment.deckId}`,
+        coverImageUrl: enrollment.deckCoverImageUrl,
+        totalCards: enrollment.deckTotalCards || 0,
+        difficulty: enrollment.deckDifficulty || 'BEGINNER',
+        levelName: enrollment.deckLevelName,
+        levelCode: enrollment.deckLevelCode,
+      };
+      return { deck, enrollment };
+    });
+  }, [enrollments]);
+
+  const isLoadingDecks = isLoadingEnrollments;
 
   // 6. Fetch Recommended Decks for User's Level
   const currentExamTypeId = profileResponse?.data?.currentExamType?.id;

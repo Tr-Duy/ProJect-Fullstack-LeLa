@@ -140,6 +140,15 @@ public class DeckEnrollmentServiceImpl implements DeckEnrollmentService {
         }
         if (entity.getDeck() != null) {
             response.setDeckId(entity.getDeck().getId());
+            response.setDeckTitle(entity.getDeck().getTitle());
+            response.setDeckSlug(entity.getDeck().getSlug());
+            response.setDeckCoverImageUrl(entity.getDeck().getCoverImageUrl());
+            response.setDeckTotalCards(entity.getDeck().getTotalCards());
+            response.setDeckDifficulty(entity.getDeck().getDifficulty());
+            if (entity.getDeck().getLevel() != null) {
+                response.setDeckLevelName(entity.getDeck().getLevel().getName());
+                response.setDeckLevelCode(entity.getDeck().getLevel().getCode());
+            }
         }
         return response;
     }

@@ -14,4 +14,23 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id: string) {
+          if (id.includes('node_modules')) {
+            if (id.includes('antd') || id.includes('@ant-design')) {
+              return 'vendor-antd';
+            }
+            if (id.includes('react-router-dom') || id.includes('react-dom') || id.includes('/react/')) {
+              return 'vendor-react';
+            }
+            if (id.includes('@tanstack')) {
+              return 'vendor-query';
+            }
+          }
+        },
+      },
+    },
+  },
 });

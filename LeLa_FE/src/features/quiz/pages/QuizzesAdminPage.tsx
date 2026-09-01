@@ -41,6 +41,7 @@ export function QuizzesAdminPage() {
   const { data: decksData } = useQuery({
     queryKey: ['admin-decks'],
     queryFn: () => decksApi.getAll({ size: 300 }),
+    staleTime: 5 * 60 * 1000,
   });
 
   const { data, isLoading } = useQuery({
@@ -52,6 +53,7 @@ export function QuizzesAdminPage() {
       difficulty: selectedDifficulty !== 'ALL' ? selectedDifficulty as any : undefined,
       search: searchQuery.trim() || undefined,
     }),
+    placeholderData: (prev) => prev,
   });
 
   const pageData = data?.data;

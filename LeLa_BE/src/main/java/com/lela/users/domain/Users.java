@@ -112,6 +112,7 @@ public class Users extends AuditableEntity {
     @Version
     private Long version;
 
+    @org.hibernate.annotations.BatchSize(size = 50)
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
     @Builder.Default
     @EqualsAndHashCode.Exclude

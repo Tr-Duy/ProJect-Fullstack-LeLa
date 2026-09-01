@@ -144,6 +144,13 @@ export interface DeckEnrollmentResponse {
   nextReviewAt?: string;
   masteredCards: number;
   note?: string;
+  deckTitle?: string;
+  deckSlug?: string;
+  deckCoverImageUrl?: string;
+  deckTotalCards?: number;
+  deckDifficulty?: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
+  deckLevelName?: string;
+  deckLevelCode?: string;
 }
 
 export type QuizType = 'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'FILL_BLANK' | 'MIXED';

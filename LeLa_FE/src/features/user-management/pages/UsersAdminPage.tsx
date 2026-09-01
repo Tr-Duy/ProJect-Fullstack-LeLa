@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Search, Lock, Unlock, Shield } from 'lucide-react';
-import { message, Modal as AntdModal, Tabs, Checkbox, Spin } from 'antd';
+import { message, Modal as AntdModal, Tabs, Checkbox, Spin, Pagination } from 'antd';
 import { Button } from '../../../shared/components/ui/Button';
 import { Input } from '../../../shared/components/ui/Input';
 import { Modal } from '../../../shared/components/ui/Modal';
@@ -43,27 +43,34 @@ export function UsersAdminPage() {
   const [activeTab, setActiveTab] = useState('ALL');
   const [selectedUser, setSelectedUser] = useState<UserResponse | null>(null);
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
   
   const { hasRole, user: currentUser } = useAuth();
   const queryClient = useQueryClient();
   
   // API query users
-  const { data: users, isLoading } = useQuery({
-    queryKey: ['admin-users', search, activeTab],
+  const { data: pageData, isLoading } = useQuery({
+    queryKey: ['admin-users', search, activeTab, currentPage, pageSize],
     queryFn: async () => {
       try {
-        const params: any = { search };
+        const params: any = { page: currentPage - 1, size: pageSize };
+        if (search.trim()) params.search = search.trim();
         if (activeTab === 'ADMIN') params.role = 'ADMIN';
         if (activeTab === 'LEARNER') params.role = 'LEARNER';
         
         const response = await apiClient.get('/users', { params });
-        return response.data?.data?.content || [];
+        return response.data?.data || { content: [], totalElements: 0 };
       } catch (error) {
         console.error('Failed to fetch users:', error);
-        return [];
+        return { content: [], totalElements: 0 };
       }
-    }
+    },
+    placeholderData: (prev) => prev,
   });
+
+  const users = pageData?.content || [];
+  const totalElements = pageData?.totalElements || 0;
 
   // API query all roles
   const { data: allRoles, isLoading: isLoadingRoles } = useQuery({
@@ -281,6 +288,21 @@ export function UsersAdminPage() {
             </tbody>
           </table>
         </div>
+        {totalElements > pageSize && (
+          <div className="p-4 border-t border-geist-gray-300 flex justify-end bg-white">
+            <Pagination
+              current={currentPage}
+              pageSize={pageSize}
+              total={totalElements}
+              onChange={(p: number, s: number) => {
+                setCurrentPage(p);
+                setPageSize(s);
+              }}
+              showSizeChanger
+              pageSizeOptions={['10', '20', '50', '100']}
+            />
+          </div>
+        )}
       </div>
 
       <Modal

@@ -17,10 +17,12 @@ public interface DeckEnrollmentRepository extends JpaRepository<DeckEnrollment, 
     @Query("SELECT de FROM DeckEnrollment de WHERE de.user.id = :userId AND de.deck.id = :deckId")
     Optional<DeckEnrollment> findByUserIdAndDeckId(@Param("userId") Long userId, @Param("deckId") Long deckId);
 
-    @Query("SELECT de FROM DeckEnrollment de WHERE de.user.id = :userId")
+    @Query(value = "SELECT de FROM DeckEnrollment de JOIN FETCH de.deck d LEFT JOIN FETCH d.level WHERE de.user.id = :userId",
+           countQuery = "SELECT COUNT(de) FROM DeckEnrollment de WHERE de.user.id = :userId")
     Page<DeckEnrollment> findByUserId(@Param("userId") Long userId, Pageable pageable);
 
-    @Query("SELECT de FROM DeckEnrollment de WHERE de.user.id = :userId AND de.nextReviewAt <= :nextReviewAt")
+    @Query(value = "SELECT de FROM DeckEnrollment de JOIN FETCH de.deck d LEFT JOIN FETCH d.level WHERE de.user.id = :userId AND de.nextReviewAt <= :nextReviewAt",
+           countQuery = "SELECT COUNT(de) FROM DeckEnrollment de WHERE de.user.id = :userId AND de.nextReviewAt <= :nextReviewAt")
     Page<DeckEnrollment> findByUserIdAndNextReviewAtLessThanEqual(@Param("userId") Long userId, @Param("nextReviewAt") LocalDateTime nextReviewAt, Pageable pageable);
 
     long countByUserId(Long userId);

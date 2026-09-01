@@ -9,6 +9,11 @@ public interface UserAchievementRepository extends JpaRepository<UserAchievement
     List<UserAchievement> findAllByUserId(Long userId);
     boolean existsByUserIdAndAchievementCode(Long userId, String code);
     boolean existsByUserIdAndAchievementId(Long userId, Long achievementId);
-    Optional<UserAchievement> findByUserIdAndAchievementCode(Long userId, String code);
     long countByAchievementId(Long achievementId);
+
+    @org.springframework.data.jpa.repository.Query("SELECT ua.achievement.id, COUNT(ua) FROM UserAchievement ua GROUP BY ua.achievement.id")
+    List<Object[]> countGroupedByAchievementId();
+
+    @org.springframework.data.jpa.repository.Query("SELECT ua.achievement.code FROM UserAchievement ua WHERE ua.user.id = :userId")
+    List<String> findAchievementCodesByUserId(@org.springframework.data.repository.query.Param("userId") Long userId);
 }

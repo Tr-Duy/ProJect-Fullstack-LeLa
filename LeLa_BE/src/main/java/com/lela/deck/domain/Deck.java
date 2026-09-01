@@ -115,6 +115,7 @@ public class Deck extends AuditableEntity {
     @Column(nullable = false)
     private Long version = 0L; // Phiên bản dùng cho optimistic locking.
 
+    @org.hibernate.annotations.BatchSize(size = 50)
     @jakarta.persistence.ManyToMany(fetch = jakarta.persistence.FetchType.LAZY)
     @jakarta.persistence.JoinTable(
         name = "deck_tags",
