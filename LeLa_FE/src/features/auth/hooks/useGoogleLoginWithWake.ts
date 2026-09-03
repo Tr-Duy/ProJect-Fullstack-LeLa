@@ -1,10 +1,18 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useAuth } from '../../../shared/providers/AuthProvider';
+import { useServerHealth } from '../../../shared/providers/ServerHealthProvider';
+import { API_BASE_URL, checkBackendHealth } from '../../../shared/lib/api';
 
 export type WakeStatus = 'connecting' | 'waking' | 'ready' | 'timeout' | 'error';
 
+const TIMEOUT_PER_REQUEST_MS = 8000;
+const POLL_INTERVAL_MS = 2500;
+const MAX_DURATION_MS = 80000; // 80s maximum duration (within 60-90s bound)
+
 export function useGoogleLoginWithWake() {
   const { isAuthenticated } = useAuth();
+  const { isBackendReady, retryCheck } = useServerHealth();
+
   const [isOpen, setIsOpen] = useState(false);
   const [status, setStatus] = useState<WakeStatus>('connecting');
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -14,6 +22,9 @@ export function useGoogleLoginWithWake() {
   const pollingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const elapsedTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isWakingRef = useRef(false);
+
+  const cleanBaseUrl = API_BASE_URL.endsWith('/') ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
+  const googleAuthUrl = `${cleanBaseUrl}/oauth2/authorization/google`;
 
   const cleanup = useCallback(() => {
     if (abortControllerRef.current) {
@@ -39,6 +50,13 @@ export function useGoogleLoginWithWake() {
 
   const startWakeAndLogin = useCallback(async () => {
     if (isAuthenticated) return;
+
+    // If backend is already confirmed ready, navigate to Google OAuth directly without modal delay
+    if (isBackendReady) {
+      window.location.href = googleAuthUrl;
+      return;
+    }
+
     if (isWakingRef.current) return;
 
     cleanup();
@@ -48,19 +66,12 @@ export function useGoogleLoginWithWake() {
     setStatus('connecting');
     setElapsedSeconds(0);
 
-    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
-    const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
-    const healthUrl = `${cleanBaseUrl}/health`;
-    const googleAuthUrl = `${cleanBaseUrl}/oauth2/authorization/google`;
-
     const startTime = Date.now();
-    const TIMEOUT_MS = 120000; // 120 seconds maximum timeout
-    const POLLING_INTERVAL_MS = 2500; // 2.5 seconds between polling attempts
 
     elapsedTimerRef.current = setInterval(() => {
       const elapsed = Math.floor((Date.now() - startTime) / 1000);
       setElapsedSeconds(elapsed);
-      if (elapsed >= 4) {
+      if (elapsed >= 3) {
         setStatus((prev) => (prev === 'connecting' ? 'waking' : prev));
       }
     }, 1000);
@@ -70,21 +81,11 @@ export function useGoogleLoginWithWake() {
         const controller = new AbortController();
         abortControllerRef.current = controller;
 
-        // Timeout per single HTTP attempt: 6 seconds
-        const timeoutId = setTimeout(() => controller.abort(), 6000);
-
-        const response = await fetch(healthUrl, {
-          method: 'GET',
-          signal: controller.signal,
-          headers: { Accept: 'application/json' },
-          cache: 'no-store',
-        });
+        const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_PER_REQUEST_MS);
+        const isUp = await checkBackendHealth(controller.signal);
         clearTimeout(timeoutId);
 
-        if (response.ok) {
-          return true;
-        }
-        return false;
+        return isUp;
       } catch {
         return false;
       }
@@ -94,7 +95,7 @@ export function useGoogleLoginWithWake() {
       if (!isWakingRef.current) return;
 
       const totalElapsed = Date.now() - startTime;
-      if (totalElapsed >= TIMEOUT_MS) {
+      if (totalElapsed >= MAX_DURATION_MS) {
         cleanup();
         setStatus('timeout');
         return;
@@ -106,17 +107,18 @@ export function useGoogleLoginWithWake() {
       if (isHealthy) {
         cleanup();
         setStatus('ready');
+        retryCheck();
         setTimeout(() => {
           window.location.href = googleAuthUrl;
-        }, 600);
+        }, 500);
       } else {
-        pollingTimerRef.current = setTimeout(poll, POLLING_INTERVAL_MS);
+        pollingTimerRef.current = setTimeout(poll, POLL_INTERVAL_MS);
       }
     };
 
     // Trigger first attempt immediately
     poll();
-  }, [isAuthenticated, cleanup]);
+  }, [isAuthenticated, isBackendReady, googleAuthUrl, retryCheck, cleanup]);
 
   useEffect(() => {
     return () => {

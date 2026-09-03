@@ -1,7 +1,22 @@
 import axios, { type AxiosResponse, type InternalAxiosRequestConfig } from 'axios';
 import type { ApiResponse } from '../types/lela';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
+
+export const checkBackendHealth = async (signal?: AbortSignal): Promise<boolean> => {
+  try {
+    const cleanBaseUrl = API_BASE_URL.endsWith('/') ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
+    const response = await fetch(`${cleanBaseUrl}/health`, {
+      method: 'GET',
+      signal,
+      headers: { Accept: 'application/json' },
+      cache: 'no-store',
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+};
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
