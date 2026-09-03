@@ -10,7 +10,7 @@ import { quizAttemptsApi } from '../../quiz/api/quiz-attempts.api';
 
 export const OnboardingPage = () => {
   const navigate = useNavigate();
-  const { user, refreshUser, isProfileLoading } = useAuth();
+  const { user, refreshUser, isProfileLoading, isInitializingAuth } = useAuth();
   const queryClient = useQueryClient();
 
   const { data: examTypes, isLoading: loadingExamTypes } = useQuery({
@@ -38,6 +38,17 @@ export const OnboardingPage = () => {
       (attempt.status === 'SUBMITTED' || attempt.status === 'COMPLETED')
   );
 
+  const hasCurrentLevel = user?.currentLevel !== null && user?.currentLevel !== undefined;
+  const isPlacementDone = Boolean((user as any)?.placementCompleted || hasCompletedPlacement);
+
+  useEffect(() => {
+    if (!isProfileLoading && !isInitializingAuth && user) {
+      if (hasCurrentLevel || isPlacementDone) {
+        navigate('/dashboard', { replace: true });
+      }
+    }
+  }, [user, hasCurrentLevel, isPlacementDone, isProfileLoading, isInitializingAuth, navigate]);
+
   useEffect(() => {
     try {
       const profile = queryClient.getQueryData<any>(['profile']);
@@ -52,10 +63,6 @@ export const OnboardingPage = () => {
   }, [user, queryClient]);
 
   const sortedLevels = levels ? [...levels].sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0)) : [];
-  const currentLevelId = user?.currentLevel?.id;
-  const currentLevelIndex = sortedLevels.findIndex(l => l.id === currentLevelId);
-  const hasCurrentLevel = !!user?.currentLevel && currentLevelIndex !== -1;
-  const userRank = hasCurrentLevel ? currentLevelIndex + 1 : 0;
   const showPlacementOption = !hasCurrentLevel && !hasCompletedPlacement;
 
   const manualSelectMutation = useMutation({
@@ -79,23 +86,11 @@ export const OnboardingPage = () => {
     }
   });
 
-  const handleLevelClick = (lvl: any, idx: number) => {
-    const targetRank = idx + 1;
-
-    if (!hasCurrentLevel) {
-      manualSelectMutation.mutate(lvl.id);
-      return;
-    }
-
-    if (targetRank === userRank) {
-      return;
-    }
-
-    // Direct navigation to 10-test Upgrade Chain for selected target level
-    navigate(`/quizzes?category=LEVEL_UP&levelId=${lvl.id}`);
+  const handleLevelClick = (lvl: any) => {
+    manualSelectMutation.mutate(lvl.id);
   };
 
-  if (loadingExamTypes || isProfileLoading) {
+  if (loadingExamTypes || isProfileLoading || isInitializingAuth || hasCurrentLevel || isPlacementDone) {
     return <div className="flex h-screen items-center justify-center bg-[#F4F3EE]"><Spin size="large" /></div>;
   }
 
@@ -108,12 +103,10 @@ export const OnboardingPage = () => {
           </div>
           <h2 className="text-2xl sm:text-3xl font-black uppercase text-[#1D2A3A] flex items-center justify-center gap-2">
             <RocketOutlined className="text-[#F05A4A]" />
-            {hasCurrentLevel ? 'Thay đổi trình độ' : 'Chọn trình độ bắt đầu'}
+            Chọn trình độ bắt đầu
           </h2>
           <p className="text-gray-600 font-bold mt-2 text-sm sm:text-base">
-            {hasCurrentLevel 
-              ? `Trình độ hiện tại của bạn: ${user?.currentLevel?.name}`
-              : 'Hãy chọn trình độ bạn muốn bắt đầu hoặc thi để xác định năng lực!'}
+            Hãy chọn trình độ bạn muốn bắt đầu hoặc thi để xác định năng lực!
           </p>
         </div>
         
@@ -121,40 +114,26 @@ export const OnboardingPage = () => {
           {loadingLevels ? (
              <div className="flex justify-center p-4"><Spin /></div>
           ) : (
-             sortedLevels.map((lvl, idx) => {
-                const targetRank = idx + 1;
-                const isCurrent = hasCurrentLevel && targetRank === userRank;
-
+             sortedLevels.map((lvl) => {
                 return (
                   <div 
                     key={lvl.id} 
-                    className={`flex justify-between items-center p-4 border-3 border-black shadow-[3px_3px_0px_0px_#000] transition-transform ${
-                      isCurrent ? 'bg-[#F0FDF4] border-[#22C55E]' : 'bg-white hover:-translate-y-0.5'
-                    }`}
+                    className="flex justify-between items-center p-4 border-3 border-black shadow-[3px_3px_0px_0px_#000] transition-transform bg-white hover:-translate-y-0.5"
                   >
                      <div className="flex flex-col">
                        <span className="font-black text-lg text-[#1D2A3A]">{lvl.name}</span>
                        <span className="text-xs font-bold text-gray-500">
-                         {isCurrent ? 'Trình độ hiện tại của bạn' : 'Chuỗi 10 bài kiểm tra thay đổi trình độ'}
+                         {lvl.minScore && lvl.maxScore ? `${lvl.minScore} - ${lvl.maxScore} điểm TOEIC` : 'Trình độ TOEIC'}
                        </span>
                      </div>
 
-                     {isCurrent ? (
-                       <Button 
-                         disabled 
-                         className="brutal-pill border-2 border-black font-black uppercase text-gray-700 bg-gray-200 cursor-not-allowed h-10 px-4"
-                       >
-                          🟢 ĐANG HỌC
-                       </Button>
-                     ) : (
-                       <Button 
-                         className="brutal-pill border-2 border-black font-black uppercase text-white bg-[#F05A4A] hover:!bg-[#d94f41] h-10 px-5 shadow-[2px_2px_0px_0px_#000]" 
-                         onClick={() => handleLevelClick(lvl, idx)}
-                         loading={manualSelectMutation.isPending}
-                       >
-                          {hasCurrentLevel ? '🔑 YÊU CẦU THI' : 'CHỌN'}
-                       </Button>
-                     )}
+                     <Button 
+                       className="brutal-pill border-2 border-black font-black uppercase text-white bg-[#F05A4A] hover:!bg-[#d94f41] h-10 px-5 shadow-[2px_2px_0px_0px_#000]" 
+                       onClick={() => handleLevelClick(lvl)}
+                       loading={manualSelectMutation.isPending}
+                     >
+                       CHỌN
+                     </Button>
                   </div>
                 );
              })

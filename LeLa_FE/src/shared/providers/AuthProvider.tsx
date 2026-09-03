@@ -9,7 +9,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isProfileLoading: boolean;
   isInitializingAuth: boolean;
-  login: (data: AuthResponse) => Promise<void>;
+  login: (data: AuthResponse) => Promise<UserResponse | null>;
   logout: () => Promise<void>;
   hasRole: (roles: string[]) => boolean;
   refreshUser: () => Promise<void>;
@@ -45,7 +45,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // If user has stored tokens, auth is initializing until the profile query resolves or errors out.
   const isInitializingAuth = hasTokens && (isPending || (isLoading && !profileResponse && !isError));
 
-  const login = async (data: AuthResponse) => {
+  const login = async (data: AuthResponse): Promise<UserResponse | null> => {
     localStorage.setItem('accessToken', data.accessToken);
     localStorage.setItem('refreshToken', data.refreshToken);
     if (apiClient.defaults.headers.common) {
@@ -64,14 +64,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.warn('setQueryData failed in login', e);
     }
 
-    // Ensure a fresh fetch in background
+    // Ensure a fresh fetch from backend profile endpoint
     try {
       await queryClient.invalidateQueries({ queryKey: ['profile'] });
       await queryClient.invalidateQueries({ queryKey: ['explore-decks'] });
-      await refetch();
+      const refetched = await refetch();
+      if (refetched.data?.data) {
+        return refetched.data.data;
+      }
     } catch (e) {
       console.error('Failed to refetch profile after login', e);
     }
+
+    return (data.user as unknown as UserResponse) || null;
   };
 
   const logout = async () => {

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../../shared/providers/AuthProvider';
+import { resolvePostLoginRedirect } from '../../../shared/utils/auth-redirect';
 import { apiClient } from '../../../shared/lib/api';
 import { App } from 'antd';
 import { BackgroundPattern } from '../../landing/components/BackgroundPattern';
@@ -35,18 +36,10 @@ export function OAuth2RedirectHandler() {
         try {
           const res = await apiClient.post('/auth/oauth2/exchange', { code });
           if (res.data.success && res.data.data) {
-            login(res.data.data);
+            const resolvedUser = await login(res.data.data);
             message.success('Đăng nhập thành công!');
-            const isAdmin = Array.isArray(res.data.data.user?.roles)
-              ? res.data.data.user.roles.includes('ADMIN')
-              : res.data.data.user?.role === 'ADMIN';
-            if (isAdmin) {
-              navigate('/admin/dashboard', { replace: true });
-            } else if (!res.data.data.user?.currentLevel) {
-              navigate('/onboarding', { replace: true });
-            } else {
-              navigate('/dashboard', { replace: true });
-            }
+            const target = resolvePostLoginRedirect(resolvedUser || res.data.data.user);
+            navigate(target || '/dashboard', { replace: true });
           } else {
             throw new Error('Xác thực thất bại');
           }

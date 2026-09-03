@@ -202,4 +202,47 @@ public class GoogleOAuthIntegrationTest {
                             "Redirect URL for local dev must contain http://localhost:8080/api/v1. Actual: " + redirectUrl);
                 });
     }
+
+    @Test
+    @Transactional
+    @DisplayName("8. OAuth2 Exchange for learner with existing level returns currentLevel and currentExamType")
+    void test8_OAuth2ExchangeWithExistingLevel() throws Exception {
+        Users user = usersRepository.findByUsername("learner1").orElseThrow();
+        String accessToken = jwtService.generateAccessToken(user);
+        String refreshToken = jwtService.generateRefreshToken(user);
+
+        com.lela.common.dto.ProficiencyLevelDTO levelDto = null;
+        if (user.getCurrentLevel() != null) {
+            levelDto = new com.lela.common.dto.ProficiencyLevelDTO();
+            levelDto.setId(user.getCurrentLevel().getId());
+            levelDto.setName(user.getCurrentLevel().getName());
+        }
+
+        AuthResponse.UserInfo userInfo = AuthResponse.UserInfo.builder()
+                .id(user.getId())
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .roles(user.getRoleCodes())
+                .currentLevel(levelDto)
+                .build();
+
+        AuthResponse authResponse = AuthResponse.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .user(userInfo)
+                .build();
+
+        String code = oauth2Service.cacheAuthResponse(authResponse);
+        assertNotNull(code);
+
+        ExchangeRequest exchangeRequest = new ExchangeRequest();
+        exchangeRequest.setCode(code);
+
+        mockMvc.perform(post("/auth/oauth2/exchange")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(exchangeRequest)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.user.roles[0]").value("LEARNER"));
+    }
 }

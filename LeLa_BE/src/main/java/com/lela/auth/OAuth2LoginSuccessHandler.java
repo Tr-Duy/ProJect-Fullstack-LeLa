@@ -28,6 +28,8 @@ import org.springframework.security.web.authentication.SimpleUrlAuthenticationSu
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.lela.common.dto.ExamTypeDTO;
+import com.lela.common.dto.ProficiencyLevelDTO;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -150,6 +152,8 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
                 .promptDailyGoal(user.getPromptDailyGoal() != null ? user.getPromptDailyGoal() : true)
                 .nativeLanguageId(user.getNativeLanguage() != null ? user.getNativeLanguage().getId() : null)
                 .targetLanguageId(user.getTargetLanguage() != null ? user.getTargetLanguage().getId() : null)
+                .currentExamType(user.getCurrentExamType() != null ? toExamTypeDto(user.getCurrentExamType()) : null)
+                .currentLevel(user.getCurrentLevel() != null ? toLevelDto(user.getCurrentLevel()) : null)
                 .build();
 
         AuthResponse authResponse = AuthResponse.builder()
@@ -163,6 +167,29 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 
         // 5. Redirect to frontend with exchange code
         getRedirectStrategy().sendRedirect(request, response, frontendUrl + "/oauth2/redirect?code=" + exchangeCode);
+    }
+
+    private ExamTypeDTO toExamTypeDto(com.lela.common.domain.ExamType examType) {
+        if (examType == null) return null;
+        ExamTypeDTO dto = new ExamTypeDTO();
+        dto.setId(examType.getId());
+        dto.setCode(examType.getCode());
+        dto.setName(examType.getName());
+        dto.setMaxScaleScore(examType.getMaxScaleScore());
+        return dto;
+    }
+
+    private ProficiencyLevelDTO toLevelDto(com.lela.common.domain.ProficiencyLevel level) {
+        if (level == null) return null;
+        ProficiencyLevelDTO dto = new ProficiencyLevelDTO();
+        dto.setId(level.getId());
+        dto.setExamTypeId(level.getExamType() != null ? level.getExamType().getId() : null);
+        dto.setCode(level.getCode());
+        dto.setName(level.getName());
+        dto.setMinScore(level.getMinScore());
+        dto.setMaxScore(level.getMaxScore());
+        dto.setDisplayOrder(level.getDisplayOrder());
+        return dto;
     }
 
     private String hashToken(String token) {

@@ -56,7 +56,7 @@ export const CurrentLevelCard: React.FC<CurrentLevelCardProps> = ({
           ) : (
             <Button
               className="brutal-border font-bold h-11 px-5 bg-[#F4F3EE] hover:bg-[#e4e3de] hover:-translate-y-0.5 transition-all text-sm border-[2px] border-black text-[#1D2A3A] shadow-[2px_2px_0px_0px_#000]"
-              onClick={() => navigate('/onboarding')}
+              onClick={() => navigate('/placement-tests')}
             >
               Đổi mức độ
             </Button>

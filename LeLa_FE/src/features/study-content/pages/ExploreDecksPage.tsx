@@ -222,7 +222,7 @@ export function ExploreDecksPage() {
           <Button 
             size="small"
             className="font-bold text-xs brutal-border border border-black"
-            onClick={() => navigate('/onboarding')}
+            onClick={() => navigate('/placement-tests')}
           >
             Đổi trình độ ⚙️
           </Button>

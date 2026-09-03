@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../../shared/providers/AuthProvider';
+import { resolvePostLoginRedirect } from '../../../shared/utils/auth-redirect';
 import { apiClient } from '../../../shared/lib/api';
 import { Button, Form, Input, App, Checkbox, Divider } from 'antd';
 import { MailOutlined, LockOutlined, ArrowLeftOutlined, GoogleOutlined } from '@ant-design/icons';
@@ -62,18 +63,10 @@ export function LoginPage() {
           localStorage.removeItem('savedPassword');
         }
 
-        login(res.data.data);
+        const resolvedUser = await login(res.data.data);
         message.success('Đăng nhập thành công!');
-        const isAdmin = Array.isArray(res.data.data.user?.roles)
-          ? res.data.data.user.roles.includes('ADMIN')
-          : res.data.data.user?.role === 'ADMIN';
-        if (isAdmin) {
-          navigate('/admin/dashboard');
-        } else if (!res.data.data.user?.currentLevel) {
-          navigate('/onboarding');
-        } else {
-          navigate('/dashboard');
-        }
+        const target = resolvePostLoginRedirect(resolvedUser || res.data.data.user);
+        navigate(target || '/dashboard');
       } else {
         throw new Error('Đăng nhập thất bại');
       }
