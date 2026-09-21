@@ -9,14 +9,21 @@ export const LandingFooter: React.FC = () => {
         <div className="md:col-span-1 flex flex-col gap-4">
           <div className="flex items-center gap-2">
             <div className="w-10 h-10 flex items-center justify-center">
-              <img src="/images/lela_fox_logo.png" alt="LeLa Fox Logo" className="w-full h-full object-contain" />
+              <img
+                src="/images/lela_fox_logo.png"
+                alt="LeLa Fox Logo"
+                width="40"
+                height="40"
+                loading="lazy"
+                className="w-full h-full object-contain"
+              />
             </div>
             <span className="text-2xl font-black tracking-tight text-[#1D2A3A]">LeLa</span>
           </div>
           <p className="text-sm font-medium text-gray-600 leading-relaxed">
             Nền tảng học tiếng Anh bằng Flashcard thông minh (SRS) & Trợ lý AI Tutor. Học ít hơn, nhớ lâu hơn.
           </p>
-          <div className="text-xs font-bold text-gray-400">
+          <div className="text-xs font-bold text-gray-500">
             © 2026 LeLa EdTech Platform. All rights reserved.
           </div>
         </div>

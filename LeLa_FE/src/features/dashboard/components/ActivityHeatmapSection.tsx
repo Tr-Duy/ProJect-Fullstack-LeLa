@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button, Modal, Spin } from 'antd';
 import type { DailyActivityDto } from '../../gamification/api/daily-activities.api';
 
@@ -41,13 +41,6 @@ export const ActivityHeatmapSection: React.FC<ActivityHeatmapSectionProps> = ({
     date.setDate(date.getDate() + index);
     return getLocalISODate(date);
   });
-
-  useEffect(() => {
-    if (heatmapDays.length > 0) {
-      console.log('HEATMAP FIRST:', heatmapDays[0]);
-      console.log('HEATMAP LAST:', heatmapDays[heatmapDays.length - 1]);
-    }
-  }, [heatmapDays]);
 
   const formatDisplayDate = (isoDateStr: string) => {
     if (!isoDateStr) return '';

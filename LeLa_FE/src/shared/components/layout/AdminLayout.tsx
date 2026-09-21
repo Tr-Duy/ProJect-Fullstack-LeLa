@@ -81,6 +81,7 @@ export function AdminLayout() {
               onClick={() => setTheme('light')}
               className={`flex-1 flex justify-center rounded-full p-1.5 transition-colors ${theme === 'light' ? 'bg-geist-bg-100 shadow-sm text-geist-gray-1000' : 'text-geist-gray-700 hover:text-geist-gray-1000'}`}
               title="Giao diện sáng"
+              aria-label="Giao diện sáng"
             >
               <Sun className="h-4 w-4" />
             </button>
@@ -88,6 +89,7 @@ export function AdminLayout() {
               onClick={() => setTheme('system')}
               className={`flex-1 flex justify-center rounded-full p-1.5 transition-colors ${theme === 'system' ? 'bg-geist-bg-100 shadow-sm text-geist-gray-1000' : 'text-geist-gray-700 hover:text-geist-gray-1000'}`}
               title="Giao diện hệ thống"
+              aria-label="Giao diện hệ thống"
             >
               <Monitor className="h-4 w-4" />
             </button>
@@ -95,6 +97,7 @@ export function AdminLayout() {
               onClick={() => setTheme('dark')}
               className={`flex-1 flex justify-center rounded-full p-1.5 transition-colors ${theme === 'dark' ? 'bg-geist-bg-100 shadow-sm text-geist-gray-1000' : 'text-geist-gray-700 hover:text-geist-gray-1000'}`}
               title="Giao diện tối"
+              aria-label="Giao diện tối"
             >
               <Moon className="h-4 w-4" />
             </button>
@@ -111,6 +114,7 @@ export function AdminLayout() {
               onClick={handleLogout}
               className="rounded-md p-2 text-geist-gray-700 hover:bg-geist-gray-200 hover:text-geist-gray-1000 transition-colors shrink-0"
               title="Đăng xuất"
+              aria-label="Đăng xuất"
             >
               <LogOut className="h-5 w-5" />
             </button>

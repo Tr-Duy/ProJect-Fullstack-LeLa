@@ -65,7 +65,7 @@ export function FlashcardDemo({ playSound }: Props) {
         utterance.lang = 'en-US';
         window.speechSynthesis.speak(utterance);
       } catch (err) {
-        console.error(err);
+        // Speech synthesis not permitted or unsupported in this context
       }
     }
   };
@@ -127,6 +127,7 @@ export function FlashcardDemo({ playSound }: Props) {
                   type="text"
                   onClick={(e) => handleSpeak(e, currentCard.word)}
                   icon={<Volume2 className="w-5 h-5 text-[#2A8B9D]" />}
+                  aria-label="Phát âm từ vựng"
                   className="p-1 hover:bg-white rounded-full"
                 />
               </div>
@@ -137,7 +138,7 @@ export function FlashcardDemo({ playSound }: Props) {
                   <h3 className="text-4xl font-black text-[#1D2A3A] m-0 tracking-tight">
                     {currentCard.word}
                   </h3>
-                  <span className="text-sm font-bold text-gray-500 font-mono">
+                  <span className="text-sm font-bold text-gray-600 font-mono">
                     {currentCard.ipa}
                   </span>
                   <span className="text-xs font-bold text-[#2A8B9D] mt-2 block">

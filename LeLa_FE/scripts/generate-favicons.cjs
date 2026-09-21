@@ -175,8 +175,10 @@ function createIco(pngBuffers) {
 }
 
 const publicDir = path.resolve(__dirname, '../public');
-const logoPath = path.join(publicDir, 'images/lela_fox_logo.png');
-const masterPng = fs.readFileSync(logoPath);
+const masterLogoPath = fs.existsSync(path.join(publicDir, 'images/lela_fox_logo_orig.png'))
+  ? path.join(publicDir, 'images/lela_fox_logo_orig.png')
+  : path.join(publicDir, 'images/lela_fox_logo.png');
+const masterPng = fs.readFileSync(masterLogoPath);
 const decoded = decodePNG(masterPng);
 
 // Generate scaled PNGs
@@ -203,12 +205,14 @@ const icoBuf = createIco([
 ]);
 fs.writeFileSync(path.join(publicDir, 'favicon.ico'), icoBuf);
 
-// Generate SVG favicon with embedded high-res Fox Logo
-const base64Master = masterPng.toString('base64');
-const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1254 1254" width="100%" height="100%">
-  <image width="1254" height="1254" href="data:image/png;base64,${base64Master}" />
+// Generate SVG favicon with embedded crisp 64x64 Fox Logo (few KB instead of 1.45MB)
+const base64Favicon = png64.toString('base64');
+const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="100%" height="100%">
+  <image width="64" height="64" href="data:image/png;base64,${base64Favicon}" />
 </svg>
 `;
 fs.writeFileSync(path.join(publicDir, 'favicon.svg'), svgContent);
 
 console.log('All favicon assets generated successfully in public/');
+
+module.exports = { decodePNG, resizeBilinear, encodePNG, createIco };

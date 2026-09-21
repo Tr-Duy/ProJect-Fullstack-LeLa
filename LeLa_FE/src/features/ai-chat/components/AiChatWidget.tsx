@@ -91,6 +91,7 @@ export const AiChatWidget: React.FC = () => {
               onClick={handleDismissBubble}
               className="hover:text-red-600 transition-colors ml-1 font-bold text-sm"
               title="Đóng"
+              aria-label="Đóng gợi ý trợ lý ảo"
             >
               ×
             </button>

@@ -163,6 +163,7 @@ export function LearnerLayout() {
                       <Badge count={unreadCount} overflowCount={99} offset={[-2, 2]}>
                         <Button
                           icon={<Bell className="w-5 h-5 text-[#1D2A3A]" />}
+                          aria-label="Thông báo"
                           className="brutal-pill border-[2px] border-black bg-white shrink-0 hover:bg-[#F4F3EE] transition-transform"
                         />
                       </Badge>

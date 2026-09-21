@@ -20,7 +20,9 @@ export function LandingPage() {
 
   const playSound = () => {
     const audio = new Audio(bubblePopSound);
-    audio.play().catch((e) => console.error('Audio play failed', e));
+    audio.play().catch(() => {
+      // Audio autoplay/playback might be blocked or deferred by browser policy without user gesture
+    });
   };
 
   const handleNav = (path: string) => {
@@ -46,6 +48,8 @@ export function LandingPage() {
               <img
                 src="/images/lela_fox_logo.png"
                 alt="LeLa Fox Logo"
+                width="44"
+                height="44"
                 className="w-full h-full object-contain drop-shadow"
               />
             </div>

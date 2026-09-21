@@ -51,6 +51,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
             {showCloseButton && (
               <button 
                 onClick={onClose}
+                aria-label="Đóng hộp thoại"
                 className="rounded-full p-1.5 text-geist-gray-600 hover:bg-geist-gray-200 hover:text-geist-gray-1000 transition-colors ml-1"
               >
                 <X className="w-5 h-5" />

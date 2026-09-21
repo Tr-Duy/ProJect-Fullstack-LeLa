@@ -76,6 +76,9 @@ export function HeroSection() {
               <img 
                 src="/images/hero_youth_learning.png" 
                 alt="Sinh viên học ngoại ngữ với flashcard" 
+                width="560"
+                height="420"
+                fetchPriority="high"
                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-[#2A8B9D]/10 mix-blend-multiply" />
@@ -87,7 +90,7 @@ export function HeroSection() {
               transition={{ duration: 4, ease: "easeInOut", repeat: Infinity }}
               className="absolute -top-10 -right-8 w-28 h-28 z-20 flex items-center justify-center drop-shadow-xl"
             >
-              <img src="/images/lela_fox_logo.png" alt="LeLa Fox Mascot" className="w-full h-full object-contain" />
+              <img src="/images/lela_fox_logo.png" alt="LeLa Fox Mascot" width="112" height="112" className="w-full h-full object-contain" />
             </motion.div>
 
             {/* Decorative Floating Pill */}
