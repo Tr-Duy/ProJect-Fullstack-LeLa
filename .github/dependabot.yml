@@ -1,0 +1,119 @@
+# Dependabot Configuration for LeLa Project (Fullstack: Maven Backend + npm Frontend)
+version: 2
+updates:
+  # --------------------------------------------------------------------------
+  # 1. Backend: Spring Boot + Maven
+  # --------------------------------------------------------------------------
+  - package-ecosystem: "maven"
+    directory: "/LeLa_BE"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "04:00"
+      timezone: "Asia/Ho_Chi_Minh"
+    open-pull-requests-limit: 10
+    target-branch: "main"
+    labels:
+      - "dependencies"
+      - "backend"
+      - "maven"
+    commit-message:
+      prefix: "chore(deps-backend)"
+      include: "scope"
+    # Prevent major architectural upgrades from breaking project stability
+    ignore:
+      - dependency-name: "org.springframework.boot:spring-boot-starter-parent"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "org.springframework.boot:*"
+        update-types: ["version-update:semver-major"]
+    # Group dependencies to minimize PR noise while prioritizing security
+    groups:
+      spring-boot-dependencies:
+        patterns:
+          - "org.springframework.boot*"
+          - "org.springframework*"
+        update-types:
+          - "minor"
+          - "patch"
+      security-jwt-dependencies:
+        patterns:
+          - "io.jsonwebtoken*"
+          - "org.springframework.security*"
+          - "com.nimbusds*"
+      database-flyway-dependencies:
+        patterns:
+          - "com.mysql*"
+          - "org.flywaydb*"
+          - "com.zaxxer*"
+          - "org.hibernate*"
+      testing-dependencies:
+        patterns:
+          - "org.junit*"
+          - "org.mockito*"
+          - "org.hamcrest*"
+          - "org.assertj*"
+
+  # --------------------------------------------------------------------------
+  # 2. Frontend: React + Vite + npm
+  # --------------------------------------------------------------------------
+  - package-ecosystem: "npm"
+    directory: "/LeLa_FE"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "04:00"
+      timezone: "Asia/Ho_Chi_Minh"
+    open-pull-requests-limit: 10
+    target-branch: "main"
+    labels:
+      - "dependencies"
+      - "frontend"
+      - "npm"
+    commit-message:
+      prefix: "chore(deps-frontend)"
+      include: "scope"
+    # Prevent major breaking upgrades of core framework / UI libraries
+    ignore:
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-dom"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "antd"
+        update-types: ["version-update:semver-major"]
+    # Grouping strategy for frontend dependencies
+    groups:
+      react-ecosystem:
+        patterns:
+          - "react*"
+          - "@types/react*"
+          - "react-router-dom"
+          - "@tanstack/react-query*"
+      ui-styling:
+        patterns:
+          - "antd"
+          - "lucide-react"
+          - "motion"
+          - "tailwindcss*"
+          - "@tailwindcss*"
+      dev-dependencies:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # --------------------------------------------------------------------------
+  # 3. CI/CD: GitHub Actions Workflows
+  # --------------------------------------------------------------------------
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    target-branch: "main"
+    labels:
+      - "dependencies"
+      - "ci"
+      - "github-actions"
+    commit-message:
+      prefix: "chore(deps-actions)"
