@@ -1,21 +1,28 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Skeleton, Button } from 'antd';
+import { Button } from 'antd';
 import { ReloadOutlined } from '@ant-design/icons';
 import { dailyActivitiesApi } from '../../gamification/api/daily-activities.api';
 import { srsReviewsApi } from '../../study-session/api/srs-reviews.api';
 import { profileApi } from '../../users/api/profile.api';
 import { deckEnrollmentsApi } from '../../study-content/api/deck-enrollments.api';
-import { decksApi } from '../../study-content/api/decks.api';
+import { quizzesApi } from '../../quiz/api/quizzes.api';
+import { voiceConversationApi } from '../../voice-conversation/api/voice-conversation.api';
+import { leaderboardsApi } from '../../gamification/api/leaderboards.api';
+import { achievementsApi } from '../../quiz/api/achievements.api';
+import { userSubscriptionsApi } from '../../subscription/api/user-subscriptions.api';
 
-import { DashboardHero } from '../components/DashboardHero';
-import { CurrentLevelCard } from '../components/CurrentLevelCard';
-import { FinalLevelAssessmentCard } from '../components/FinalLevelAssessmentCard';
+import { TodayDueHero } from '../components/TodayDueHero';
+import { DailyGoalRingCard } from '../components/DailyGoalRingCard';
 import { ContinueLearningSection } from '../components/ContinueLearningSection';
-import { RecommendedDecksSection } from '../components/RecommendedDecksSection';
-import { StatsSection } from '../components/StatsSection';
-import { ActivityHeatmapSection } from '../components/ActivityHeatmapSection';
-import { QuickActionsSection } from '../components/QuickActionsSection';
+import { PracticeRoomsSection } from '../components/PracticeRoomsSection';
+import { LevelUpRoadmapSection } from '../components/LevelUpRoadmapSection';
+import { StreakCalendarSection } from '../components/StreakCalendarSection';
+import { TopLearnersSection } from '../components/TopLearnersSection';
+import { UpcomingBadgesSection } from '../components/UpcomingBadgesSection';
+import { FreeUpgradeBanner } from '../components/FreeUpgradeBanner';
+import { SkeletonBox } from '../../../shared/components/ui/SkeletonBox';
+import { HighlighterText } from '../../../shared/components/ui/HighlighterText';
 
 export function LearnerDashboardPage() {
   const getLocalISODate = (date: Date) => {
@@ -25,28 +32,10 @@ export function LearnerDashboardPage() {
 
   const endDate = getLocalISODate(new Date());
   const startDateObj = new Date();
-  startDateObj.setDate(startDateObj.getDate() - 364);
+  startDateObj.setDate(startDateObj.getDate() - 30);
   const startDate = getLocalISODate(startDateObj);
 
-  // 1. Fetch Today's Activity
-  const { data: activityData } = useQuery({
-    queryKey: ['daily-activity', 'today'],
-    queryFn: () => dailyActivitiesApi.getToday(),
-  });
-
-  // 2. Fetch Activity History
-  const { data: historyData, isLoading: isLoadingHistory } = useQuery({
-    queryKey: ['daily-activity', 'history', startDate, endDate],
-    queryFn: () => dailyActivitiesApi.getHistory({ startDate, endDate }),
-  });
-
-  // 3. Fetch SRS Statistics
-  const { data: srsStats } = useQuery({
-    queryKey: ['srs-statistics'],
-    queryFn: () => srsReviewsApi.getStatistics(),
-  });
-
-  // 4. Fetch Me Profile
+  // 1. Profile
   const {
     data: profileResponse,
     isLoading: isProfileLoading,
@@ -57,16 +46,48 @@ export function LearnerDashboardPage() {
     queryFn: profileApi.getMe,
   });
 
-  // 5. Fetch Enrolled Decks
-  const { data: enrollmentsResponse, isLoading: isLoadingEnrollments } = useQuery({
-    queryKey: ['my-enrollments'],
-    queryFn: () => deckEnrollmentsApi.getMyList({ size: 100 }),
+  const user = profileResponse?.data;
+  const username = user?.fullName || user?.username || 'học viên';
+  const currentExamTypeId = user?.currentExamType?.id;
+  const currentLevelId = user?.currentLevel?.id;
+  const levelName = user?.currentLevel?.name || 'TOEIC Foundation';
+
+  // 1b. Check active subscription
+  const { data: userSubsResp } = useQuery({
+    queryKey: ['my-subscriptions'],
+    queryFn: () => userSubscriptionsApi.getAll({ size: 100 }),
+    retry: 1,
+  });
+  const activeSub = userSubsResp?.data?.content?.find((s: any) => s.status === 'ACTIVE');
+  const isFreeUser = !activeSub;
+
+  // 2. Today's Activity
+  const { data: activityData } = useQuery({
+    queryKey: ['daily-activity', 'today'],
+    queryFn: () => dailyActivitiesApi.getToday(),
   });
 
-  const enrollments = enrollmentsResponse?.data?.content || [];
+  // 3. Activity History
+  const { data: historyData } = useQuery({
+    queryKey: ['daily-activity', 'history', startDate, endDate],
+    queryFn: () => dailyActivitiesApi.getHistory({ startDate, endDate }),
+  });
+
+  // 4. SRS Statistics
+  const { data: srsStats } = useQuery({
+    queryKey: ['srs-statistics'],
+    queryFn: () => srsReviewsApi.getStatistics(),
+  });
+
+  // 5. Enrolled Decks
+  const { data: enrollmentsResponse, isLoading: isLoadingEnrollments } = useQuery({
+    queryKey: ['my-enrollments'],
+    queryFn: () => deckEnrollmentsApi.getMyList({ size: 50 }),
+  });
 
   const enrolledDecksData = useMemo(() => {
-    return enrollments.map((enrollment) => {
+    const list = enrollmentsResponse?.data?.content || [];
+    return list.map((enrollment) => {
       const deck: any = {
         id: enrollment.deckId,
         title: enrollment.deckTitle || `Bộ thẻ #${enrollment.deckId}`,
@@ -79,187 +100,190 @@ export function LearnerDashboardPage() {
       };
       return { deck, enrollment };
     });
-  }, [enrollments]);
+  }, [enrollmentsResponse?.data?.content]);
 
-  const isLoadingDecks = isLoadingEnrollments;
-
-  // 6. Fetch Recommended Decks for User's Level
-  const currentExamTypeId = profileResponse?.data?.currentExamType?.id;
-  const currentLevelId = profileResponse?.data?.currentLevel?.id;
-
-  const { data: exploreDecksResponse, isLoading: isLoadingExplore } = useQuery({
-    queryKey: ['explore-decks', currentExamTypeId, currentLevelId],
-    queryFn: () =>
-      decksApi.getAll({
-        size: 20,
-        examTypeId: currentExamTypeId,
-        levelId: currentLevelId,
-      }),
-    enabled: !!currentExamTypeId && !!currentLevelId,
-  });
-
-  const enrolledDeckIds = useMemo(() => {
-    return new Set(enrollments.map((e) => e.deckId));
-  }, [enrollments]);
-
-  const recommendedDecks = useMemo(() => {
-    const all = exploreDecksResponse?.content || [];
-    return all.filter((d: any) => !enrolledDeckIds.has(d.id));
-  }, [exploreDecksResponse, enrolledDeckIds]);
-
-  // Data variables
-  const user = profileResponse?.data;
-  const username = user?.fullName || user?.username || 'bạn';
-  const currentLevel = user?.currentLevel;
-  const hasCurrentLevel = !!currentLevel;
-  const levelName = currentLevel?.name;
-
-  const streak = activityData?.data?.currentStreak || 0;
-  const xp = activityData?.data?.xpEarned || 0;
-  const totalXp = user?.xpTotal || 0;
-  const totalCardsLearned = srsStats?.data?.totalCardsLearned || 0;
-  const masteredPercent = srsStats?.data?.masteryPercentage || 0;
-  const dueTodayCount = srsStats?.data?.dueTodayCount || srsStats?.data?.dueCount || 0;
-
-  const sortedEnrolledDecks = useMemo(() => {
-    return [...enrolledDecksData].sort((a, b) => {
-      const aMastered = a.enrollment?.masteredCards || 0;
-      const aTotal = a.deck.totalCards || 0;
-      const aCompleted = aTotal > 0 && aMastered >= aTotal;
-      const aInProgress = aMastered > 0 && !aCompleted;
-
-      const bMastered = b.enrollment?.masteredCards || 0;
-      const bTotal = b.deck.totalCards || 0;
-      const bCompleted = bTotal > 0 && bMastered >= bTotal;
-      const bInProgress = bMastered > 0 && !bCompleted;
-
-      // Priority 1: In progress (0 < progress < 100%)
-      if (aInProgress && !bInProgress) return -1;
-      if (!aInProgress && bInProgress) return 1;
-
-      // Priority 3: Completed (100%) last
-      if (aCompleted && !bCompleted) return 1;
-      if (!aCompleted && bCompleted) return -1;
-
-      return 0;
-    });
-  }, [enrolledDecksData]);
-
+  // First uncompleted deck to continue
   const continueDeck = useMemo(() => {
-    if (sortedEnrolledDecks.length === 0) return null;
-
-    // Find the first deck that is NOT 100% completed
-    const uncompletedItem = sortedEnrolledDecks.find(({ deck, enrollment }) => {
+    if (enrolledDecksData.length === 0) return null;
+    const item = enrolledDecksData.find(({ deck, enrollment }) => {
       const mastered = enrollment?.masteredCards || 0;
       const total = deck.totalCards || 0;
       return total === 0 || mastered < total;
     });
-
-    if (!uncompletedItem) return null; // All decks are 100% completed!
-
-    return {
-      deck: uncompletedItem.deck,
-      masteredCards: uncompletedItem.enrollment?.masteredCards || 0,
-    };
-  }, [sortedEnrolledDecks]);
-
-  const allCompleted = useMemo(() => {
-    if (enrolledDecksData.length === 0) return false;
-    return enrolledDecksData.every(({ deck, enrollment }) => {
-      const mastered = enrollment?.masteredCards || 0;
-      const total = deck.totalCards || 0;
-      return total > 0 && mastered >= total;
-    });
+    if (item) {
+      return { deck: item.deck, masteredCards: item.enrollment?.masteredCards || 0 };
+    }
+    const first = enrolledDecksData[0];
+    return first ? { deck: first.deck, masteredCards: first.enrollment?.masteredCards || 0 } : null;
   }, [enrolledDecksData]);
 
-  // Render Skeleton while initial profile is loading
+  // 6. Voice Status (Quota, limits)
+  const { data: voiceStatusResp } = useQuery({
+    queryKey: ['voice-status'],
+    queryFn: () => voiceConversationApi.getStatus(),
+    retry: 1,
+  });
+  const voiceStatus = voiceStatusResp?.data || null;
+
+  // 7. Level-Up Quizzes for current level
+  const { data: levelUpQuizzesResp, isLoading: isLoadingQuizzes } = useQuery({
+    queryKey: ['level-up-quizzes', currentExamTypeId, currentLevelId],
+    queryFn: () => quizzesApi.search('LEVEL_UP', currentExamTypeId, currentLevelId),
+    enabled: !!currentExamTypeId || !!currentLevelId,
+    retry: 1,
+  });
+  const levelUpQuizzes = (levelUpQuizzesResp?.data as any[]) || [];
+
+  // 8. Weekly Leaderboard Top 5
+  const { data: leaderboardResp } = useQuery({
+    queryKey: ['leaderboard-weekly-top5'],
+    queryFn: () => leaderboardsApi.getWeekly({ size: 5 }),
+    retry: 1,
+  });
+  const topLearners = (leaderboardResp?.data?.content as any[]) || [];
+
+  // 9. Achievements Progress
+  const { data: achievementsResp } = useQuery({
+    queryKey: ['achievements-progress'],
+    queryFn: () => achievementsApi.getMyProgress(),
+    retry: 1,
+  });
+  const achievements = achievementsResp?.data || [];
+
+  // Calculated numbers
+  const streak = activityData?.data?.currentStreak || user?.streakCurrent || 0;
+  const xpToday = activityData?.data?.xpEarned || 0;
+  const cardsReviewedToday = activityData?.data?.reviewCount || 0;
+  const dueTodayCount = srsStats?.data?.dueTodayCount || srsStats?.data?.dueCount || 0;
+
+  // Date formatted in Vietnamese
+  const todayFormatted = useMemo(() => {
+    const now = new Date();
+    const daysOfWeek = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+    const dayName = daysOfWeek[now.getDay()];
+    const day = now.getDate();
+    const month = now.getMonth() + 1;
+    const year = now.getFullYear();
+    return `${dayName}, ngày ${day} tháng ${month}, ${year}`;
+  }, []);
+
   if (isProfileLoading) {
     return (
-      <div className="min-h-screen bg-[#F4F3EE] p-4 md:p-8">
-        <div className="max-w-6xl mx-auto space-y-6">
-          <Skeleton active avatar paragraph={{ rows: 3 }} className="brutal-card bg-white p-8" />
-          <Skeleton active paragraph={{ rows: 2 }} className="brutal-card bg-white p-8" />
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            <Skeleton active className="brutal-card bg-white p-6" />
-            <Skeleton active className="brutal-card bg-white p-6" />
-            <Skeleton active className="brutal-card bg-white p-6" />
+      <div className="max-w-[1200px] mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+        <SkeletonBox height="36px" width="300px" />
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="lg:col-span-8">
+            <SkeletonBox height="240px" />
           </div>
+          <div className="lg:col-span-4">
+            <SkeletonBox height="240px" />
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <SkeletonBox height="180px" />
+          <SkeletonBox height="180px" />
+          <SkeletonBox height="180px" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#F4F3EE] p-4 md:p-8">
-      <div className="max-w-6xl mx-auto">
-        {/* Error Notice */}
-        {isProfileError && (
-          <div className="mb-6 p-4 bg-red-100 border-[2px] border-black text-red-800 font-bold flex justify-between items-center">
-            <span>Không thể tải đầy đủ dữ liệu thông tin cá nhân.</span>
-            <Button
-              icon={<ReloadOutlined />}
-              onClick={() => refetchProfile()}
-              className="brutal-pill border-black bg-white font-bold"
-            >
-              Thử lại
-            </Button>
-          </div>
-        )}
+    <div className="max-w-[1200px] mx-auto p-4 sm:p-6 lg:p-8 space-y-8 animate-fade-in">
+      {/* Error Notice */}
+      {isProfileError && (
+        <div className="p-4 bg-coral/15 border-2 border-coral rounded-[10px] text-ink font-bold flex justify-between items-center">
+          <span>Không thể tải dữ liệu mới nhất. Vui lòng thử lại.</span>
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={() => refetchProfile()}
+            className="border-ink font-bold bg-card"
+          >
+            Tải lại
+          </Button>
+        </div>
+      )}
 
-        {/* SECTION 1: HERO BANNER (Primary CTA) */}
-        <DashboardHero
-          username={username}
-          levelName={levelName}
-          dueTodayCount={dueTodayCount}
-          continueDeck={continueDeck}
-          hasCurrentLevel={hasCurrentLevel}
-          allCompleted={allCompleted}
-        />
+      {/* Greeting line & Date */}
+      <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 pb-1">
+        <div>
+          <span className="text-xs font-mono uppercase tracking-wider text-ink-mute block mb-1">
+            {todayFormatted}
+          </span>
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold font-display text-ink tracking-tight">
+            Chào mừng trở lại, <HighlighterText text={username} highlight={username} />!
+          </h1>
+        </div>
+        <div className="text-xs sm:text-sm font-sans text-ink-soft">
+          Mục tiêu hôm nay: <span className="font-bold text-ink">Hoàn thành các thẻ đến hạn</span>
+        </div>
+      </div>
 
-        {/* SECTION 2: CURRENT LEVEL */}
-        <CurrentLevelCard
-          currentLevelName={levelName}
-          hasCurrentLevel={hasCurrentLevel}
-        />
-
-        {/* SECTION 2B: FINAL LEVEL ASSESSMENT */}
-        <FinalLevelAssessmentCard
-          levelName={levelName}
-          hasCurrentLevel={hasCurrentLevel}
-        />
-
-        {/* SECTION 3: CONTINUE LEARNING / MY DECKS */}
-        <ContinueLearningSection
-          enrolledDecks={sortedEnrolledDecks}
-          isLoading={isLoadingEnrollments || isLoadingDecks}
-        />
-
-        {/* SECTION 4: RECOMMENDED DECKS (Based on current level) */}
-        {hasCurrentLevel && (
-          <RecommendedDecksSection
-            levelName={levelName}
-            recommendedDecks={recommendedDecks}
-            isLoading={isLoadingExplore}
+      {/* ROW 1: 12-Column Asymmetric Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* 8 Cols Main Block: Due Cards & Primary CTAs */}
+        <div className="lg:col-span-8">
+          <TodayDueHero
+            dueTodayCount={dueTodayCount}
+            continueDeck={continueDeck}
+            username={username}
           />
-        )}
+        </div>
 
-        {/* SECTION 5: COMPACT STATS (Streak, XP, Mastery) */}
-        <StatsSection
-          streak={streak}
-          xp={xp}
-          totalXp={totalXp}
-          totalCardsLearned={totalCardsLearned}
-          masteredPercent={masteredPercent}
+        {/* 4 Cols Right Block: Daily Goal Progress Ring & Metrics */}
+        <div className="lg:col-span-4">
+          <DailyGoalRingCard
+            cardsReviewedToday={cardsReviewedToday}
+            dailyGoalTarget={user?.dailyGoalCards || 20}
+            xpToday={xpToday}
+            currentStreak={streak}
+          />
+        </div>
+      </div>
+
+      {/* Free Tier Upgrade Banner (Only if FREE user) */}
+      {isFreeUser && (
+        <FreeUpgradeBanner isFreeUser={isFreeUser} />
+      )}
+
+      {/* ROW 2: "Học tiếp" (Enrolled Decks) & "Phòng luyện" (3 Practice Rooms) */}
+      <div className="space-y-8">
+        <ContinueLearningSection
+          enrolledDecks={enrolledDecksData}
+          isLoading={isLoadingEnrollments}
         />
 
-        {/* SECTION 6: INTERACTIVE ACTIVITY HEATMAP */}
-        <ActivityHeatmapSection
-          historyData={historyData?.data}
-          isLoading={isLoadingHistory}
+        <PracticeRoomsSection voiceStatus={voiceStatus} />
+      </div>
+
+      {/* ROW 3: Roadmap (Level-Up Stepper) & Community/Metrics Grid */}
+      <div className="space-y-6">
+        {/* 10-Step Level-Up Stepper */}
+        <LevelUpRoadmapSection
+          levelName={levelName}
+          quizzes={levelUpQuizzes}
+          isLoading={isLoadingQuizzes}
         />
 
-        {/* SECTION 7: QUICK ACTIONS */}
-        <QuickActionsSection />
+        {/* 3-Column Community, Streak & Achievements Block */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* 14-day Streak Tracker */}
+          <StreakCalendarSection
+            currentStreak={streak}
+            historyData={historyData?.data}
+          />
+
+          {/* Top 5 Weekly Leaderboard */}
+          <TopLearnersSection
+            learners={topLearners}
+            currentUserId={user?.id}
+          />
+
+          {/* Upcoming Badges */}
+          <UpcomingBadgesSection
+            achievements={achievements}
+          />
+        </div>
       </div>
     </div>
   );

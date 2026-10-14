@@ -1,7 +1,12 @@
 import React from 'react';
-import { Button, Card, Empty, Skeleton } from 'antd';
 import { useNavigate } from 'react-router-dom';
-import { RightOutlined } from '@ant-design/icons';
+import { FlashCardBox } from '../../../shared/components/ui/FlashCardBox';
+import { RulerProgress } from '../../../shared/components/ui/RulerProgress';
+import { Stamp } from '../../../shared/components/ui/Stamp';
+import { HighlighterText } from '../../../shared/components/ui/HighlighterText';
+import { SkeletonBox } from '../../../shared/components/ui/SkeletonBox';
+import { EmptyState } from '../../../shared/components/ui/EmptyState';
+import { ArrowRightOutlined, RightOutlined } from '@ant-design/icons';
 import type { DeckResponse } from '../../../shared/types/lela';
 
 interface ContinueLearningSectionProps {
@@ -17,119 +22,98 @@ export const ContinueLearningSection: React.FC<ContinueLearningSectionProps> = (
 
   if (isLoading) {
     return (
-      <div className="brutal-card brutal-shadow bg-white p-6 md:p-8 mb-8 border-[3px] border-black">
-        <h2 className="text-2xl font-black uppercase mb-6 border-b-[3px] border-black pb-3 text-[#1D2A3A]">
-          BỘ THẺ ĐANG HỌC
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3].map((i) => (
-            <Card key={i} className="brutal-card">
-              <Skeleton active />
-            </Card>
-          ))}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <SkeletonBox height="28px" width="200px" />
+          <SkeletonBox height="20px" width="80px" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <SkeletonBox height="180px" />
+          <SkeletonBox height="180px" />
+          <SkeletonBox height="180px" />
         </div>
       </div>
     );
   }
 
-  // Take top 3 decks
   const displayDecks = enrolledDecks.slice(0, 3);
 
   return (
-    <div className="brutal-card brutal-shadow bg-white p-6 md:p-8 mb-8 border-[3px] border-black">
-      <div className="flex justify-between items-center mb-6 border-b-[3px] border-black pb-3">
-        <h2 className="text-2xl font-black uppercase text-[#1D2A3A] m-0">
-          BỘ THẺ ĐANG HỌC
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl sm:text-2xl font-bold font-display text-ink tracking-tight flex items-center gap-2">
+          <HighlighterText text="Học tiếp các bộ thẻ" highlight="Học tiếp" />
         </h2>
         {enrolledDecks.length > 0 && (
-          <Button
-            type="link"
-            className="font-bold text-[#F05A4A] hover:text-[#d94f41] p-0 text-base flex items-center gap-1"
+          <button
+            type="button"
             onClick={() => navigate('/my-decks')}
+            className="text-xs sm:text-sm font-bold text-ink hover:text-brand flex items-center gap-1 transition-colors cursor-pointer"
           >
-            XEM TẤT CẢ ({enrolledDecks.length}) <RightOutlined />
-          </Button>
+            Tất cả ({enrolledDecks.length}) <RightOutlined className="text-xs" />
+          </button>
         )}
       </div>
 
       {displayDecks.length === 0 ? (
-        <div className="py-8 text-center bg-[#F4F3EE] border-[2px] border-black p-6">
-          <Empty
-            description={
-              <span className="font-bold text-gray-600 text-lg">
-                Bạn chưa tham gia học bộ thẻ nào.
-              </span>
-            }
-          />
-          <Button
-            className="mt-4 brutal-pill border-black font-black uppercase text-white bg-[#F05A4A] hover:!bg-[#d94f41] h-12 px-8 text-base shadow-[2px_2px_0px_0px_#000]"
-            onClick={() => navigate('/decks')}
-          >
-            KHÁM PHÁ BỘ THẺ MỚI
-          </Button>
-        </div>
+        <EmptyState
+          title="Chưa tham gia bộ thẻ nào"
+          description="Khám phá kho từ vựng TOEIC được phân loại theo chủ đề và cấp độ để bắt đầu học."
+          actionText="Khám phá bộ thẻ ngay"
+          onAction={() => navigate('/decks')}
+        />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {displayDecks.map(({ deck, enrollment }) => {
             const masteredCards = enrollment?.masteredCards || 0;
             const totalCards = deck.totalCards || 0;
-            const progressPercent = totalCards > 0 ? Math.round((masteredCards / totalCards) * 100) : 0;
+            const progressPercent =
+              totalCards > 0 ? Math.round((masteredCards / totalCards) * 100) : 0;
             const isCompleted = totalCards > 0 && masteredCards >= totalCards;
 
             return (
-              <div
+              <FlashCardBox
                 key={deck.id}
-                className="brutal-card brutal-shadow bg-white border-[2px] border-black flex flex-col justify-between p-5 hover:-translate-y-1 transition-transform"
+                interactive
+                onClick={() => navigate(`/study/${deck.id}`)}
+                className="flex flex-col justify-between h-full bg-card"
               >
                 <div>
-                  <div className="flex justify-between items-start mb-2 gap-2">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="bg-[#2A8B9D] text-white text-xs font-bold px-2.5 py-1 brutal-border border-black">
-                        {deck.topic?.name || 'Chủ đề'}
-                      </span>
-                      {isCompleted && (
-                        <span className="bg-[#4CAF50] text-white text-xs font-black px-2 py-0.5 brutal-border border-black shadow-[1px_1px_0px_0px_#000]">
-                          ✓ HOÀN THÀNH
-                        </span>
-                      )}
-                    </div>
-                    <span className="text-xs font-bold text-gray-500">
-                      {totalCards} thẻ
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    <span className="text-[11px] font-mono uppercase tracking-wider text-ink-mute">
+                      {deck.topic?.name || 'TOEIC'}
                     </span>
+                    {isCompleted ? (
+                      <Stamp text="ĐÃ THÀNH THẠO" variant="mint" />
+                    ) : (
+                      <Stamp text="ĐANG HỌC" variant="neutral" />
+                    )}
                   </div>
 
-                  <h3
-                    className="text-xl font-black text-[#1D2A3A] mb-3 line-clamp-1 cursor-pointer hover:text-[#F05A4A] transition-colors"
-                    onClick={() => navigate(`/decks/${deck.id}`)}
-                  >
+                  <h3 className="text-base sm:text-lg font-bold font-display text-ink line-clamp-1 mb-1">
                     {deck.title}
                   </h3>
-
-                  <div className="mb-4">
-                    <div className="flex justify-between text-xs font-bold text-gray-700 mb-1 uppercase">
-                      <span>Tiến độ</span>
-                      <span>{masteredCards} / {totalCards} thẻ ({progressPercent}%)</span>
-                    </div>
-                    <div className="h-3 w-full bg-[#F4F3EE] border-[2px] border-black overflow-hidden relative">
-                      <div
-                        className={`h-full transition-all duration-300 ${isCompleted ? 'bg-[#4CAF50]' : 'bg-[#2A8B9D]'}`}
-                        style={{ width: `${progressPercent}%` }}
-                      />
-                    </div>
-                  </div>
+                  <p className="text-xs text-ink-soft line-clamp-2 mb-4">
+                    {deck.description || 'Bộ từ vựng trọng tâm bám sát đề thi TOEIC.'}
+                  </p>
                 </div>
 
-                <Button
-                  className={`w-full brutal-pill font-black uppercase h-11 border-[2px] border-black ${
-                    isCompleted
-                      ? '!bg-[#2A8B9D] !text-white hover:!bg-[#1D2A3A]'
-                      : '!bg-[#1D2A3A] !text-white hover:!bg-[#2A8B9D]'
-                  }`}
-                  onClick={() => navigate(`/study/${deck.id}`)}
-                >
-                  {isCompleted ? 'ÔN LẠI' : 'HỌC TIẾP'}
-                </Button>
-              </div>
+                <div className="pt-3 border-t border-line space-y-2">
+                  <div className="flex justify-between items-center text-xs font-mono">
+                    <span className="text-ink-soft">Tiến độ</span>
+                    <span className="font-bold text-ink tabular-nums">
+                      {masteredCards}/{totalCards} từ ({progressPercent}%)
+                    </span>
+                  </div>
+                  <RulerProgress percent={progressPercent} color="brand" />
+
+                  <div className="pt-2 flex justify-end">
+                    <span className="inline-flex items-center gap-1 text-xs font-bold text-brand group-hover:translate-x-1 transition-transform">
+                      {isCompleted ? 'Ôn lại' : 'Học tiếp'} <ArrowRightOutlined className="text-[10px]" />
+                    </span>
+                  </div>
+                </div>
+              </FlashCardBox>
             );
           })}
         </div>
