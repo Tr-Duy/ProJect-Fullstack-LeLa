@@ -1,35 +1,42 @@
 import { ConfigProvider } from 'antd';
 import React from 'react';
 
-export const neoBrutalismTheme = {
+export const editorialJournalTheme = {
   token: {
-    colorPrimary: '#F05A4A', // Coral Red
-    colorInfo: '#2A8B9D', // Teal Blue
-    colorTextBase: '#1D2A3A', // Dark Navy
-    colorBgBase: '#F4F3EE', // Off-White
-    borderRadius: 999, // Soft brutalism pill exception
-    lineWidth: 3,
-    colorBorder: '#000000',
-    boxShadow: '6px 6px 0px 0px #000000',
-    fontFamily: '"Outfit", "Inter", sans-serif',
+    colorPrimary: '#1D5CFF', // LeLa Brand Blue
+    colorSuccess: '#00C896', // Mint
+    colorWarning: '#FFD60A', // Sun Yellow
+    colorError: '#FF5A4E', // Coral Red
+    colorInfo: '#1D5CFF',
+    colorTextBase: '#0F1729', // Ink
+    colorBgBase: '#FFFFFF', // Card White
+    colorBgLayout: '#F5F1E8', // Paper
+    borderRadius: 10,
+    lineWidth: 2,
+    colorBorder: '#0F1729', // Ink Border
+    fontFamily: '"Be Vietnam Pro", -apple-system, sans-serif',
   },
   components: {
     Button: {
-      controlHeight: 48,
-      fontWeight: 'bold',
-      defaultBg: '#ffffff',
-      defaultColor: '#1D2A3A',
-      primaryColor: '#ffffff',
+      controlHeight: 44,
+      fontWeight: '600',
+      defaultBg: '#FFFFFF',
+      defaultColor: '#0F1729',
+      defaultBorderColor: '#0F1729',
+      primaryColor: '#FFFFFF',
     },
     Input: {
-      controlHeight: 48,
-    }
-  }
+      controlHeight: 44,
+    },
+    Select: {
+      controlHeight: 44,
+    },
+  },
 };
 
 export function LearnerThemeProvider({ children }: { children: React.ReactNode }) {
   return (
-    <ConfigProvider theme={neoBrutalismTheme} wave={{ disabled: true }}>
+    <ConfigProvider theme={editorialJournalTheme} wave={{ disabled: true }}>
       {children}
     </ConfigProvider>
   );

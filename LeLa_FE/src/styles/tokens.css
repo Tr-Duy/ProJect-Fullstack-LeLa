@@ -1,0 +1,261 @@
+/* Design Tokens: "Sổ Tay Ôn Thi" (Editorial Study Journal) */
+
+:root {
+  /* Bảng màu chính (Palette) */
+  --paper: #F5F1E8;
+  --paper-2: #EDE7DA;
+  --card: #FFFFFF;
+  --ink: #0F1729;
+  --ink-soft: #3B465C;
+  --ink-mute: #7A8499;
+  --line: #D9D2C3;
+  --brand: #1D5CFF;
+  --brand-ink: #0B2E99;
+  --mint: #00C896;
+  --sun: #FFD60A;
+  --coral: #FF5A4E;
+
+  /* Typography */
+  --font-display: 'Bricolage Grotesque Variable', 'Bricolage Grotesque', 'Be Vietnam Pro', sans-serif;
+  --font-body: 'Be Vietnam Pro', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+
+  /* Shadows & Borders */
+  --border-ink: 2px solid var(--ink);
+  --border-line: 1px solid var(--line);
+  --shadow-card: 4px 4px 0 var(--ink);
+  --shadow-card-hover: 6px 6px 0 var(--ink);
+  --shadow-card-active: 0 0 0 var(--ink);
+  --shadow-sm: 2px 2px 0 var(--ink);
+
+  /* Radius */
+  --radius-card: 12px;
+  --radius-btn: 10px;
+  --radius-chip: 999px;
+
+  /* Transitions */
+  --ease-journal: 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Vệt dạ quang dưới chữ */
+.highlighter-streak {
+  background: linear-gradient(180deg, transparent 62%, var(--sun) 62%);
+  display: inline;
+  padding: 0 2px;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+/* Thẻ Flashcard góc trên phải cắt chéo 12px */
+.flashcard-clip {
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%);
+}
+
+.flashcard-notch {
+  position: relative;
+}
+.flashcard-notch::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 12px;
+  height: 12px;
+  border-left: 2px solid var(--ink);
+  border-bottom: 2px solid var(--ink);
+  background-color: var(--paper-2);
+  pointer-events: none;
+}
+
+/* Kiểu card Flashcard có bóng mực cứng */
+.journal-card {
+  background-color: var(--card);
+  border: 2px solid var(--ink);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  transition: transform var(--ease-journal), box-shadow var(--ease-journal);
+}
+
+.journal-card-interactive:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: var(--shadow-card-hover);
+}
+
+.journal-card-interactive:active {
+  transform: translate(2px, 2px);
+  box-shadow: var(--shadow-card-active);
+}
+
+/* Khối phụ viền mảnh 1px không bóng */
+.journal-subcard {
+  background-color: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+}
+
+/* Tem nhãn (Stamp) in hoa xoay -2 độ */
+.journal-stamp {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 2px 7px;
+  border: 1.5px solid var(--ink);
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transform: rotate(-2deg);
+  white-space: nowrap;
+}
+
+.journal-stamp-due {
+  background-color: var(--sun);
+  color: var(--ink);
+}
+
+.journal-stamp-mastered {
+  background-color: var(--mint);
+  color: var(--ink);
+}
+
+.journal-stamp-new {
+  background-color: var(--paper-2);
+  color: var(--ink);
+}
+
+.journal-stamp-pro {
+  background-color: var(--brand);
+  color: #ffffff;
+  border-color: var(--brand-ink);
+}
+
+.journal-stamp-coral {
+  background-color: var(--coral);
+  color: #ffffff;
+}
+
+/* Thước đo tiến độ (Ruler Progress) */
+.ruler-track {
+  position: relative;
+  height: 14px;
+  background-color: var(--paper-2);
+  border: 2px solid var(--ink);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.ruler-ticks {
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    to right,
+    transparent 0,
+    transparent calc(10% - 1px),
+    rgba(15, 23, 41, 0.4) calc(10% - 1px),
+    rgba(15, 23, 41, 0.4) 10%
+  );
+  pointer-events: none;
+  z-index: 2;
+}
+
+.ruler-fill {
+  height: 100%;
+  background-color: var(--brand);
+  transition: width 300ms ease-out;
+  position: relative;
+  z-index: 1;
+}
+
+.ruler-fill-mint {
+  background-color: var(--mint);
+}
+
+/* Nút bấm Journal */
+.journal-btn {
+  font-family: var(--font-body);
+  font-weight: 600;
+  border: 2px solid var(--ink) !important;
+  border-radius: var(--radius-btn) !important;
+  box-shadow: 3px 3px 0 var(--ink) !important;
+  transition: transform var(--ease-journal), box-shadow var(--ease-journal) !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.journal-btn:hover:not(:disabled) {
+  transform: translate(-1.5px, -1.5px);
+  box-shadow: 4.5px 4.5px 0 var(--ink) !important;
+}
+
+.journal-btn:active:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: 0 0 0 var(--ink) !important;
+}
+
+.journal-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: 1px 1px 0 var(--ink) !important;
+}
+
+.journal-btn-brand {
+  background-color: var(--brand) !important;
+  color: #FFFFFF !important;
+}
+
+.journal-btn-sun {
+  background-color: var(--sun) !important;
+  color: var(--ink) !important;
+}
+
+.journal-btn-paper {
+  background-color: var(--paper-2) !important;
+  color: var(--ink) !important;
+}
+
+.journal-btn-ink {
+  background-color: var(--ink) !important;
+  color: var(--paper) !important;
+}
+
+.journal-btn-danger {
+  background-color: var(--coral) !important;
+  color: #FFFFFF !important;
+}
+
+/* Số liệu Mono */
+.mono-num {
+  font-family: var(--font-mono);
+  font-feature-settings: 'tnum' on, 'zero' on;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* Stagger entrance animation */
+@keyframes journalFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-journal-in {
+  animation: journalFadeIn 220ms ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-journal-in,
+  .journal-card-interactive,
+  .journal-btn {
+    transition: none !important;
+    animation: none !important;
+  }
+}

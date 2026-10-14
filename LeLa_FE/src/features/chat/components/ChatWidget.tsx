@@ -60,16 +60,26 @@ export const ChatWidget: React.FC = () => {
     setIsInitializing(false);
   };
 
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 120);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   const { messages, isConnected, sendMessage } = useWebSocketChat(
     conversation?.id || null, 
     user ? undefined : guestToken
   );
 
   return (
-    <div className="fixed bottom-6 right-4 md:right-6 z-50 flex flex-col items-end pointer-events-none">
+    <div className="fixed bottom-[calc(76px+env(safe-area-inset-bottom))] lg:bottom-[calc(16px+env(safe-area-inset-bottom))] right-4 z-30 flex flex-col items-end pointer-events-none">
       {/* Help Panel Window */}
       {isOpen && (
-        <div className="pointer-events-auto mb-4 w-[calc(100vw-32px)] sm:w-[400px] h-[580px] max-h-[calc(100vh-120px)] transition-all transform origin-bottom-right duration-200">
+        <div className="pointer-events-auto mb-3 w-[calc(100vw-32px)] sm:w-[380px] h-[520px] max-h-[calc(100vh-140px)] transition-all transform origin-bottom-right duration-200">
           {!user && !conversation ? (
             <GuestChatForm onSubmit={handleGuestSubmit} isLoading={isInitializing} />
           ) : (
@@ -86,18 +96,23 @@ export const ChatWidget: React.FC = () => {
         </div>
       )}
       
-      {/* Floating Help Center Button */}
+      {/* Unified Floating Live Chat Button */}
       <button 
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        aria-label={isOpen ? "Đóng bảng Trợ giúp LeLa" : "Mở bảng Trợ giúp LeLa"}
-        title="Trợ giúp LeLa"
-        className="pointer-events-auto w-14 h-14 bg-[#F05A4A] hover:bg-[#d94a3a] rounded-full text-white flex items-center justify-center shadow-xl shadow-orange-500/30 hover:scale-105 active:scale-95 transition-all border border-white/20 relative group cursor-pointer"
+        aria-label={isOpen ? "Đóng hỗ trợ LeLa" : "Mở hỗ trợ trực tiếp"}
+        title="Hỗ trợ trực tiếp"
+        className="pointer-events-auto h-11 px-3.5 bg-[var(--sun)] hover:bg-[#ffe033] text-[var(--ink)] rounded-xl flex items-center gap-2 border-2 border-[var(--ink)] shadow-[3px_3px_0_var(--ink)] hover:translate-x-[-1px] hover:translate-y-[-1px] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all cursor-pointer font-bold text-xs"
       >
         {isOpen ? (
-          <X className="w-6 h-6 text-white" />
+          <X className="w-5 h-5 text-[var(--ink)] shrink-0" />
         ) : (
-          <HelpCircle className="w-7 h-7 text-white stroke-[2.5]" />
+          <HelpCircle className="w-5 h-5 text-[var(--ink)] stroke-[2.5] shrink-0" />
+        )}
+        {!isOpen && !isScrolled && (
+          <span className="font-mono uppercase tracking-wider font-bold hidden sm:inline">
+            Trợ giúp
+          </span>
         )}
       </button>
     </div>
