@@ -46,10 +46,10 @@ export const NextActionCard: React.FC<NextActionCardProps> = ({
   const vocabAudio = featuredCard?.frontAudioUrl;
 
   return (
-    <div className="bg-[var(--surface)] rounded-[24px] p-6 sm:p-8 border border-[var(--border)] shadow-[var(--shadow-md)] relative overflow-hidden transition-all duration-200">
-      <div className="flex flex-col lg:flex-row items-center justify-between gap-8">
+    <div className="bg-[var(--surface)] rounded-[24px] p-6 sm:p-8 border border-[var(--border)] shadow-[var(--shadow-md)] relative transition-all duration-200">
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_320px] items-center gap-8">
         {/* Left Side: Priority Next Action */}
-        <div className="flex-1 space-y-4 text-left w-full">
+        <div className="min-w-0 space-y-4 text-left w-full">
           {dueTodayCount > 0 ? (
             <>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--brand-50)] text-[var(--brand-700)] text-xs font-semibold">
@@ -166,7 +166,7 @@ export const NextActionCard: React.FC<NextActionCardProps> = ({
         </div>
 
         {/* Right Side: Real Interactive Vocabulary Card (or Lela celebrating if goal achieved) */}
-        <div className="shrink-0 flex items-center justify-center py-2">
+        <div className="w-full max-w-[320px] min-w-0 [overflow-wrap:anywhere] p-4 flex items-center justify-center mx-auto">
           {isGoalMet && dueTodayCount === 0 ? (
             <div className="flex flex-col items-center justify-center p-6 bg-[var(--surface-2)] rounded-[20px] text-center w-full max-w-[300px]">
               <LelaMascot size={88} mood="celebrating" />

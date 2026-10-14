@@ -88,19 +88,19 @@ export const VocabCard: React.FC<VocabCardProps> = ({
 
   return (
     <div
-      className={`flip-card-container w-full max-w-[340px] h-[210px] select-none transition-transform duration-300 hover:scale-[1.02] ${className}`}
+      className={`flip-card-container w-full max-w-[320px] min-w-0 [overflow-wrap:anywhere] h-[210px] select-none transition-transform duration-300 hover:scale-[1.02] ${className}`}
       style={{
-        transform: `rotate(${rotateDeg}deg)`,
+        transform: rotateDeg ? `rotate(${rotateDeg}deg)` : undefined,
       }}
     >
       <div
-        className={`flip-card-inner vocab-card-folded h-full cursor-pointer ${
+        className={`flip-card-inner vocab-card-folded h-full cursor-pointer min-w-0 ${
           isFlipped ? 'flipped' : ''
         }`}
         onClick={() => interactive && setIsFlipped(!isFlipped)}
       >
         {/* FRONT */}
-        <div className="flip-card-front p-5 flex flex-col justify-between bg-[var(--surface)]">
+        <div className="flip-card-front p-5 flex flex-col justify-between bg-[var(--surface)] min-w-0">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-medium text-[var(--text-3)] bg-[var(--surface-2)] px-2.5 py-0.5 rounded-full">
               {partOfSpeech || 'TOEIC Vocabulary'}
@@ -120,8 +120,8 @@ export const VocabCard: React.FC<VocabCardProps> = ({
             </button>
           </div>
 
-          <div className="my-auto text-center py-2">
-            <h3 className="text-2xl sm:text-3xl font-bold font-display text-[var(--text)] tracking-tight">
+          <div className="my-auto text-center py-2 min-w-0">
+            <h3 className="text-2xl sm:text-3xl font-bold font-display text-[var(--text)] tracking-tight [overflow-wrap:anywhere] break-normal">
               {word}
             </h3>
             {phonetic && (
@@ -140,7 +140,7 @@ export const VocabCard: React.FC<VocabCardProps> = ({
         </div>
 
         {/* BACK */}
-        <div className="flip-card-back p-5 flex flex-col justify-between bg-[var(--surface)] border border-[var(--border)] shadow-[var(--shadow-sm)]">
+        <div className="flip-card-back p-5 flex flex-col justify-between bg-[var(--surface)] border border-[var(--border)] shadow-[var(--shadow-sm)] min-w-0 [overflow-wrap:anywhere]">
           <div>
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-semibold text-[var(--brand-700)]">

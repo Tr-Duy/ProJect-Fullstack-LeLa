@@ -24,6 +24,7 @@ import { DailyGoalPromptModal } from '../../../features/users/components/DailyGo
 import { ChatWidget } from '../../../features/chat/components/ChatWidget';
 import { LEARNER_NAV_GROUPS, MOBILE_BOTTOM_TABS } from '../../config/navConfig';
 import { StatChip } from '../ui/StatChip';
+import { ErrorBoundary } from '../ui/ErrorBoundary';
 
 export function LearnerLayout() {
   useRealtimeMetadata();
@@ -450,8 +451,10 @@ export function LearnerLayout() {
         </header>
 
         {/* Page Content Viewport with pb-24 (96px padding bottom) to prevent floating overlap */}
-        <main className="flex-1 w-full bg-[var(--bg)] pb-24 lg:pb-16">
-          <Outlet />
+        <main className="flex-1 w-full bg-[var(--bg)] pb-24 lg:pb-16 min-w-0">
+          <ErrorBoundary resetKey={location.pathname}>
+            <Outlet />
+          </ErrorBoundary>
         </main>
 
         {/* =========================================================================

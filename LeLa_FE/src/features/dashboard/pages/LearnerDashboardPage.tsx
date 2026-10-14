@@ -21,19 +21,15 @@ import { SkillsPracticeSection } from '../components/SkillsPracticeSection';
 import { DailyGoalSidebarCard } from '../components/DailyGoalSidebarCard';
 import { LevelUpRoadmapSidebarCard } from '../components/LevelUpRoadmapSidebarCard';
 import { TopLearnersSidebarCard } from '../components/TopLearnersSidebarCard';
+import { getGreeting, formatLocalISODate } from '../../../shared/utils/dateUtils';
 
 export function LearnerDashboardPage() {
   const navigate = useNavigate();
 
-  const getLocalISODate = (date: Date) => {
-    const tzOffset = date.getTimezoneOffset() * 60000;
-    return new Date(date.getTime() - tzOffset).toISOString().split('T')[0];
-  };
-
-  const endDate = getLocalISODate(new Date());
+  const endDate = formatLocalISODate(new Date());
   const startDateObj = new Date();
   startDateObj.setDate(startDateObj.getDate() - 30);
-  const startDate = getLocalISODate(startDateObj);
+  const startDate = formatLocalISODate(startDateObj);
 
   // 1. Profile
   const {
@@ -51,19 +47,11 @@ export function LearnerDashboardPage() {
   const currentLevelId = user?.currentLevel?.id;
   const levelName = user?.currentLevel?.name || 'TOEIC 450 - 650';
 
-  // Greeting name logic: Never leave trailing comma
+  // Timezone-aware greeting
   const rawName = user?.fullName?.trim() || user?.username?.trim() || '';
-  const greetingText = useMemo(() => {
-    const hour = new Date().getHours();
-    let timeGreeting = 'Chào buổi sáng';
-    if (hour >= 12 && hour < 18) {
-      timeGreeting = 'Chào buổi chiều';
-    } else if (hour >= 18) {
-      timeGreeting = 'Chào buổi tối';
-    }
-
-    return rawName ? `${timeGreeting}, ${rawName}!` : `${timeGreeting}!`;
-  }, [rawName]);
+  const greeting = useMemo(() => {
+    return getGreeting(new Date(), rawName, (user as any)?.timezone);
+  }, [rawName, user]);
 
   // Sub-line: lower-case Vietnamese date e.g. "thứ năm, 15 tháng 10"
   const formattedDate = useMemo(() => {
@@ -243,7 +231,7 @@ export function LearnerDashboardPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div className="flex items-center gap-3">
           <SpeechBubble variant="brand" tail="bottom-left">
-            <span>{greetingText}</span>
+            <span>{greeting.text}</span>
           </SpeechBubble>
           <span className="text-xs text-[var(--text-3)] font-normal hidden sm:inline">
             {formattedDate}
@@ -260,7 +248,7 @@ export function LearnerDashboardPage() {
         {/* =========================================================================
             MAIN COLUMN (8 COLS)
             ========================================================================= */}
-        <div className="lg:col-span-8 space-y-8">
+        <div className="lg:col-span-8 space-y-8 min-w-0">
           {/* 1. Next Priority Action Card ("Việc tiếp theo" with Real Vocab Card) */}
           <NextActionCard
             dueTodayCount={dueTodayCount}
@@ -290,7 +278,7 @@ export function LearnerDashboardPage() {
         {/* =========================================================================
             SIDEBAR COLUMN (4 COLS)
             ========================================================================= */}
-        <div className="lg:col-span-4 space-y-6">
+        <div className="lg:col-span-4 space-y-6 min-w-0">
           {/* 4. Mục tiêu hôm nay: 140px Ring, 7 Weekday Dots, XP & Streak single-line */}
           <DailyGoalSidebarCard
             cardsReviewedToday={cardsReviewedToday}

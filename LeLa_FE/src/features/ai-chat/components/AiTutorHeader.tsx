@@ -8,16 +8,16 @@ interface AiTutorHeaderProps {
 
 export const AiTutorHeader: React.FC<AiTutorHeaderProps> = ({ currentLevelName }) => {
   return (
-    <div className="bg-[#1D2A3A] text-white rounded-2xl p-6 border-[3px] border-black shadow-[4px_4px_0px_0px_#000] flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
+    <div className="bg-white rounded-[20px] p-6 border border-[var(--border)] shadow-[var(--shadow-sm)] flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
       <div className="flex items-center gap-4">
-        <div className="w-14 h-14 rounded-full bg-[#FFD700] border-[2px] border-black flex items-center justify-center shrink-0 shadow-[2px_2px_0px_0px_#000]">
-          <AiTutorMascotIcon size={38} />
+        <div className="w-14 h-14 rounded-full bg-[var(--brand-50)] text-[var(--brand)] flex items-center justify-center shrink-0 border border-[var(--brand-100)]">
+          <AiTutorMascotIcon size={36} />
         </div>
         <div>
-          <h1 className="text-2xl md:text-3xl font-black tracking-tight text-white flex items-center gap-2 m-0">
-            🤖 AI Tutor <Sparkles className="w-6 h-6 text-[#FFD700]" />
+          <h1 className="text-2xl md:text-3xl font-bold font-display tracking-tight text-[var(--text)] flex items-center gap-2 m-0">
+            AI Tutor <Sparkles className="w-5 h-5 text-[var(--xp)]" />
           </h1>
-          <p className="text-gray-300 font-medium text-sm mt-1 m-0">
+          <p className="text-[var(--text-2)] font-normal text-sm mt-1 m-0">
             Trợ lý học tiếng Anh thông minh – Giải đáp từ vựng, ngữ pháp & luyện giao tiếp
           </p>
         </div>
@@ -25,11 +25,11 @@ export const AiTutorHeader: React.FC<AiTutorHeaderProps> = ({ currentLevelName }
 
       <div className="flex flex-wrap items-center gap-3">
         {currentLevelName && (
-          <div className="bg-[#FFD700] text-black font-black text-xs md:text-sm px-3.5 py-1.5 rounded-full border-[2px] border-black shadow-[2px_2px_0px_0px_#000]">
+          <div className="bg-[var(--brand-50)] text-[var(--brand-700)] font-semibold text-xs md:text-sm px-3.5 py-1.5 rounded-full">
             Trình độ: {currentLevelName}
           </div>
         )}
-        <div className="bg-white/10 px-3.5 py-1.5 rounded-full border border-white/20 text-xs font-bold text-gray-200">
+        <div className="bg-[var(--surface-2)] px-3.5 py-1.5 rounded-full border border-[var(--border)] text-xs font-semibold text-[var(--text-2)]">
           ✨ Powered by Gemini AI
         </div>
       </div>

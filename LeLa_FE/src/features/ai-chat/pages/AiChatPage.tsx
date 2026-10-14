@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAiStream } from '../hooks/useAiStream';
+import { AiChatProvider } from '../context/AiChatContext';
 import { profileApi } from '../../users/api/profile.api';
 import { AiTutorHeader } from '../components/AiTutorHeader';
 import { AiTutorNavigationTabs, type AiMode } from '../components/AiTutorNavigationTabs';
@@ -12,7 +13,7 @@ import { ConversationPracticeTool } from '../components/ConversationPracticeTool
 import { LeLaSupportTool } from '../components/LeLaSupportTool';
 import { AiChatWindow } from '../components/AiChatWindow';
 
-export const AiChatPage: React.FC = () => {
+const AiChatPageContent: React.FC = () => {
   const [activeMode, setActiveMode] = useState<AiMode>('chat');
   const [lastToolResponse, setLastToolResponse] = useState<string>('');
   const streamState = useAiStream();
@@ -35,8 +36,8 @@ export const AiChatPage: React.FC = () => {
   const displayResult = lastAiMessage?.content || lastToolResponse;
 
   return (
-    <div className="min-h-screen bg-[#F4F3EE] p-4 md:p-8">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-[calc(100vh-4rem)] bg-[var(--bg)] p-4 md:p-8">
+      <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <AiTutorHeader currentLevelName={currentLevelName} />
 
@@ -45,7 +46,7 @@ export const AiChatPage: React.FC = () => {
 
         {/* Mode Content Workspace */}
         {activeMode === 'chat' && (
-          <div className="bg-white rounded-2xl border-[3px] border-black shadow-[4px_4px_0px_0px_#000] h-[calc(100vh-16rem)] min-h-[550px] overflow-hidden">
+          <div className="bg-white rounded-[20px] border border-[var(--border)] shadow-[var(--shadow-sm)] h-[calc(100vh-16rem)] min-h-[550px] overflow-hidden">
             <AiChatWindow {...streamState} />
           </div>
         )}
@@ -77,10 +78,10 @@ export const AiChatPage: React.FC = () => {
         )}
 
         {activeMode === 'conversation' && (
-          <div>
+          <div className="space-y-6">
             <ConversationPracticeTool onStartRoleplay={handleToolSubmit} />
             {streamState.messages.length > 0 && (
-              <div className="mt-6 bg-white rounded-2xl border-[3px] border-black shadow-[4px_4px_0px_0px_#000] h-[450px] overflow-hidden">
+              <div className="bg-white rounded-[20px] border border-[var(--border)] shadow-[var(--shadow-sm)] h-[450px] overflow-hidden">
                 <AiChatWindow {...streamState} />
               </div>
             )}
@@ -92,3 +93,13 @@ export const AiChatPage: React.FC = () => {
     </div>
   );
 };
+
+export const AiChatPage: React.FC = () => {
+  return (
+    <AiChatProvider>
+      <AiChatPageContent />
+    </AiChatProvider>
+  );
+};
+
+export default AiChatPage;

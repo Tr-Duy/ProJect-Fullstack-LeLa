@@ -3,6 +3,8 @@ import { ProgressRing } from '../../../shared/components/ui/ProgressRing';
 import { FireFilled, ThunderboltFilled } from '@ant-design/icons';
 import type { DailyActivityDto } from '../../gamification/api/daily-activities.api';
 
+import { formatLocalISODate } from '../../../shared/utils/dateUtils';
+
 interface DailyGoalSidebarCardProps {
   cardsReviewedToday: number;
   dailyGoalTarget?: number;
@@ -32,14 +34,27 @@ export const DailyGoalSidebarCard: React.FC<DailyGoalSidebarCardProps> = ({
     monday.setDate(now.getDate() - dayOfWeek);
 
     const labels = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+    const todayIso = formatLocalISODate(now);
 
     return Array.from({ length: 7 }, (_, i) => {
       const d = new Date(monday);
       d.setDate(monday.getDate() + i);
-      const iso = d.toISOString().split('T')[0];
-      const isToday = i === dayOfWeek;
+      const iso = formatLocalISODate(d);
+      const isToday = iso === todayIso;
+      const isFuture = iso > todayIso;
+
       const matched = historyData.find((h) => h.activityDate === iso);
-      const hasLearned = (matched?.reviewCount ?? 0) > 0 || (matched?.xpEarned ?? 0) > 0 || (isToday && cardsReviewedToday > 0);
+      const hasLearned =
+        !isFuture &&
+        Boolean(
+          (matched &&
+            (matched.active ||
+              (matched.reviewCount ?? 0) > 0 ||
+              (matched.xpEarned ?? 0) > 0 ||
+              (matched.cardsLearned ?? 0) > 0 ||
+              (matched.quizCount ?? 0) > 0)) ||
+            (isToday && (cardsReviewedToday > 0 || xpToday > 0))
+        );
 
       return {
         label: labels[i],
@@ -48,7 +63,7 @@ export const DailyGoalSidebarCard: React.FC<DailyGoalSidebarCardProps> = ({
         hasLearned,
       };
     });
-  }, [historyData, cardsReviewedToday]);
+  }, [historyData, cardsReviewedToday, xpToday]);
 
   return (
     <div className="bg-[var(--surface)] rounded-[20px] p-6 border border-[var(--border)] shadow-[var(--shadow-sm)] flex flex-col justify-between space-y-5">
