@@ -12,10 +12,10 @@ interface ProgressRingProps {
 
 export const ProgressRing: React.FC<ProgressRingProps> = ({
   percent,
-  size = 96,
-  strokeWidth = 8,
-  color = 'var(--mint)',
-  trackColor = 'var(--paper-2)',
+  size = 140,
+  strokeWidth = 12,
+  color = 'var(--brand)',
+  trackColor = 'var(--brand-100)',
   children,
   className = '',
 }) => {

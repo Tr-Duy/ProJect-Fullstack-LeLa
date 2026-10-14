@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 const storagePath = fileURLToPath(new URL('../../.auth/user.json', import.meta.url));
 
 export const test = base.extend({
-  storageState: async (_params, provide) => {
+  storageState: async ({}, provide) => {
     await provide(storagePath);
   },
 });

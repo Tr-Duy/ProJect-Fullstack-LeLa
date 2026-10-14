@@ -184,7 +184,7 @@ export function RegisterPage() {
                   {
                     validator: (_, value) => {
                       if (!value) return Promise.resolve();
-                      const pattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^()_+\-=\[\]{};':"\\|,.<>/?])(?=\S+$).{8,100}$/;
+                      const pattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^()_+\-=[\]{};':"\\|,.<>/?])(?=\S+$).{8,100}$/;
                       if (!pattern.test(value)) {
                         return Promise.reject(new Error('Mật khẩu phải từ 8-100 ký tự, gồm chữ hoa, chữ thường, số, ký tự đặc biệt và không chứa khoảng trắng!'));
                       }

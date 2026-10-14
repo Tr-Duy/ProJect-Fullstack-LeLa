@@ -1,242 +1,178 @@
-/* Design Tokens: "Sổ Tay Ôn Thi" (Editorial Study Journal) */
+/* Design Tokens: "Lớp Học Ngôn Ngữ Thân Thiện" (Friendly Language Classroom) */
 
 :root {
-  /* Bảng màu chính (Palette) */
-  --paper: #F5F1E8;
-  --paper-2: #EDE7DA;
-  --card: #FFFFFF;
-  --ink: #0F1729;
-  --ink-soft: #3B465C;
-  --ink-mute: #7A8499;
-  --line: #D9D2C3;
-  --brand: #1D5CFF;
-  --brand-ink: #0B2E99;
-  --mint: #00C896;
-  --sun: #FFD60A;
-  --coral: #FF5A4E;
+  /* Bảng màu chính (Colors) */
+  --bg: #F6F8FC;
+  --surface: #FFFFFF;
+  --surface-2: #EEF2F9;
+  --border: #E4E9F2;
+  --text: #101828;
+  --text-2: #475467;
+  --text-3: #8792A6;
+
+  --brand: #1F5BFF;
+  --brand-700: #1544C9;
+  --brand-100: #DCE7FF;
+  --brand-50: #EEF3FF;
+
+  --success: #12B76A;
+  --success-50: #E8F8F0;
+  --warning: #F79009;
+  --warning-50: #FFF4E0;
+  --danger: #F04438;
+  --danger-50: #FEECEA;
+
+  --flame: #FF7A1A;
+  --xp: #FFB703;
+
+  /* Topic Colors (Nền 50 + Chữ 700) */
+  --topic-business-bg: #EEF2FF;
+  --topic-business-text: #3730A3;
+  --topic-travel-bg: #E6FFFA;
+  --topic-travel-text: #0D9488;
+  --topic-office-bg: #FFFBEB;
+  --topic-office-text: #B45309;
+  --topic-daily-bg: #FDF2F8;
+  --topic-daily-text: #BE185D;
+  --topic-food-bg: #FFF7ED;
+  --topic-food-text: #C2410C;
 
   /* Typography */
-  --font-display: 'Bricolage Grotesque Variable', 'Bricolage Grotesque', 'Be Vietnam Pro', sans-serif;
-  --font-body: 'Be Vietnam Pro', sans-serif;
-  --font-mono: 'IBM Plex Mono', monospace;
-
-  /* Shadows & Borders */
-  --border-ink: 2px solid var(--ink);
-  --border-line: 1px solid var(--line);
-  --shadow-card: 4px 4px 0 var(--ink);
-  --shadow-card-hover: 6px 6px 0 var(--ink);
-  --shadow-card-active: 0 0 0 var(--ink);
-  --shadow-sm: 2px 2px 0 var(--ink);
+  --font-display: 'Lexend Variable', 'Lexend', 'Be Vietnam Pro', sans-serif;
+  --font-body: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-ipa: 'Noto Sans', sans-serif;
 
   /* Radius */
-  --radius-card: 12px;
-  --radius-btn: 10px;
+  --radius-btn: 12px;
+  --radius-input: 12px;
+  --radius-card: 20px;
   --radius-chip: 999px;
 
-  /* Transitions */
-  --ease-journal: 180ms cubic-bezier(0.16, 1, 0.3, 1);
+  /* Shadows & Elevation */
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06);
+  --shadow-md: 0 8px 24px -8px rgba(16, 24, 40, 0.14);
+  --shadow-card: 0 1px 3px rgba(16, 24, 40, 0.05), 0 1px 2px rgba(16, 24, 40, 0.03);
+
+  /* Animation timing */
+  --ease-friendly: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Vệt dạ quang dưới chữ */
-.highlighter-streak {
-  background: linear-gradient(180deg, transparent 62%, var(--sun) 62%);
-  display: inline;
-  padding: 0 2px;
-  box-decoration-break: clone;
-  -webkit-box-decoration-break: clone;
-}
-
-/* Thẻ Flashcard góc trên phải cắt chéo 12px */
-.flashcard-clip {
-  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%);
-}
-
-.flashcard-notch {
+/* Thẻ từ vựng có góc trên phải gập nhẹ (Folded corner motif) */
+.vocab-card-folded {
   position: relative;
+  background: var(--surface);
+  border-radius: var(--radius-card);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  transition: transform 200ms var(--ease-friendly), box-shadow 200ms var(--ease-friendly);
 }
-.flashcard-notch::after {
+
+.vocab-card-folded::after {
   content: '';
   position: absolute;
-  top: 0;
-  right: 0;
-  width: 12px;
-  height: 12px;
-  border-left: 2px solid var(--ink);
-  border-bottom: 2px solid var(--ink);
-  background-color: var(--paper-2);
+  top: -1px;
+  right: -1px;
+  width: 24px;
+  height: 24px;
+  background: linear-gradient(225deg, var(--surface-2) 48%, var(--border) 50%, var(--surface) 52%);
+  border-bottom-left-radius: 6px;
+  border-bottom: 1px solid var(--border);
+  border-left: 1px solid var(--border);
   pointer-events: none;
 }
 
-/* Kiểu card Flashcard có bóng mực cứng */
-.journal-card {
-  background-color: var(--card);
-  border: 2px solid var(--ink);
-  border-radius: var(--radius-card);
-  box-shadow: var(--shadow-card);
-  transition: transform var(--ease-journal), box-shadow var(--ease-journal);
-}
-
-.journal-card-interactive:hover {
-  transform: translate(-2px, -2px);
-  box-shadow: var(--shadow-card-hover);
-}
-
-.journal-card-interactive:active {
-  transform: translate(2px, 2px);
-  box-shadow: var(--shadow-card-active);
-}
-
-/* Khối phụ viền mảnh 1px không bóng */
-.journal-subcard {
-  background-color: var(--card);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-card);
-}
-
-/* Tem nhãn (Stamp) in hoa xoay -2 độ */
-.journal-stamp {
-  font-family: var(--font-mono);
-  font-size: 0.6875rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  padding: 2px 7px;
-  border: 1.5px solid var(--ink);
-  border-radius: 4px;
+/* Bong bóng thoại (Speech Bubble with tiny tail) */
+.speech-bubble {
+  position: relative;
+  background: var(--brand-50);
+  color: var(--brand-700);
+  border-radius: 14px;
+  padding: 8px 14px;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  transform: rotate(-2deg);
-  white-space: nowrap;
+  font-weight: 500;
+  font-size: 0.875rem;
 }
 
-.journal-stamp-due {
-  background-color: var(--sun);
-  color: var(--ink);
-}
-
-.journal-stamp-mastered {
-  background-color: var(--mint);
-  color: var(--ink);
-}
-
-.journal-stamp-new {
-  background-color: var(--paper-2);
-  color: var(--ink);
-}
-
-.journal-stamp-pro {
-  background-color: var(--brand);
-  color: #ffffff;
-  border-color: var(--brand-ink);
-}
-
-.journal-stamp-coral {
-  background-color: var(--coral);
-  color: #ffffff;
-}
-
-/* Thước đo tiến độ (Ruler Progress) */
-.ruler-track {
-  position: relative;
-  height: 14px;
-  background-color: var(--paper-2);
-  border: 2px solid var(--ink);
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.ruler-ticks {
+.speech-bubble-bottom-left::after {
+  content: '';
   position: absolute;
-  inset: 0;
-  background-image: repeating-linear-gradient(
-    to right,
-    transparent 0,
-    transparent calc(10% - 1px),
-    rgba(15, 23, 41, 0.4) calc(10% - 1px),
-    rgba(15, 23, 41, 0.4) 10%
-  );
-  pointer-events: none;
-  z-index: 2;
+  bottom: -6px;
+  left: 16px;
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid var(--brand-50);
 }
 
-.ruler-fill {
-  height: 100%;
-  background-color: var(--brand);
-  transition: width 300ms ease-out;
+.speech-bubble-surface {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.speech-bubble-surface::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: 16px;
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid var(--surface-2);
+}
+
+/* 3D Card Flip */
+.flip-card-container {
+  perspective: 1000px;
+}
+
+.flip-card-inner {
   position: relative;
-  z-index: 1;
+  width: 100%;
+  height: 100%;
+  transition: transform 450ms var(--ease-friendly);
+  transform-style: preserve-3d;
 }
 
-.ruler-fill-mint {
-  background-color: var(--mint);
+.flip-card-inner.flipped {
+  transform: rotateY(180deg);
 }
 
-/* Nút bấm Journal */
-.journal-btn {
-  font-family: var(--font-body);
-  font-weight: 600;
-  border: 2px solid var(--ink) !important;
-  border-radius: var(--radius-btn) !important;
-  box-shadow: 3px 3px 0 var(--ink) !important;
-  transition: transform var(--ease-journal), box-shadow var(--ease-journal) !important;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
+.flip-card-front,
+.flip-card-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  border-radius: var(--radius-card);
 }
 
-.journal-btn:hover:not(:disabled) {
-  transform: translate(-1.5px, -1.5px);
-  box-shadow: 4.5px 4.5px 0 var(--ink) !important;
+.flip-card-back {
+  transform: rotateY(180deg);
 }
 
-.journal-btn:active:not(:disabled) {
-  transform: translate(2px, 2px);
-  box-shadow: 0 0 0 var(--ink) !important;
+/* Audio Wave Animation for AI Speaking */
+@keyframes voiceWave {
+  0%, 100% { height: 6px; }
+  50% { height: 22px; }
 }
 
-.journal-btn:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-  box-shadow: 1px 1px 0 var(--ink) !important;
+.voice-wave-bar {
+  width: 3px;
+  background-color: var(--brand);
+  border-radius: 999px;
+  animation: voiceWave 1s ease-in-out infinite;
 }
 
-.journal-btn-brand {
-  background-color: var(--brand) !important;
-  color: #FFFFFF !important;
-}
+.voice-wave-bar:nth-child(2) { animation-delay: 0.15s; }
+.voice-wave-bar:nth-child(3) { animation-delay: 0.3s; }
+.voice-wave-bar:nth-child(4) { animation-delay: 0.45s; }
 
-.journal-btn-sun {
-  background-color: var(--sun) !important;
-  color: var(--ink) !important;
-}
-
-.journal-btn-paper {
-  background-color: var(--paper-2) !important;
-  color: var(--ink) !important;
-}
-
-.journal-btn-ink {
-  background-color: var(--ink) !important;
-  color: var(--paper) !important;
-}
-
-.journal-btn-danger {
-  background-color: var(--coral) !important;
-  color: #FFFFFF !important;
-}
-
-/* Số liệu Mono */
-.mono-num {
-  font-family: var(--font-mono);
-  font-feature-settings: 'tnum' on, 'zero' on;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
-}
-
-/* Stagger entrance animation */
-@keyframes journalFadeIn {
+/* Subtle Staggered Enter */
+@keyframes friendlyFadeInUp {
   from {
     opacity: 0;
     transform: translateY(8px);
@@ -247,15 +183,14 @@
   }
 }
 
-.animate-journal-in {
-  animation: journalFadeIn 220ms ease-out forwards;
+.animate-friendly-enter {
+  animation: friendlyFadeInUp 220ms var(--ease-friendly) forwards;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .animate-journal-in,
-  .journal-card-interactive,
-  .journal-btn {
-    transition: none !important;
-    animation: none !important;
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

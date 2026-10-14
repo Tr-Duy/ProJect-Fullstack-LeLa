@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from 'antd';
-import { InboxOutlined } from '@ant-design/icons';
+import { LelaMascot } from './LelaMascot';
 
 interface EmptyStateProps {
   title: string;
@@ -9,6 +9,7 @@ interface EmptyStateProps {
   actionText?: string;
   onAction?: () => void;
   className?: string;
+  useMascot?: boolean;
 }
 
 export const EmptyState: React.FC<EmptyStateProps> = ({
@@ -18,22 +19,38 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   actionText,
   onAction,
   className = '',
+  useMascot = true,
 }) => {
   return (
     <div
-      className={`journal-subcard p-8 md:p-12 text-center flex flex-col items-center justify-center space-y-3 bg-[var(--paper-2)]/40 ${className}`}
+      className={`p-8 md:p-10 text-center flex flex-col items-center justify-center space-y-3 bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius-card)] shadow-[var(--shadow-sm)] ${className}`}
     >
-      <div className="w-14 h-14 rounded-full bg-white border-2 border-[var(--ink)] shadow-[2px_2px_0_var(--ink)] flex items-center justify-center text-2xl text-[var(--ink)] mb-2">
-        {icon || <InboxOutlined />}
+      <div className="mb-2">
+        {icon ? (
+          <div className="w-14 h-14 rounded-full bg-[var(--surface-2)] flex items-center justify-center text-2xl text-[var(--brand)]">
+            {icon}
+          </div>
+        ) : useMascot ? (
+          <LelaMascot size={72} mood="encouraging" />
+        ) : null}
       </div>
-      <h3 className="text-lg font-bold text-[var(--ink)]">{title}</h3>
+
+      <h3 className="text-base sm:text-lg font-bold font-display text-[var(--text)]">
+        {title}
+      </h3>
+
       {description && (
-        <p className="text-sm text-[var(--ink-soft)] max-w-md">
+        <p className="text-xs sm:text-sm text-[var(--text-2)] max-w-md leading-relaxed">
           {description}
         </p>
       )}
+
       {actionText && onAction && (
-        <Button type="primary" onClick={onAction} className="mt-3">
+        <Button
+          type="primary"
+          onClick={onAction}
+          className="mt-2 h-10 px-5 font-semibold text-xs sm:text-sm"
+        >
           {actionText}
         </Button>
       )}

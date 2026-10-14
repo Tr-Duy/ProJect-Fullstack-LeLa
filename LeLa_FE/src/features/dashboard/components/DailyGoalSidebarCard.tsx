@@ -1,0 +1,143 @@
+import React from 'react';
+import { ProgressRing } from '../../../shared/components/ui/ProgressRing';
+import { FireFilled, ThunderboltFilled } from '@ant-design/icons';
+import type { DailyActivityDto } from '../../gamification/api/daily-activities.api';
+
+interface DailyGoalSidebarCardProps {
+  cardsReviewedToday: number;
+  dailyGoalTarget?: number;
+  xpToday: number;
+  currentStreak: number;
+  historyData?: DailyActivityDto[];
+}
+
+export const DailyGoalSidebarCard: React.FC<DailyGoalSidebarCardProps> = ({
+  cardsReviewedToday,
+  dailyGoalTarget = 20,
+  xpToday,
+  currentStreak,
+  historyData = [],
+}) => {
+  const percent = Math.min(
+    100,
+    Math.round((cardsReviewedToday / Math.max(1, dailyGoalTarget)) * 100)
+  );
+
+  // 7 days of current week (T2 to CN)
+  const currentWeekDays = React.useMemo(() => {
+    const now = new Date();
+    // Monday as day 0 in Vietnam
+    const dayOfWeek = (now.getDay() + 6) % 7; // 0 is Monday, 6 is Sunday
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - dayOfWeek);
+
+    const labels = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      const iso = d.toISOString().split('T')[0];
+      const isToday = i === dayOfWeek;
+      const matched = historyData.find((h) => h.activityDate === iso);
+      const hasLearned = (matched?.reviewCount ?? 0) > 0 || (matched?.xpEarned ?? 0) > 0 || (isToday && cardsReviewedToday > 0);
+
+      return {
+        label: labels[i],
+        date: iso,
+        isToday,
+        hasLearned,
+      };
+    });
+  }, [historyData, cardsReviewedToday]);
+
+  return (
+    <div className="bg-[var(--surface)] rounded-[20px] p-6 border border-[var(--border)] shadow-[var(--shadow-sm)] flex flex-col justify-between space-y-5">
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <span className="text-xs font-semibold text-[var(--text-3)]">
+            Mục tiêu hôm nay
+          </span>
+          <span className="text-xs font-semibold text-[var(--brand)]">
+            {cardsReviewedToday}/{dailyGoalTarget} thẻ
+          </span>
+        </div>
+
+        {/* 140px Progress Ring */}
+        <div className="flex items-center justify-center py-2">
+          <ProgressRing
+            percent={percent}
+            size={140}
+            strokeWidth={12}
+            color="var(--brand)"
+            trackColor="var(--brand-100)"
+          >
+            <div className="flex flex-col items-center justify-center">
+              <span className="font-display font-bold text-2xl text-[var(--text)] tracking-tight tabular-nums leading-none">
+                {cardsReviewedToday}/{dailyGoalTarget}
+              </span>
+              <span className="text-[11px] font-medium text-[var(--text-3)] mt-1">
+                từ vựng
+              </span>
+            </div>
+          </ProgressRing>
+        </div>
+
+        {/* 7 Weekday Dots (T2 - CN) */}
+        <div className="pt-4 mt-2 border-t border-[var(--border)]">
+          <div className="flex items-center justify-between px-1">
+            {currentWeekDays.map((day) => (
+              <div key={day.date} className="flex flex-col items-center gap-1.5">
+                <span
+                  className={`text-[11px] font-medium ${
+                    day.isToday ? 'text-[var(--brand)] font-bold' : 'text-[var(--text-3)]'
+                  }`}
+                >
+                  {day.label}
+                </span>
+
+                <div
+                  className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors ${
+                    day.hasLearned
+                      ? 'bg-[var(--flame)]/15 text-[var(--flame)]'
+                      : day.isToday
+                      ? 'bg-[var(--surface-2)] border-2 border-dashed border-[var(--brand)] text-[var(--brand)]'
+                      : 'bg-[var(--surface-2)] text-[var(--border)]'
+                  }`}
+                >
+                  {day.hasLearned ? (
+                    <FireFilled className="text-sm" />
+                  ) : (
+                    <span className="w-1.5 h-1.5 rounded-full bg-[var(--border)]" />
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Two Numbers Side-by-Side on One Line (No wrap!) */}
+      <div className="grid grid-cols-2 gap-3 pt-4 border-t border-[var(--border)]">
+        <div className="p-3 rounded-[14px] bg-[var(--surface-2)] flex flex-col justify-center whitespace-nowrap overflow-hidden">
+          <span className="text-[11px] font-medium text-[var(--text-3)] flex items-center gap-1 truncate">
+            <ThunderboltFilled className="text-[var(--xp)] text-xs" />
+            XP hôm nay
+          </span>
+          <span className="font-display font-bold text-lg text-[var(--text)] mt-0.5 tabular-nums truncate">
+            +{xpToday} XP
+          </span>
+        </div>
+
+        <div className="p-3 rounded-[14px] bg-[var(--surface-2)] flex flex-col justify-center whitespace-nowrap overflow-hidden">
+          <span className="text-[11px] font-medium text-[var(--text-3)] flex items-center gap-1 truncate">
+            <FireFilled className="text-[var(--flame)] text-xs" />
+            Chuỗi ngày
+          </span>
+          <span className="font-display font-bold text-lg text-[var(--text)] mt-0.5 tabular-nums truncate">
+            {currentStreak} ngày
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+};

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { HelpCircle, X } from 'lucide-react';
+import { MessageSquare, X } from 'lucide-react';
 import { GuestChatForm } from './GuestChatForm';
 import { ChatWindow } from './ChatWindow';
 import { useWebSocketChat } from '../hooks/useWebSocketChat';
@@ -23,7 +23,7 @@ export const ChatWidget: React.FC = () => {
         restoreGuestChat(guestToken);
       }
     }
-  }, [isOpen, user]);
+  }, [isOpen, user, conversation, guestToken]);
 
   const initLearnerChat = async () => {
     setIsInitializing(true);
@@ -60,16 +60,6 @@ export const ChatWidget: React.FC = () => {
     setIsInitializing(false);
   };
 
-  const [isScrolled, setIsScrolled] = useState(false);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 120);
-    };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
   const { messages, isConnected, sendMessage } = useWebSocketChat(
     conversation?.id || null, 
     user ? undefined : guestToken
@@ -79,7 +69,7 @@ export const ChatWidget: React.FC = () => {
     <div className="fixed bottom-[calc(76px+env(safe-area-inset-bottom))] lg:bottom-[calc(16px+env(safe-area-inset-bottom))] right-4 z-30 flex flex-col items-end pointer-events-none">
       {/* Help Panel Window */}
       {isOpen && (
-        <div className="pointer-events-auto mb-3 w-[calc(100vw-32px)] sm:w-[380px] h-[520px] max-h-[calc(100vh-140px)] transition-all transform origin-bottom-right duration-200">
+        <div className="pointer-events-auto mb-3 w-[calc(100vw-32px)] sm:w-[380px] h-[520px] max-h-[calc(100vh-140px)] transition-all transform origin-bottom-right duration-200 shadow-[var(--shadow-md)] rounded-[var(--radius-card)] overflow-hidden border border-[var(--border)]">
           {!user && !conversation ? (
             <GuestChatForm onSubmit={handleGuestSubmit} isLoading={isInitializing} />
           ) : (
@@ -88,7 +78,7 @@ export const ChatWidget: React.FC = () => {
               onSendMessage={sendMessage} 
               isConnected={isConnected}
               currentUserRole={user ? 'LEARNER' : 'GUEST'}
-              title="Trợ giúp LeLa"
+              title="Hỗ trợ học tập LeLa"
               onClose={() => setIsOpen(false)}
               isLoading={isInitializing}
             />
@@ -96,23 +86,18 @@ export const ChatWidget: React.FC = () => {
         </div>
       )}
       
-      {/* Unified Floating Live Chat Button */}
+      {/* Unified Floating Live Chat Button (52px round brand button) */}
       <button 
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        aria-label={isOpen ? "Đóng hỗ trợ LeLa" : "Mở hỗ trợ trực tiếp"}
-        title="Hỗ trợ trực tiếp"
-        className="pointer-events-auto h-11 px-3.5 bg-[var(--sun)] hover:bg-[#ffe033] text-[var(--ink)] rounded-xl flex items-center gap-2 border-2 border-[var(--ink)] shadow-[3px_3px_0_var(--ink)] hover:translate-x-[-1px] hover:translate-y-[-1px] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all cursor-pointer font-bold text-xs"
+        aria-label={isOpen ? "Đóng hộp trò chuyện" : "Mở trò chuyện hỗ trợ"}
+        title="Trò chuyện hỗ trợ"
+        className="pointer-events-auto w-[52px] h-[52px] rounded-full bg-[var(--brand)] hover:bg-[var(--brand-700)] text-white shadow-[var(--shadow-md)] flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer"
       >
         {isOpen ? (
-          <X className="w-5 h-5 text-[var(--ink)] shrink-0" />
+          <X className="w-6 h-6 text-white shrink-0" />
         ) : (
-          <HelpCircle className="w-5 h-5 text-[var(--ink)] stroke-[2.5] shrink-0" />
-        )}
-        {!isOpen && !isScrolled && (
-          <span className="font-mono uppercase tracking-wider font-bold hidden sm:inline">
-            Trợ giúp
-          </span>
+          <MessageSquare className="w-6 h-6 text-white shrink-0" />
         )}
       </button>
     </div>

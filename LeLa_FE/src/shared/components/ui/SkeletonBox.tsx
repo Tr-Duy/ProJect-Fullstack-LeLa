@@ -13,7 +13,7 @@ export const SkeletonBox: React.FC<SkeletonBoxProps> = ({
 }) => {
   return (
     <div
-      className={`animate-pulse bg-[var(--paper-2)] border border-[var(--line)] rounded-[var(--radius-btn)] ${className}`}
+      className={`animate-pulse bg-[var(--surface-2)] border border-[var(--border)] rounded-[var(--radius-btn)] ${className}`}
       style={{ height, width }}
     />
   );

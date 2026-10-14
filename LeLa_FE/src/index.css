@@ -1,183 +1,133 @@
-@import "@fontsource-variable/bricolage-grotesque";
+@import "@fontsource-variable/lexend";
 @import "@fontsource/be-vietnam-pro/400.css";
 @import "@fontsource/be-vietnam-pro/500.css";
 @import "@fontsource/be-vietnam-pro/600.css";
 @import "@fontsource/be-vietnam-pro/700.css";
-@import "@fontsource/be-vietnam-pro/800.css";
-@import "@fontsource/ibm-plex-mono/400.css";
-@import "@fontsource/ibm-plex-mono/500.css";
-@import "@fontsource/ibm-plex-mono/600.css";
+@import "@fontsource/noto-sans/400.css";
+@import "@fontsource/noto-sans/500.css";
 @import "./styles/tokens.css";
 
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
 @theme {
-  --color-paper: var(--paper);
-  --color-paper-2: var(--paper-2);
-  --color-card: var(--card);
-  --color-ink: var(--ink);
-  --color-ink-soft: var(--ink-soft);
-  --color-ink-mute: var(--ink-mute);
-  --color-line: var(--line);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
+  --color-text: var(--text);
+  --color-text-2: var(--text-2);
+  --color-text-3: var(--text-3);
+
   --color-brand: var(--brand);
-  --color-brand-ink: var(--brand-ink);
-  --color-mint: var(--mint);
-  --color-sun: var(--sun);
-  --color-coral: var(--coral);
+  --color-brand-700: var(--brand-700);
+  --color-brand-100: var(--brand-100);
+  --color-brand-50: var(--brand-50);
+
+  --color-success: var(--success);
+  --color-success-50: var(--success-50);
+  --color-warning: var(--warning);
+  --color-warning-50: var(--warning-50);
+  --color-danger: var(--danger);
+  --color-danger-50: var(--danger-50);
+
+  --color-flame: var(--flame);
+  --color-xp: var(--xp);
+
+  /* Topics */
+  --color-topic-business-bg: var(--topic-business-bg);
+  --color-topic-business-text: var(--topic-business-text);
+  --color-topic-travel-bg: var(--topic-travel-bg);
+  --color-topic-travel-text: var(--topic-travel-text);
+  --color-topic-office-bg: var(--topic-office-bg);
+  --color-topic-office-text: var(--topic-office-text);
+  --color-topic-daily-bg: var(--topic-daily-bg);
+  --color-topic-daily-text: var(--topic-daily-text);
+  --color-topic-food-bg: var(--topic-food-bg);
+  --color-topic-food-text: var(--topic-food-text);
 
   --font-display: var(--font-display);
   --font-sans: var(--font-body);
-  --font-mono: var(--font-mono);
+  --font-ipa: var(--font-ipa);
+
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-card: var(--shadow-card);
 }
 
 body {
   font-family: var(--font-body);
-  background-color: var(--paper);
-  color: var(--ink);
+  background-color: var(--bg);
+  color: var(--text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-display);
-  color: var(--ink);
-  letter-spacing: -0.02em;
+  color: var(--text);
+  letter-spacing: -0.01em;
 }
 
 ::selection {
-  background-color: var(--sun);
-  color: var(--ink);
+  background-color: var(--brand-100);
+  color: var(--brand-700);
 }
 
-/* Ant Design Component Overrides to match 2px ink border Journal Style */
+/* Ant Design Component Overrides to match Friendly Language Classroom Style */
 .ant-btn {
   font-family: var(--font-body);
-  font-weight: 600 !important;
+  font-weight: 500 !important;
   border-radius: var(--radius-btn) !important;
+  box-shadow: none !important;
+  transition: all 180ms ease-out !important;
 }
 
 .ant-btn-primary {
   background-color: var(--brand) !important;
-  border-color: var(--ink) !important;
-  border-width: 2px !important;
-  box-shadow: 2px 2px 0 var(--ink) !important;
+  border-color: var(--brand) !important;
   color: #FFFFFF !important;
 }
 
-.ant-btn-primary:hover:not(:disabled) {
-  background-color: #2e69ff !important;
-  transform: translate(-1px, -1px);
-  box-shadow: 3px 3px 0 var(--ink) !important;
-}
-
-.ant-btn-default {
-  border-color: var(--ink) !important;
-  border-width: 2px !important;
-  box-shadow: 2px 2px 0 var(--ink) !important;
-  background-color: var(--card) !important;
-  color: var(--ink) !important;
-}
-
-.ant-btn-default:hover:not(:disabled) {
-  background-color: var(--paper-2) !important;
-  color: var(--ink) !important;
-  transform: translate(-1px, -1px);
-  box-shadow: 3px 3px 0 var(--ink) !important;
+.ant-btn-primary:hover {
+  background-color: var(--brand-700) !important;
+  border-color: var(--brand-700) !important;
 }
 
 .ant-input,
-.ant-input-affix-wrapper {
-  border-color: var(--ink) !important;
-  border-width: 2px !important;
-  border-radius: var(--radius-btn) !important;
-  background-color: var(--card) !important;
-  color: var(--ink) !important;
-  font-family: var(--font-body);
+.ant-select-selector {
+  border-radius: var(--radius-input) !important;
+  border: 1px solid var(--border) !important;
+  background-color: var(--surface) !important;
+  color: var(--text) !important;
+  font-family: var(--font-body) !important;
 }
 
 .ant-input:focus,
-.ant-input-affix-wrapper:focus,
-.ant-input-affix-wrapper-focused {
+.ant-select-focused .ant-select-selector {
   border-color: var(--brand) !important;
-  box-shadow: 0 0 0 2px rgba(29, 92, 255, 0.2) !important;
-}
-
-.ant-select-selector {
-  border-color: var(--ink) !important;
-  border-width: 2px !important;
-  border-radius: var(--radius-btn) !important;
-  background-color: var(--card) !important;
-  font-family: var(--font-body);
+  box-shadow: 0 0 0 2px var(--brand-100) !important;
 }
 
 .ant-modal-content {
-  border: 2px solid var(--ink) !important;
-  box-shadow: var(--shadow-card) !important;
   border-radius: var(--radius-card) !important;
-  background-color: var(--paper) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: var(--shadow-md) !important;
   padding: 24px !important;
 }
 
-.ant-modal-header {
-  background-color: var(--paper) !important;
-  border-bottom: 1px solid var(--line) !important;
-  padding-bottom: 12px !important;
-  margin-bottom: 16px !important;
-}
-
-.ant-modal-title {
-  font-family: var(--font-display) !important;
-  font-weight: 800 !important;
-  font-size: 1.25rem !important;
-  color: var(--ink) !important;
-}
-
-.ant-table {
-  background: var(--card) !important;
-  border: 2px solid var(--ink) !important;
-  border-radius: var(--radius-card) !important;
-  overflow: hidden !important;
-  box-shadow: var(--shadow-card) !important;
-}
-
-.ant-table-thead > tr > th {
-  background-color: var(--paper-2) !important;
-  color: var(--ink) !important;
-  font-family: var(--font-mono) !important;
-  font-size: 0.75rem !important;
-  text-transform: uppercase !important;
-  letter-spacing: 0.05em !important;
-  font-weight: 700 !important;
-  border-bottom: 2px solid var(--ink) !important;
-}
-
-.ant-table-tbody > tr > td {
-  border-bottom: 1px solid var(--line) !important;
-  color: var(--ink-soft) !important;
-  font-size: 0.875rem !important;
-}
-
-.ant-table-tbody > tr:hover > td {
-  background-color: rgba(255, 214, 10, 0.08) !important;
+.ant-tag {
+  border-radius: var(--radius-chip) !important;
+  font-family: var(--font-body) !important;
+  font-weight: 500 !important;
 }
 
 .ant-tabs-nav::before {
-  border-bottom: 2px solid var(--line) !important;
-}
-
-.ant-tabs-tab {
-  font-family: var(--font-body);
-  font-weight: 600 !important;
-  color: var(--ink-soft) !important;
-}
-
-.ant-tabs-tab-active .ant-tabs-tab-btn {
-  color: var(--brand) !important;
-  font-weight: 700 !important;
+  border-bottom: 1px solid var(--border) !important;
 }
 
 .ant-tabs-ink-bar {
   background: var(--brand) !important;
-  height: 3px !important;
+  height: 2px !important;
+  border-radius: 999px !important;
 }
