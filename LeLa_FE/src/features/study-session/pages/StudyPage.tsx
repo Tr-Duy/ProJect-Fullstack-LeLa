@@ -55,26 +55,24 @@ export function StudyPage() {
       if (e.code === 'Space') {
         e.preventDefault();
         setShowBack((prev) => !prev);
-      } else if (showBack) {
-        if (e.key === '1') {
-          e.preventDefault();
-          handleNext(1);
-        } else if (e.key === '2') {
-          e.preventDefault();
-          handleNext(2);
-        } else if (e.key === '3') {
-          e.preventDefault();
-          handleNext(3);
-        } else if (e.key === '4') {
-          e.preventDefault();
-          handleNext(4);
-        }
+      } else if (e.key === '1') {
+        e.preventDefault();
+        handleNext(1);
+      } else if (e.key === '2') {
+        e.preventDefault();
+        handleNext(2);
+      } else if (e.key === '3') {
+        e.preventDefault();
+        handleNext(3);
+      } else if (e.key === '4') {
+        e.preventDefault();
+        handleNext(4);
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showBack, currentCard]);
+  }, [currentCard]);
 
   const getButtonLabels = () => {
     return {
@@ -277,71 +275,56 @@ export function StudyPage() {
           />
         </div>
 
-        {/* Action Controls: Mặt trước hiển thị nút Xem Đáp Án, Mặt sau hiển thị 4 nút SM-2 */}
-        {!showBack ? (
-          <div className="w-full animate-fade-in">
-            <button
-              type="button"
-              onClick={() => setShowBack(true)}
-              className="w-full h-14 sm:h-16 bg-[#181E24] hover:bg-black active:translate-y-0.5 text-white text-base sm:text-lg font-black rounded-2xl border-2 border-black shadow-[5px_5px_0px_#000] active:shadow-none flex items-center justify-center gap-3 cursor-pointer transition-all hover:-translate-y-0.5"
-            >
-              <span>Xem Đáp Án / Lật Thẻ</span>
-              <span className="text-xs sm:text-sm font-bold bg-white/20 text-white px-2.5 py-1 rounded-lg border border-white/30 tracking-wider">
-                Phím Space
-              </span>
-            </button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 animate-fade-in">
-            <button
-              type="button"
-              onClick={() => handleNext(1)}
-              className="h-[84px] border-2 border-black rounded-2xl bg-[#ffcccc] hover:bg-[#ffb3b3] active:translate-y-0.5 text-[#cc0000] flex flex-col justify-center items-center transition-all cursor-pointer shadow-[4px_4px_0px_#000] active:shadow-none"
-            >
-              <div className="flex items-center gap-1.5">
-                <span className="text-xl font-black">LẠI</span>
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-black/10">[1]</span>
-              </div>
-              <div className="text-xs font-bold opacity-80 mt-0.5">{labels.again}</div>
-            </button>
+        {/* Cụm 4 nút đánh giá SM-2 (LẠI - KHÓ - TỐT - DỄ) */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full animate-fade-in">
+          <button
+            type="button"
+            onClick={() => handleNext(1)}
+            className="h-[84px] border-2 border-black rounded-2xl bg-[#ffcccc] hover:bg-[#ffb3b3] active:translate-y-0.5 text-[#cc0000] flex flex-col justify-center items-center transition-all cursor-pointer shadow-[4px_4px_0px_#000] active:shadow-none"
+          >
+            <div className="flex items-center gap-1.5">
+              <span className="text-xl font-black">LẠI</span>
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-black/10">[1]</span>
+            </div>
+            <div className="text-xs font-bold opacity-80 mt-0.5">{labels.again}</div>
+          </button>
 
-            <button
-              type="button"
-              onClick={() => handleNext(2)}
-              className="h-[84px] border-2 border-black rounded-2xl bg-[#ffe6cc] hover:bg-[#ffd9b3] active:translate-y-0.5 text-[#cc6600] flex flex-col justify-center items-center transition-all cursor-pointer shadow-[4px_4px_0px_#000] active:shadow-none"
-            >
-              <div className="flex items-center gap-1.5">
-                <span className="text-xl font-black">KHÓ</span>
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-black/10">[2]</span>
-              </div>
-              <div className="text-xs font-bold opacity-80 mt-0.5">{labels.hard}</div>
-            </button>
+          <button
+            type="button"
+            onClick={() => handleNext(2)}
+            className="h-[84px] border-2 border-black rounded-2xl bg-[#ffe6cc] hover:bg-[#ffd9b3] active:translate-y-0.5 text-[#cc6600] flex flex-col justify-center items-center transition-all cursor-pointer shadow-[4px_4px_0px_#000] active:shadow-none"
+          >
+            <div className="flex items-center gap-1.5">
+              <span className="text-xl font-black">KHÓ</span>
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-black/10">[2]</span>
+            </div>
+            <div className="text-xs font-bold opacity-80 mt-0.5">{labels.hard}</div>
+          </button>
 
-            <button
-              type="button"
-              onClick={() => handleNext(3)}
-              className="h-[84px] border-2 border-black rounded-2xl bg-[#ccffcc] hover:bg-[#b3ffb3] active:translate-y-0.5 text-[#009900] flex flex-col justify-center items-center transition-all cursor-pointer shadow-[4px_4px_0px_#000] active:shadow-none"
-            >
-              <div className="flex items-center gap-1.5">
-                <span className="text-xl font-black">TỐT</span>
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-black/10">[3]</span>
-              </div>
-              <div className="text-xs font-bold opacity-80 mt-0.5">{labels.good}</div>
-            </button>
+          <button
+            type="button"
+            onClick={() => handleNext(3)}
+            className="h-[84px] border-2 border-black rounded-2xl bg-[#ccffcc] hover:bg-[#b3ffb3] active:translate-y-0.5 text-[#009900] flex flex-col justify-center items-center transition-all cursor-pointer shadow-[4px_4px_0px_#000] active:shadow-none"
+          >
+            <div className="flex items-center gap-1.5">
+              <span className="text-xl font-black">TỐT</span>
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-black/10">[3]</span>
+            </div>
+            <div className="text-xs font-bold opacity-80 mt-0.5">{labels.good}</div>
+          </button>
 
-            <button
-              type="button"
-              onClick={() => handleNext(4)}
-              className="h-[84px] border-2 border-black rounded-2xl bg-[#cce5ff] hover:bg-[#b3d9ff] active:translate-y-0.5 text-[#0066cc] flex flex-col justify-center items-center transition-all cursor-pointer shadow-[4px_4px_0px_#000] active:shadow-none"
-            >
-              <div className="flex items-center gap-1.5">
-                <span className="text-xl font-black">DỄ</span>
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-black/10">[4]</span>
-              </div>
-              <div className="text-xs font-bold opacity-80 mt-0.5">{labels.easy}</div>
-            </button>
-          </div>
-        )}
+          <button
+            type="button"
+            onClick={() => handleNext(4)}
+            className="h-[84px] border-2 border-black rounded-2xl bg-[#cce5ff] hover:bg-[#b3d9ff] active:translate-y-0.5 text-[#0066cc] flex flex-col justify-center items-center transition-all cursor-pointer shadow-[4px_4px_0px_#000] active:shadow-none"
+          >
+            <div className="flex items-center gap-1.5">
+              <span className="text-xl font-black">DỄ</span>
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-black/10">[4]</span>
+            </div>
+            <div className="text-xs font-bold opacity-80 mt-0.5">{labels.easy}</div>
+          </button>
+        </div>
       </div>
     </div>
   );
