@@ -1,7 +1,8 @@
 -- V48__seed_full_flashcards_for_typing_game.sql
 -- Bổ sung đầy đủ 50-60 từ vựng phong phú cho các bộ thẻ cơ bản (Fruits, Animals, Colors) 
 -- Phục vụ tính năng Luyện Gõ (Typing Game) với 5 - 10 mốc chơi (10 từ/mốc) và tăng dần độ dài
-
+SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci;
+SET collation_connection = 'utf8mb4_unicode_ci';
 SET @admin_id = COALESCE((SELECT id FROM users WHERE username = 'admin' LIMIT 1), 1);
 
 -- =========================================================================
