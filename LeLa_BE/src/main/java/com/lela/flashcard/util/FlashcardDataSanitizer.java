@@ -293,6 +293,8 @@ public class FlashcardDataSanitizer {
             } else {
                 exampleVi = generateCleanExampleVi(cleanWord, rawBackText);
             }
+        }
+
         if (exampleEn != null && !cleanWord.isEmpty()) {
             exampleEn = exampleEn.replaceAll("(?i)\\b" + Pattern.quote(cleanWord) + "\\s+(v|n|adj|adv|phr)\\b", cleanWord);
         }
