@@ -50,5 +50,6 @@ public class GeminiRequest {
         private Integer topK;
         private Double topP;
         private Integer maxOutputTokens;
+        private String responseMimeType;
     }
 }

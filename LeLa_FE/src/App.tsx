@@ -5,6 +5,7 @@ import { ServerHealthProvider } from "./shared/providers/ServerHealthProvider";
 import { ServerWakeBanner } from "./shared/components/ui/ServerWakeBanner";
 import { AppRoutes } from "./app/routes";
 import { App as AntdApp } from 'antd';
+import { LearnerThemeProvider } from "./shared/providers/LearnerThemeProvider";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -22,12 +23,14 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ServerHealthProvider>
         <AuthProvider>
-          <AntdApp>
-            <ServerWakeBanner />
-            <BrowserRouter>
-              <AppRoutes />
-            </BrowserRouter>
-          </AntdApp>
+          <LearnerThemeProvider>
+            <AntdApp>
+              <ServerWakeBanner />
+              <BrowserRouter>
+                <AppRoutes />
+              </BrowserRouter>
+            </AntdApp>
+          </LearnerThemeProvider>
         </AuthProvider>
       </ServerHealthProvider>
     </QueryClientProvider>

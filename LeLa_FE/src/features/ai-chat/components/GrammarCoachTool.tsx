@@ -41,16 +41,16 @@ Yêu cầu định dạng phản hồi:
   };
 
   return (
-    <div className="bg-white brutal-card brutal-shadow p-6 border-[3px] border-black rounded-2xl">
-      <div className="flex items-center gap-2 border-b-[3px] border-black pb-3 mb-6">
-        <FormOutlined className="text-2xl text-[#1D2A3A]" />
-        <h2 className="text-xl font-black uppercase text-[#1D2A3A] m-0">
+    <div className="bg-white rounded-[var(--radius-card)] shadow-[var(--shadow-md)] p-6 border border-[var(--border)] rounded-2xl">
+      <div className="flex items-center gap-2 border-b-[3px] border-[var(--border)] pb-3 mb-6">
+        <FormOutlined className="text-2xl text-[#2B1B0E]" />
+        <h2 className="text-xl font-bold text-[#2B1B0E] m-0">
           HUẤN LUYỆN VIÊN NGỮ PHÁP (GRAMMAR COACH)
         </h2>
       </div>
 
       <div className="flex flex-col gap-3 mb-6">
-        <label className="text-xs font-bold uppercase text-gray-500">
+        <label className="text-xs font-bold text-gray-500">
           Nhập tên thì/cấu trúc ngữ pháp hoặc câu bạn chưa hiểu (Ví dụ: Present Perfect Continuous, Wish structure, Inversion):
         </label>
         <Input
@@ -59,13 +59,13 @@ Yêu cầu định dạng phản hồi:
           onChange={(e) => setTopic(e.target.value)}
           onPressEnter={handleExplainClick}
           placeholder="Nhập tên thì hoặc cấu trúc ngữ pháp (Ví dụ: Thì hiện tại hoàn thành tiếp diễn)..."
-          className="brutal-input text-base font-bold border-[2px] border-black shadow-[2px_2px_0px_0px_#000] rounded-xl"
+          className="brutal-input text-base font-bold border border-[var(--border)] shadow-[var(--shadow-sm)] rounded-xl"
         />
         <div className="flex justify-end">
           <Button
             onClick={handleExplainClick}
             loading={isLoading}
-            className="brutal-pill border-[2px] border-black font-black uppercase text-white bg-[#1D2A3A] hover:!bg-[#2A8B9D] h-11 px-8 text-base shadow-[2px_2px_0px_0px_#000]"
+            className="brutal-pill border border-[var(--border)] font-black text-white bg-[#2B1B0E] hover:!bg-[#2A8B9D] h-11 px-8 text-base shadow-[var(--shadow-sm)]"
           >
             GIẢI THÍCH NGỮ PHÁP
           </Button>
@@ -73,16 +73,16 @@ Yêu cầu định dạng phản hồi:
       </div>
 
       {/* Result Display Pane */}
-      <div className="p-6 bg-[#F4F3EE] rounded-xl border-[2px] border-black shadow-[2px_2px_0px_0px_#000] min-h-[220px]">
+      <div className="p-6 bg-[#F4F3EE] rounded-xl border border-[var(--border)] shadow-[var(--shadow-sm)] min-h-[220px]">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center h-40 gap-3">
             <Spin size="large" />
-            <span className="font-bold text-xs uppercase text-gray-600">AI đang tổng hợp công thức, ví dụ và lỗi sai thường gặp...</span>
+            <span className="font-bold text-xs  text-gray-600">AI đang tổng hợp công thức, ví dụ và lỗi sai thường gặp...</span>
           </div>
         ) : resultText ? (
           <div>
-            <div className="flex justify-between items-center border-b-[2px] border-black pb-2 mb-3">
-              <span className="text-xs font-black uppercase text-[#1D2A3A]">Bài giải thích ngữ pháp từ AI Tutor</span>
+            <div className="flex justify-between items-center border-b-[2px] border-[var(--border)] pb-2 mb-3">
+              <span className="text-xs font-bold text-[#2B1B0E]">Bài giải thích ngữ pháp từ AI Tutor</span>
               <Button
                 type="text"
                 onClick={() => handleCopy(resultText)}
@@ -92,7 +92,7 @@ Yêu cầu định dạng phản hồi:
                 Sao chép bài viết
               </Button>
             </div>
-            <div className="prose text-[#1D2A3A] font-medium leading-relaxed whitespace-pre-wrap">
+            <div className="prose text-[#2B1B0E] font-medium leading-relaxed whitespace-pre-wrap">
               {resultText}
             </div>
           </div>

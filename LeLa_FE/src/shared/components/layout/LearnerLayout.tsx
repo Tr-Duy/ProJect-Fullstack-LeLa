@@ -1,11 +1,9 @@
-import { useState, useEffect } from 'react';
-import { Outlet, useNavigate, useLocation, Link } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../providers/AuthProvider';
-import { Dropdown, Badge, Popover } from 'antd';
+import { Dropdown, Badge, Popover, Drawer, Tooltip } from 'antd';
 import {
   BellOutlined,
-  MenuFoldOutlined,
-  MenuUnfoldOutlined,
   ThunderboltFilled,
   FireFilled,
   UserOutlined,
@@ -13,34 +11,66 @@ import {
   CreditCardOutlined,
   SettingOutlined,
   RocketOutlined,
-  ArrowRightOutlined,
 } from '@ant-design/icons';
+import {
+  ChevronLeft,
+  ChevronRight,
+  Crown,
+  HelpCircle,
+  Settings,
+  Menu as MenuIcon,
+  X as CloseIcon,
+} from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { notificationsApi } from '../../../features/notifications/api/notifications.api';
 import { voiceConversationApi } from '../../../features/voice-conversation/api/voice-conversation.api';
+import { srsReviewsApi } from '../../../features/study-session/api/srs-reviews.api';
 import bubblePopSound from '../../../assets/sounds/bubble-pop.mp3';
 import { useRealtimeMetadata } from '../../hooks/useRealtimeMetadata';
 import { DailyGoalPromptModal } from '../../../features/users/components/DailyGoalPromptModal';
 import { ChatWidget } from '../../../features/chat/components/ChatWidget';
-import { LEARNER_NAV_GROUPS, MOBILE_BOTTOM_TABS } from '../../config/navConfig';
+import { LEARNER_NAV_GROUPS, DASHBOARD_NAV_ITEM } from '../../config/navConfig';
+import { SidebarNavItem } from './SidebarNavItem';
 import { StatChip } from '../ui/StatChip';
 import { ErrorBoundary } from '../ui/ErrorBoundary';
+import { AnimatedOutlet } from '../../../ui/motion';
+import { useStreakData } from '../../../features/gamification/hooks/useStreakData';
 
 export function LearnerLayout() {
   useRealtimeMetadata();
   const { user, logout, hasRole } = useAuth();
+  const { currentStreak } = useStreakData();
   const navigate = useNavigate();
   const location = useLocation();
+  // Route check: fitViewport (calc(100dvh - 64px), no bottom padding, overflow hidden)
+  const isFitViewport =
+    location.pathname === '/ai-chat' ||
+    location.pathname === '/voice-conversation' ||
+    location.pathname.startsWith('/study/');
 
-  // Sidebar collapsed state with localStorage persistence
+  // Sidebar collapsed state with localStorage persistence ('lela.sidebar')
   const [collapsed, setCollapsed] = useState<boolean>(() => {
-    return localStorage.getItem('lela_sidebar_collapsed') === 'true';
+    return localStorage.getItem('lela.sidebar') === 'collapsed';
   });
+
+  // Mobile Drawer state
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+
+  // Sidebar navigation scroll ref
+  const desktopNavRef = useRef<HTMLElement>(null);
+
+  // Close mobile drawer and ensure sidebar navigation scrolls to top on route change
+  useEffect(() => {
+    setMobileDrawerOpen(false);
+    if (desktopNavRef.current) {
+      desktopNavRef.current.scrollTop = 0;
+    }
+  }, [location.pathname]);
 
   const toggleSidebar = () => {
     setCollapsed((prev) => {
       const next = !prev;
-      localStorage.setItem('lela_sidebar_collapsed', String(next));
+      localStorage.setItem('lela.sidebar', next ? 'collapsed' : 'expanded');
       return next;
     });
   };
@@ -89,6 +119,13 @@ export function LearnerLayout() {
     staleTime: 60000,
   });
 
+  const { data: srsStatsResp } = useQuery({
+    queryKey: ['srs-statistics'],
+    queryFn: () => srsReviewsApi.getStatistics(),
+    enabled: !!user,
+    staleTime: 60000,
+  });
+
   const markAllReadMutation = useMutation({
     mutationFn: notificationsApi.markAllAsRead,
     onSuccess: () => {
@@ -99,8 +136,9 @@ export function LearnerLayout() {
   const unreadCount = unreadResp?.data?.totalElements || 0;
   const notifications = unreadResp?.data?.content || [];
   const voiceStatus = voiceStatusResp?.data;
+  const dueTodayCount = srsStatsResp?.data?.dueTodayCount || srsStatsResp?.data?.dueCount || 0;
 
-  // Determine active page title for topbar (clean Lexend 600, no highlighter/underline)
+  // Determine active page title for topbar
   const getPageTitle = () => {
     const path = location.pathname;
     if (path === '/dashboard') return 'Bảng học tập hôm nay';
@@ -202,145 +240,242 @@ export function LearnerLayout() {
   const displayName = user?.fullName?.trim() || user?.username || '';
   const initialLetter = displayName ? displayName[0].toUpperCase() : 'L';
 
-  return (
-    <div className="min-h-screen flex bg-[var(--bg)] text-[var(--text)] font-sans antialiased">
-      {/* =========================================================================
-          DESKTOP SIDEBAR (>= 1024px)
-          ========================================================================= */}
-      <aside
-        className={`hidden lg:flex flex-col sticky top-0 h-screen shrink-0 border-r border-[var(--border)] bg-white z-30 transition-all duration-200 ${
-          collapsed ? 'w-[72px]' : 'w-[256px]'
-        }`}
-      >
-        {/* Brand Header */}
-        <div className="h-16 flex items-center justify-between px-5 border-b border-[var(--border)]">
-          {!collapsed ? (
-            <Link
-              to="/dashboard"
-              className="font-display font-bold text-2xl tracking-tight text-[var(--brand)] flex items-center"
+  // Check user tier
+  const isPro = user?.roles?.includes('PRO') || (voiceStatus as any)?.subscriptionTier === 'PRO';
+
+  // Reusable Sidebar Content for both Desktop and Mobile Drawer
+  const renderSidebarContent = (isMobile = false) => {
+    const isCollapsed = !isMobile && collapsed;
+
+    return (
+      <div className="flex flex-col h-full bg-[var(--chrome)] select-none">
+        {/* 1. Header (64px, border-b 1px var(--border)) */}
+        <div className="h-16 shrink-0 flex items-center justify-between px-4 border-b border-[var(--border)]">
+          <Link
+            to="/dashboard"
+            onClick={isMobile ? () => setMobileDrawerOpen(false) : undefined}
+            className="flex items-center gap-2.5 group cursor-pointer focus-visible:outline-none"
+          >
+            {/* Square Logo badge: 36x36 rounded 10px bg var(--brand) */}
+            <div className="w-9 h-9 rounded-[10px] bg-[var(--brand)] flex items-center justify-center shrink-0 shadow-xs transition-transform group-hover:scale-105">
+              <span className="font-display font-bold text-lg text-[#2A1300] leading-none">
+                L
+              </span>
+            </div>
+
+            {(!isCollapsed || isMobile) && (
+              <span className="font-display font-bold text-[20px] text-[var(--text)] tracking-tight">
+                LeLa
+              </span>
+            )}
+          </Link>
+
+          {/* Collapse button on Desktop */}
+          {!isMobile && (
+            <button
+              onClick={toggleSidebar}
+              title={collapsed ? 'Mở rộng thanh bên' : 'Thu gọn thanh bên'}
+              aria-label={collapsed ? 'Mở rộng thanh bên' : 'Thu gọn thanh bên'}
+              aria-expanded={!collapsed}
+              className="w-8 h-8 rounded-[8px] flex items-center justify-center text-[var(--text-3)] hover:text-[var(--text)] hover:bg-[var(--hover)] transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]"
             >
-              LELA<span className="text-[var(--danger)]">.</span>
-            </Link>
-          ) : (
-            <Link
-              to="/dashboard"
-              className="font-display font-bold text-2xl tracking-tight text-[var(--brand)] mx-auto"
-            >
-              L<span className="text-[var(--danger)]">.</span>
-            </Link>
+              {collapsed ? (
+                <ChevronRight size={18} strokeWidth={1.75} />
+              ) : (
+                <ChevronLeft size={18} strokeWidth={1.75} />
+              )}
+            </button>
           )}
 
-          <button
-            onClick={toggleSidebar}
-            title={collapsed ? 'Mở rộng thanh bên' : 'Thu gọn thanh bên'}
-            aria-label={collapsed ? 'Mở rộng thanh bên' : 'Thu gọn thanh bên'}
-            className="p-1.5 rounded-lg text-[var(--text-3)] hover:text-[var(--text)] hover:bg-[var(--surface-2)] transition-colors cursor-pointer"
-          >
-            {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-          </button>
+          {/* Close button on Mobile Drawer */}
+          {isMobile && (
+            <button
+              onClick={() => setMobileDrawerOpen(false)}
+              aria-label="Đóng thanh điều hướng"
+              className="w-8 h-8 rounded-[8px] flex items-center justify-center text-[var(--text-3)] hover:text-[var(--text)] hover:bg-[var(--hover)] transition-colors cursor-pointer"
+            >
+              <CloseIcon size={20} strokeWidth={1.75} />
+            </button>
+          )}
         </div>
 
-        {/* Navigation Groups */}
-        <div className="flex-1 overflow-y-auto py-3 px-3 space-y-5 scrollbar-thin">
-          {LEARNER_NAV_GROUPS.map((group) => (
-            <div key={group.groupKey} className="space-y-1">
-              {!collapsed && (
-                <div className="px-3 pb-1 text-[13px] font-semibold text-[var(--text-3)]">
-                  {group.groupLabel}
+        {/* 2. Navigation Groups (flex: 1, overflow-y: auto, sidebar-scroll) */}
+        <nav
+          ref={!isMobile ? desktopNavRef : undefined}
+          aria-label="Điều hướng chính"
+          className="flex-1 overflow-y-auto sidebar-scroll px-3 py-3 space-y-4"
+        >
+          {/* Mục độc lập đầu tiên (Header Navigation) */}
+          <div className="mb-2">
+            <SidebarNavItem
+              item={DASHBOARD_NAV_ITEM}
+              collapsed={isCollapsed}
+              onClick={isMobile ? () => setMobileDrawerOpen(false) : undefined}
+            />
+          </div>
+
+          {LEARNER_NAV_GROUPS.map((group, groupIdx) => (
+            <div
+              key={group.key}
+              role="group"
+              aria-labelledby={`group-title-${group.key}`}
+              className={groupIdx === 0 ? 'mt-2' : 'mt-4'}
+            >
+              {/* Group Label: chữ in hoa nhỏ (text-xs font-bold uppercase tracking-wider text-slate-400) */}
+              {(!isCollapsed || isMobile) && (
+                <div
+                  id={`group-title-${group.key}`}
+                  className="px-3 pt-2 pb-1 text-xs font-bold uppercase tracking-wider text-slate-400 select-none"
+                >
+                  {group.label}
                 </div>
               )}
 
-              {group.items.map((item) => {
-                const isActive = item.exact
-                  ? location.pathname === item.path
-                  : location.pathname.startsWith(item.path.split('?')[0]);
+              {/* Items in group, spaced 4px apart */}
+              <div className="space-y-1">
+                {group.items.map((item) => {
+                  const count = item.key === 'my-decks' && dueTodayCount > 0 ? dueTodayCount : undefined;
 
-                return (
-                  <Link
-                    key={item.key}
-                    to={item.path}
-                    title={collapsed ? item.label : undefined}
-                    className={`flex items-center gap-3 px-3.5 h-11 rounded-[12px] text-sm font-medium transition-all duration-150 ${
-                      isActive
-                        ? 'bg-[var(--brand-50)] text-[var(--brand-700)] font-semibold'
-                        : 'text-[var(--text-2)] hover:bg-[var(--surface-2)] hover:text-[var(--text)]'
-                    } ${collapsed ? 'justify-center px-0' : ''}`}
-                  >
-                    <span
-                      className={`shrink-0 flex items-center justify-center text-lg ${
-                        isActive ? 'text-[var(--brand-700)]' : 'text-[var(--text-3)]'
-                      }`}
-                    >
-                      {item.icon}
-                    </span>
-
-                    {!collapsed && (
-                      <span className="truncate flex-1">{item.label}</span>
-                    )}
-
-                    {!collapsed && item.badge && (
-                      <span className="shrink-0 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-[var(--brand-50)] text-[var(--brand-700)]">
-                        {item.badge}
-                      </span>
-                    )}
-                  </Link>
-                );
-              })}
+                  return (
+                    <SidebarNavItem
+                      key={item.key}
+                      item={item}
+                      collapsed={isCollapsed}
+                      count={count}
+                      onClick={isMobile ? () => setMobileDrawerOpen(false) : undefined}
+                    />
+                  );
+                })}
+              </div>
             </div>
           ))}
-        </div>
+        </nav>
 
-        {/* Footer Sidebar: User Subscription Status Card */}
-        {!collapsed ? (
-          <div className="p-3 border-t border-[var(--border)]">
-            <div className="rounded-[16px] bg-[var(--brand-50)] p-3.5 space-y-2.5">
+        {/* 3. Footer Sidebar (padding 12px, border-t 1px var(--border)) */}
+        <div className="p-3 shrink-0 border-t border-[var(--border)] bg-[var(--chrome)] space-y-2">
+          {/* Subscription Status Card */}
+          {!isCollapsed ? (
+            <div className="rounded-[14px] bg-[var(--surface-2)] border border-[var(--border)] p-3 space-y-2.5 shadow-xs">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-[var(--brand-700)]">
-                  Gói của bạn
+                <span className="text-sm font-bold text-[var(--text)]">
+                  {isPro ? 'Gói Pro' : 'Gói Miễn phí'}
                 </span>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white text-[var(--brand-700)] border border-[var(--brand-100)]">
-                  FREE
+                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-white text-[var(--brand-700)] border border-[var(--border)] shadow-xs">
+                  {isPro ? 'PRO' : 'FREE'}
                 </span>
               </div>
 
-              {/* Dynamic limit from API, no hardcoded values */}
-              {voiceStatus && (
-                <p className="text-[11px] text-[var(--text-2)] leading-relaxed">
-                  Dùng thử Hội thoại AI:{' '}
-                  <strong className="text-[var(--brand-700)] font-semibold">
-                    {voiceStatus.remainingQuota}/{voiceStatus.maxSessionsPerDay} buổi hôm nay
+              {/* Dynamic free limit or Pro minutes */}
+              {!isPro && (
+                <p className="text-[11px] text-[var(--text-2)] font-medium leading-tight">
+                  Hội thoại AI: dùng thử còn{' '}
+                  <strong className="text-[var(--brand-700)] font-bold">
+                    {voiceStatus ? `${voiceStatus.remainingQuota}/${voiceStatus.maxSessionsPerDay}` : '3/3'} buổi
                   </strong>
                 </p>
               )}
 
+              {isPro && (
+                <div className="space-y-1">
+                  <div className="w-full h-1.5 rounded-full bg-[var(--brand-100)] overflow-hidden">
+                    <div className="h-full bg-[var(--brand)] rounded-full w-3/4" />
+                  </div>
+                  <p className="text-[11px] text-[var(--text-2)] font-medium">Còn 45/60 phút hôm nay</p>
+                </div>
+              )}
+
+              {!isPro && (
+                <button
+                  onClick={() => {
+                    if (isMobile) setMobileDrawerOpen(false);
+                    navigate('/pricing');
+                  }}
+                  className="w-full h-9 rounded-[10px] bg-[var(--brand)] hover:bg-[var(--brand-600)] text-white font-black text-xs transition-colors flex items-center justify-center cursor-pointer shadow-xs active:translate-y-0.5 border border-black/10"
+                >
+                  <span>Nâng cấp lên Pro</span>
+                </button>
+              )}
+            </div>
+          ) : (
+            <Tooltip title="Gói cước & Nâng cấp" placement="right" mouseEnterDelay={0.3}>
               <button
                 onClick={() => navigate('/pricing')}
-                className="w-full h-9 bg-[var(--brand)] hover:bg-[var(--brand-700)] text-white text-xs font-semibold rounded-[10px] transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+                aria-label="Xem gói cước"
+                className="w-10 h-10 mx-auto rounded-[10px] bg-[var(--surface-2)] hover:bg-[var(--hover)] text-[var(--brand-700)] flex items-center justify-center transition-colors cursor-pointer border border-[var(--border)]"
               >
-                <span>Nâng cấp PRO</span>
-                <ArrowRightOutlined className="text-[10px]" />
+                <Crown size={18} strokeWidth={1.75} />
+              </button>
+            </Tooltip>
+          )}
+
+          {/* Small row: Help & Settings */}
+          {(!isCollapsed || isMobile) && (
+            <div className="flex items-center justify-between px-1 pt-1 text-[13px] text-[var(--text-3)] font-medium">
+              <button
+                onClick={() => {
+                  if (isMobile) setMobileDrawerOpen(false);
+                  navigate('/decks');
+                }}
+                className="inline-flex items-center gap-1.5 hover:text-[var(--text)] transition-colors cursor-pointer"
+              >
+                <HelpCircle size={15} strokeWidth={1.75} />
+                <span>Trợ giúp</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  if (isMobile) setMobileDrawerOpen(false);
+                  navigate('/profile#goals');
+                }}
+                className="inline-flex items-center gap-1.5 hover:text-[var(--text)] transition-colors cursor-pointer"
+              >
+                <Settings size={15} strokeWidth={1.75} />
+                <span>Cài đặt</span>
               </button>
             </div>
-          </div>
-        ) : (
-          <div className="p-2 border-t border-[var(--border)] flex justify-center">
-            <button
-              onClick={() => navigate('/pricing')}
-              title="Nâng cấp gói cước"
-              className="w-10 h-10 rounded-[12px] bg-[var(--brand)] hover:bg-[var(--brand-700)] text-white flex items-center justify-center cursor-pointer transition-colors"
-            >
-              <RocketOutlined />
-            </button>
-          </div>
-        )}
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="min-h-screen flex bg-[var(--bg)] text-[var(--text)] font-sans antialiased">
+      {/* =========================================================================
+          DESKTOP SIDEBAR (>= 1024px, 264px wide, 72px collapsed, sticky 100dvh)
+          ========================================================================= */}
+      <aside
+        className={`hidden lg:flex flex-col sticky top-0 h-[100dvh] shrink-0 border-r border-[var(--border)] bg-[var(--chrome)] z-30 transition-all duration-200 ${
+          collapsed ? 'w-[72px]' : 'w-[264px]'
+        }`}
+      >
+        {renderSidebarContent(false)}
       </aside>
+
+      {/* =========================================================================
+          MOBILE DRAWER (< 1024px, 288px wide, slides from left)
+          ========================================================================= */}
+      <Drawer
+        placement="left"
+        closable={false}
+        open={mobileDrawerOpen}
+        onClose={() => setMobileDrawerOpen(false)}
+        width={288}
+        styles={{
+          body: { padding: 0, background: 'var(--chrome)', overflow: 'hidden' },
+          content: { background: 'var(--chrome)' },
+        }}
+        className="lg:hidden"
+      >
+        {renderSidebarContent(true)}
+      </Drawer>
 
       {/* =========================================================================
           MAIN APPLICATION AREA (Topbar + Page Outlet)
           ========================================================================= */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Desktop Topbar (>= 1024px, 64px height) */}
-        <header className="hidden lg:flex sticky top-0 z-20 h-16 bg-white border-b border-[var(--border)] px-8 items-center justify-between">
+        <header className="hidden lg:flex sticky top-0 z-20 h-16 bg-[var(--chrome)] border-b border-[var(--border)] px-8 items-center justify-between">
           {/* Left: Dynamic Clean Page Title */}
           <div className="flex items-center gap-2">
             <span className="font-display font-semibold text-lg text-[var(--text)] tracking-tight">
@@ -350,15 +485,19 @@ export function LearnerLayout() {
 
           {/* Right: Metrics & Profile */}
           <div className="flex items-center gap-3">
-            {/* Streak Chip */}
+            {/* Streak Chip with continuous gentle flame flicker */}
             <StatChip
-              icon={<FireFilled className="text-[var(--flame)]" />}
-              value={`${user?.streakCurrent || 0} ngày`}
+              icon={
+                <span className="flame-animated">
+                  <FireFilled className="text-[var(--flame)]" />
+                </span>
+              }
+              value={`${currentStreak} ngày`}
             />
 
-            {/* XP Chip */}
+            {/* XP Chip with warm sun yellow */}
             <StatChip
-              icon={<ThunderboltFilled className="text-[var(--xp)]" />}
+              icon={<ThunderboltFilled className="text-[var(--sun)]" />}
               value={`${user?.xpTotal || 0} XP`}
             />
 
@@ -386,7 +525,7 @@ export function LearnerLayout() {
                 <button
                   className="h-9 pl-1 pr-3 rounded-full bg-[var(--surface-2)] hover:bg-[var(--border)] flex items-center gap-2 text-xs font-semibold text-[var(--text)] transition-colors cursor-pointer"
                 >
-                  <div className="w-7 h-7 rounded-full bg-[var(--brand)] text-white text-xs font-bold flex items-center justify-center shrink-0">
+                  <div className="w-7 h-7 rounded-full bg-[var(--brand)] text-[#2A1300] text-xs font-bold flex items-center justify-center shrink-0">
                     {initialLetter}
                   </div>
                   <span className="max-w-[140px] truncate">{displayName}</span>
@@ -395,7 +534,7 @@ export function LearnerLayout() {
             ) : (
               <button
                 onClick={() => navigate('/login')}
-                className="h-9 px-4 rounded-[10px] bg-[var(--brand)] text-white text-xs font-semibold hover:bg-[var(--brand-700)] transition-colors"
+                className="h-9 px-4 rounded-[10px] bg-[var(--brand)] text-[#2A1300] text-xs font-semibold hover:bg-[var(--brand-600)] transition-colors btn-shine"
               >
                 Đăng nhập
               </button>
@@ -404,13 +543,26 @@ export function LearnerLayout() {
         </header>
 
         {/* Mobile Topbar (< 1024px, 56px height) */}
-        <header className="lg:hidden sticky top-0 z-20 h-14 bg-white border-b border-[var(--border)] px-4 flex items-center justify-between">
-          <Link
-            to="/dashboard"
-            className="font-display font-bold text-xl tracking-tight text-[var(--brand)] flex items-center"
-          >
-            LELA<span className="text-[var(--danger)]">.</span>
-          </Link>
+        <header className="lg:hidden sticky top-0 z-20 h-14 bg-[var(--chrome)] border-b border-[var(--border)] px-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setMobileDrawerOpen(true)}
+              aria-label="Mở menu điều hướng"
+              className="p-1.5 -ml-1 text-[var(--text-2)] hover:text-[var(--text)] rounded-lg hover:bg-[var(--hover)] transition-colors cursor-pointer"
+            >
+              <MenuIcon size={22} strokeWidth={1.75} />
+            </button>
+
+            <Link
+              to="/dashboard"
+              className="flex items-center gap-2 font-display font-bold text-lg tracking-tight text-[var(--text)]"
+            >
+              <div className="w-7 h-7 rounded-[8px] bg-[var(--brand)] flex items-center justify-center text-[#2A1300] text-sm font-bold">
+                L
+              </div>
+              <span>LeLa</span>
+            </Link>
+          </div>
 
           <div className="flex items-center gap-2">
             <Popover
@@ -433,7 +585,7 @@ export function LearnerLayout() {
             {user ? (
               <Dropdown menu={{ items: userMenuItems }} trigger={['click']} placement="bottomRight">
                 <button
-                  className="w-8 h-8 rounded-full bg-[var(--brand)] text-white font-bold text-xs flex items-center justify-center cursor-pointer"
+                  className="w-8 h-8 rounded-full bg-[var(--brand)] text-[#2A1300] font-bold text-xs flex items-center justify-center cursor-pointer"
                   aria-label="Tài khoản cá nhân"
                 >
                   {initialLetter}
@@ -442,7 +594,7 @@ export function LearnerLayout() {
             ) : (
               <button
                 onClick={() => navigate('/login')}
-                className="px-3 py-1 text-xs font-semibold bg-[var(--brand)] text-white rounded-[8px]"
+                className="px-3 py-1 text-xs font-semibold bg-[var(--brand)] text-[#2A1300] rounded-[8px]"
               >
                 Đăng nhập
               </button>
@@ -450,59 +602,27 @@ export function LearnerLayout() {
           </div>
         </header>
 
-        {/* Page Content Viewport with pb-24 (96px padding bottom) to prevent floating overlap */}
-        <main className="flex-1 w-full bg-[var(--bg)] pb-24 lg:pb-16 min-w-0">
+        {/* Page Content Viewport with fitViewport support */}
+        <main
+          className={`flex-1 w-full bg-[var(--bg)] min-w-0 ${
+            isFitViewport
+              ? 'h-[calc(100dvh-64px)] overflow-hidden p-3.5 sm:p-5 md:px-6'
+              : 'pb-24 lg:pb-16'
+          }`}
+        >
           <ErrorBoundary resetKey={location.pathname}>
-            <Outlet />
+            <AnimatedOutlet />
           </ErrorBoundary>
         </main>
-
-        {/* =========================================================================
-            MOBILE BOTTOM TAB BAR (< 1024px)
-            ========================================================================= */}
-        <nav className="lg:hidden fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-[var(--border)] z-40 px-2 flex items-center justify-around shadow-[0_-2px_12px_rgba(16,24,40,0.04)]">
-          {MOBILE_BOTTOM_TABS.map((tab, idx) => {
-            const isActive = location.pathname === tab.path;
-
-            // Nút nổi ở giữa "Ôn ngay"
-            if (idx === 2) {
-              return (
-                <div key="study-center" className="relative -top-3">
-                  <button
-                    onClick={() => navigate('/decks')}
-                    title="Ôn tập thẻ ngay"
-                    className="w-12 h-12 rounded-full bg-[var(--brand)] text-white flex flex-col items-center justify-center shadow-[var(--shadow-md)] active:scale-95 transition-transform cursor-pointer"
-                  >
-                    <ThunderboltFilled className="text-lg text-[var(--xp)]" />
-                    <span className="text-[9px] font-semibold leading-none mt-0.5">Ôn ngay</span>
-                  </button>
-                </div>
-              );
-            }
-
-            return (
-              <Link
-                key={tab.key}
-                to={tab.path}
-                className={`flex flex-col items-center justify-center flex-1 py-1 text-xs font-medium transition-colors ${
-                  isActive
-                    ? 'text-[var(--brand)] font-semibold'
-                    : 'text-[var(--text-3)] hover:text-[var(--text)]'
-                }`}
-              >
-                <span className="text-lg">{tab.icon}</span>
-                <span className="text-[10px] mt-0.5 leading-tight">{tab.label}</span>
-              </Link>
-            );
-          })}
-        </nav>
 
         {/* Prompt Daily Goal Modal */}
         <DailyGoalPromptModal />
 
-        {/* Unified Live Chat Floating Widget (One single 52px button, no clipping) */}
-        <ChatWidget />
+        {/* Unified Live Chat Floating Widget - hidden on fitViewport pages */}
+        <ChatWidget hidden={isFitViewport} />
       </div>
     </div>
   );
 }
+
+export default LearnerLayout;

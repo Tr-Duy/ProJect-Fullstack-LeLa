@@ -127,6 +127,15 @@ export interface FlashcardResponse {
   isActive: boolean;
   cardColor?: string;
   tagIds: number[];
+
+  // Standardized fields
+  word?: string;
+  vietnameseMeaning?: string;
+  exampleEn?: string;
+  exampleVi?: string;
+  definitionEn?: string;
+  synonyms?: string[];
+  antonyms?: string[];
 }
 
 export type DeckEnrollmentStatus = 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'DROPPED';

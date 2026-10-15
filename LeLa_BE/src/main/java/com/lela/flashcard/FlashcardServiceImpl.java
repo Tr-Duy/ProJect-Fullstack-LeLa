@@ -36,14 +36,27 @@ public class FlashcardServiceImpl implements FlashcardService {
     public FlashcardResponse createFlashcard(FlashcardRequest request) {
         Flashcard flashcard = new Flashcard();
         
-        flashcard.setFrontText(request.getFrontText());
-        flashcard.setBackText(request.getBackText());
-        flashcard.setPhonetic(request.getPhonetic());
-        flashcard.setPartOfSpeech(request.getPartOfSpeech());
-        flashcard.setDefinition(request.getDefinition());
-        flashcard.setExampleText(request.getExampleText());
-        flashcard.setExampleTranslation(request.getExampleTranslation());
-        flashcard.setRelatedWords(request.getRelatedWords());
+        com.lela.flashcard.util.FlashcardDataSanitizer.SanitizedResult sanitized = com.lela.flashcard.util.FlashcardDataSanitizer.sanitize(
+                request.getFrontText(),
+                request.getBackText(),
+                request.getPhonetic(),
+                request.getPartOfSpeech(),
+                request.getDefinition(),
+                request.getExampleText(),
+                request.getExampleTranslation(),
+                request.getRelatedWords(),
+                request.getHint(),
+                request.getNote()
+        );
+
+        flashcard.setFrontText(sanitized.getWord());
+        flashcard.setBackText(sanitized.getVietnameseMeaning());
+        flashcard.setPhonetic(sanitized.getPhonetic());
+        flashcard.setPartOfSpeech(sanitized.getPartOfSpeech());
+        flashcard.setDefinition(sanitized.getDefinition());
+        flashcard.setExampleText(sanitized.getExampleEn());
+        flashcard.setExampleTranslation(sanitized.getExampleVi());
+        flashcard.setRelatedWords(sanitized.getRelatedWords());
         flashcard.setHint(request.getHint());
         flashcard.setNote(request.getNote());
         flashcard.setFrontImageUrl(request.getFrontImageUrl());
@@ -119,6 +132,32 @@ public class FlashcardServiceImpl implements FlashcardService {
         if (request.getCardOrder() != null) flashcard.setCardOrder(request.getCardOrder());
         if (request.getCardColor() != null) flashcard.setCardColor(request.getCardColor());
         if (request.getIsActive() != null) flashcard.setActive(request.getIsActive());
+
+        com.lela.flashcard.util.FlashcardDataSanitizer.SanitizedResult sanitized = com.lela.flashcard.util.FlashcardDataSanitizer.sanitize(
+                flashcard.getFrontText(),
+                flashcard.getBackText(),
+                flashcard.getPhonetic(),
+                flashcard.getPartOfSpeech(),
+                flashcard.getDefinition(),
+                flashcard.getExampleText(),
+                flashcard.getExampleTranslation(),
+                flashcard.getRelatedWords(),
+                flashcard.getHint(),
+                flashcard.getNote()
+        );
+
+        flashcard.setFrontText(sanitized.getWord());
+        flashcard.setBackText(sanitized.getVietnameseMeaning());
+        flashcard.setPhonetic(sanitized.getPhonetic());
+        flashcard.setPartOfSpeech(sanitized.getPartOfSpeech());
+        flashcard.setDefinition(sanitized.getDefinition());
+        if (flashcard.getExampleText() == null || flashcard.getExampleText().isBlank()) {
+            flashcard.setExampleText(sanitized.getExampleEn());
+        }
+        if (flashcard.getExampleTranslation() == null || flashcard.getExampleTranslation().isBlank()) {
+            flashcard.setExampleTranslation(sanitized.getExampleVi());
+        }
+        flashcard.setRelatedWords(sanitized.getRelatedWords());
 
         if (request.getCreatedById() != null) {
             Users updater = entityManager.getReference(Users.class, request.getCreatedById());

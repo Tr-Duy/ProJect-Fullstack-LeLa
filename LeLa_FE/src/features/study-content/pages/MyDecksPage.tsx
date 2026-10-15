@@ -15,13 +15,13 @@ function EnrolledDeckCard({ deck, masteredCards }: { deck: DeckResponse, mastere
   const isCompleted = deck.totalCards > 0 && masteredCards >= deck.totalCards;
 
   return (
-    <div className="brutal-card brutal-shadow bg-white flex flex-col h-full overflow-hidden transition-transform duration-300 hover:-translate-y-2">
+    <div className="rounded-[var(--radius-card)] shadow-[var(--shadow-md)] bg-white flex flex-col h-full overflow-hidden transition-transform duration-300 hover:-translate-y-2">
       <div
-        className="h-32 bg-gray-200 border-b-[3px] border-black bg-cover bg-center relative"
+        className="h-32 bg-gray-200 border-b-[3px] border-[var(--border)] bg-cover bg-center relative"
         style={{ backgroundImage: `url(${deck.coverImageUrl || 'https://placehold.co/400x200/F4F3EE/1D2A3A?text=No+Image'})` }}
       >
         {isCompleted && (
-          <span className="absolute top-3 left-3 bg-[#4CAF50] text-white text-xs font-black px-2.5 py-1 brutal-border border-black shadow-[2px_2px_0px_0px_#000]">
+          <span className="absolute top-3 left-3 bg-[#4CAF50] text-white text-xs font-black px-2.5 py-1 border border-[var(--border)] border-[var(--border)] shadow-[var(--shadow-sm)]">
             ✓ HOÀN THÀNH
           </span>
         )}
@@ -36,20 +36,20 @@ function EnrolledDeckCard({ deck, masteredCards }: { deck: DeckResponse, mastere
           </h3>
           <Button
             icon={<InfoCircleOutlined />}
-            className="brutal-pill border-[2px] border-black bg-white text-black shrink-0 hover:bg-[#F4F3EE] hover:-translate-y-1 transition-transform"
+            className="brutal-pill border border-[var(--border)] bg-white text-black shrink-0 hover:bg-[#F4F3EE] hover:-translate-y-1 transition-transform"
             onClick={() => navigate(`/decks/${deck.id}`)}
             title="Chi tiết bộ thẻ"
           />
         </div>
 
         <div className="mb-4 mt-2">
-          <div className="flex justify-between text-xs font-bold text-gray-700 mb-1 uppercase">
+          <div className="flex justify-between text-xs font-bold text-gray-700 mb-1 ">
             <span>Tiến độ</span>
             <span>{masteredCards} / {deck.totalCards} thẻ ({progressPercent}%)</span>
           </div>
-          <div className="h-4 w-full bg-[#F4F3EE] border-[2px] border-black overflow-hidden relative shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+          <div className="h-4 w-full bg-[#F4F3EE] border border-[var(--border)] overflow-hidden relative shadow-[var(--shadow-md)]">
             <div
-              className={`h-full border-r-[2px] border-black transition-all duration-500 ${isCompleted ? 'bg-[#4CAF50]' : 'bg-[#2A8B9D]'}`}
+              className={`h-full border-r-[2px] border-[var(--border)] transition-all duration-500 ${isCompleted ? 'bg-[#4CAF50]' : 'bg-[#2A8B9D]'}`}
               style={{ width: `${progressPercent}%` }}
             ></div>
           </div>
@@ -57,12 +57,12 @@ function EnrolledDeckCard({ deck, masteredCards }: { deck: DeckResponse, mastere
 
         <div className="mt-auto flex gap-2">
           <Button
-            className={`flex-1 brutal-pill font-black uppercase h-10 border-[2px] border-black ${
+            className={`flex-1 brutal-pill font-bold h-10 border border-[var(--border)] ${
               isCompleted
-                ? '!bg-[#2A8B9D] !text-white hover:!bg-[#1D2A3A]'
-                : '!bg-[#1D2A3A] !text-white hover:!translate-y-[-2px]'
+                ? '!bg-[#2A8B9D] !text-white hover:!bg-[#2B1B0E]'
+                : '!bg-[#2B1B0E] !text-white hover:!translate-y-[-2px]'
             }`}
-            onClick={() => navigate(`/study/${deck.id}`)}
+            onClick={() => navigate(isCompleted ? `/study/${deck.id}?mode=cram` : `/study/${deck.id}`)}
           >
             {isCompleted ? 'ÔN LẠI' : 'HỌC TIẾP'}
           </Button>
@@ -116,12 +116,12 @@ export function MyDecksPage() {
     <div className="p-8 max-w-7xl mx-auto min-h-screen bg-[#F4F3EE]">
       <div className="flex justify-between items-center mb-10">
         <div>
-          <h1 className="text-4xl font-black uppercase tracking-tighter text-[#1D2A3A]">Bộ thẻ của tôi</h1>
+          <h1 className="text-4xl font-black  tracking-tighter text-[#2B1B0E]">Bộ thẻ của tôi</h1>
         </div>
         <Button
           type="primary"
           onClick={() => navigate('/decks')}
-          className="brutal-pill !bg-[#F05A4A] !text-white h-12 px-6 font-bold uppercase hover:!translate-y-[-2px] transition-transform"
+          className="brutal-pill !bg-[#F05A4A] !text-white h-12 px-6 font-bold hover:!translate-y-[-2px] transition-transform"
         >
           TÌM BỘ THẺ MỚI
         </Button>
@@ -129,18 +129,18 @@ export function MyDecksPage() {
 
       {!isReady ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          <Card className="brutal-card h-[250px]"><Skeleton active /></Card>
-          <Card className="brutal-card h-[250px]"><Skeleton active /></Card>
-          <Card className="brutal-card h-[250px]"><Skeleton active /></Card>
+          <Card className="rounded-[var(--radius-card)] h-[250px]"><Skeleton active /></Card>
+          <Card className="rounded-[var(--radius-card)] h-[250px]"><Skeleton active /></Card>
+          <Card className="rounded-[var(--radius-card)] h-[250px]"><Skeleton active /></Card>
         </div>
       ) : (
         <>
           {Object.keys(groupedDecks).length === 0 ? (
-            <div className="text-center py-20 brutal-card bg-white">
-              <h2 className="text-2xl font-black uppercase mb-4 text-[#1D2A3A]">Bạn chưa học bộ thẻ nào!</h2>
+            <div className="text-center py-20 rounded-[var(--radius-card)] bg-white">
+              <h2 className="text-2xl font-black  mb-4 text-[#2B1B0E]">Bạn chưa học bộ thẻ nào!</h2>
               <Button
                 onClick={() => navigate('/decks')}
-                className="brutal-border bg-[#FFD700] text-black font-black h-12 px-6 uppercase hover:-translate-y-1 transition-transform"
+                className="border border-[var(--brand)] bg-[var(--brand)] text-[#2A1300] font-semibold h-12 px-6 rounded-xl hover:bg-[var(--brand-600)] transition-transform btn-shine cursor-pointer"
               >
                 Khám phá ngay
               </Button>
@@ -151,8 +151,8 @@ export function MyDecksPage() {
                 <div key={topicName} className="flex flex-col">
                   {/* Brutalist Topic Header */}
                   <div className="mb-6 inline-flex">
-                    <div className="bg-[#2A8B9D] text-white px-6 py-2 brutal-border shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] -rotate-1 hover:rotate-0 transition-transform">
-                      <h2 className="text-2xl font-black uppercase tracking-tight m-0">{topicName}</h2>
+                    <div className="bg-[#2A8B9D] text-white px-6 py-2 border border-[var(--border)] shadow-[var(--shadow-md)] -rotate-1 hover:rotate-0 transition-transform">
+                      <h2 className="text-2xl font-black  tracking-tight m-0">{topicName}</h2>
                     </div>
                   </div>
 

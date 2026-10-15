@@ -1,4 +1,8 @@
-export type Mood = 'sleepy' | 'happy';
+export function hourInTz(tz = 'Asia/Ho_Chi_Minh', d = new Date()): number {
+  return Number(new Intl.DateTimeFormat('en-GB', { hour: '2-digit', hourCycle: 'h23', timeZone: tz }).format(d));
+}
+
+export type Mood = 'sleepy' | 'happy' | 'cheer' | 'idle';
 
 export interface GreetingResult {
   text: string;
@@ -13,33 +17,27 @@ export function getGreeting(
   name?: string | null,
   timezone: string = 'Asia/Ho_Chi_Minh'
 ): GreetingResult {
-  let h = now.getHours();
-
-  // If Intl is available, extract the exact hour in the target timezone
-  try {
-    const hourFormatter = new Intl.DateTimeFormat('en-US', {
-      hour: 'numeric',
-      hour12: false,
-      timeZone: timezone,
-    });
-    const formattedHour = parseInt(hourFormatter.format(now), 10);
-    if (!Number.isNaN(formattedHour)) {
-      h = formattedHour;
-    }
-  } catch {
-    // Fallback to local getHours
-    h = now.getHours();
-  }
-
+  const h = hourInTz(timezone, now);
   const n = name?.trim();
   const who = n ? `, ${n}` : '';
 
-  if (h < 5) return { text: `Khuya rồi${who}. Học nhẹ một chút rồi đi ngủ nhé!`, mood: 'sleepy' };
-  if (h < 11) return { text: `Chào buổi sáng${who}!`, mood: 'happy' };
-  if (h < 13) return { text: `Chào buổi trưa${who}!`, mood: 'happy' };
-  if (h < 18) return { text: `Chào buổi chiều${who}!`, mood: 'happy' };
-  if (h < 22) return { text: `Chào buổi tối${who}!`, mood: 'happy' };
-  return { text: `Tối muộn rồi${who}. Ôn vài từ rồi nghỉ ngơi nhé!`, mood: 'sleepy' };
+  if (h >= 0 && h <= 4) {
+    return { text: `Khuya rồi${who}, học nhẹ rồi đi ngủ nhé!`, mood: 'sleepy' };
+  }
+  if (h >= 5 && h <= 10) {
+    return { text: `Chào buổi sáng${who}! Sẵn sàng học cùng LeLa chưa?`, mood: 'happy' };
+  }
+  if (h >= 11 && h <= 12) {
+    return { text: `Chào buổi trưa${who}! Nghỉ một chút và nạp thêm vài từ vựng nhé.`, mood: 'happy' };
+  }
+  if (h >= 13 && h <= 17) {
+    return { text: `Chào buổi chiều${who}! Giữ vững phong độ học tập nhé.`, mood: 'happy' };
+  }
+  if (h >= 18 && h <= 21) {
+    return { text: `Chào buổi tối${who}! Cùng ôn lại bài hôm nay thôi.`, mood: 'happy' };
+  }
+  // 22 - 23
+  return { text: `Tối muộn rồi${who}, làm vài thẻ nhẹ nhàng trước khi ngủ nhé.`, mood: 'sleepy' };
 }
 
 /**

@@ -32,13 +32,13 @@ export const TopLearnersSidebarCard: React.FC<TopLearnersSidebarCardProps> = ({
     <div className="bg-[var(--surface)] rounded-[20px] p-6 border border-[var(--border)] shadow-[var(--shadow-sm)] space-y-4">
       <div className="flex items-center justify-between">
         <span className="text-xs font-semibold text-[var(--text-3)] flex items-center gap-1.5">
-          <TrophyFilled className="text-[var(--xp)]" />
+          <TrophyFilled className="text-[var(--sun)]" />
           Bảng xếp hạng tuần
         </span>
         <button
           type="button"
           onClick={() => navigate('/leaderboard')}
-          className="text-xs font-semibold text-[var(--brand)] hover:underline cursor-pointer"
+          className="text-xs font-semibold text-[var(--brand-700)] hover:underline cursor-pointer"
         >
           Chi tiết
         </button>

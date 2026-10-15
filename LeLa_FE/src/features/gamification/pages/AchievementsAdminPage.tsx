@@ -121,11 +121,11 @@ export function AchievementsAdminPage() {
               ) : (
                 achievements.map((item: any) => (
                   <tr key={item.id} className="hover:bg-geist-gray-100/50 transition-colors">
-                    <td className="px-4 py-3 font-mono text-geist-gray-900">{item.id}</td>
+                    <td className="px-4 py-3 font-sans text-geist-gray-900">{item.id}</td>
                     <td className="px-4 py-3 font-medium text-geist-gray-1000">{item.code}</td>
                     <td className="px-4 py-3 text-geist-gray-1000">{item.title}</td>
-                    <td className="px-4 py-3 text-right text-geist-blue-700 font-semibold">+{item.xpReward} XP</td>
-                    <td className="px-4 py-3 text-geist-gray-700 font-mono text-xs">{item.conditionType}</td>
+                    <td className="px-4 py-3 text-right text-[var(--brand-700)] font-semibold">+{item.xpReward} XP</td>
+                    <td className="px-4 py-3 text-geist-gray-700 font-sans text-xs">{item.conditionType}</td>
                     <td className="px-4 py-3 text-right text-geist-gray-900">{item.conditionValue}</td>
                     <td className="px-4 py-3 text-right">
                       <Button variant="ghost" size="icon" onClick={() => openModal(item)} title="Chỉnh sửa">
@@ -174,7 +174,7 @@ export function AchievementsAdminPage() {
             <label className="text-sm font-medium text-geist-gray-1000">Mô tả</label>
             <textarea
               {...register('description')}
-              className="flex w-full resize-none rounded-md border border-geist-gray-400 bg-transparent px-3 py-2 text-sm text-geist-gray-1000 focus:outline-none focus:ring-2 focus:ring-geist-blue-700 hover:border-geist-gray-600 transition-colors"
+              className="flex w-full resize-none rounded-md border border-geist-gray-400 bg-transparent px-3 py-2 text-sm text-geist-gray-1000 focus:outline-none focus:ring-2 focus:ring-[var(--brand)] hover:border-geist-gray-600 transition-colors"
               rows={3}
             />
           </div>
@@ -190,7 +190,7 @@ export function AchievementsAdminPage() {
               <label className="text-sm font-medium text-geist-gray-1000">Loại điều kiện</label>
               <select
                 {...register('conditionType', { required: true })}
-                className="flex w-full rounded-md border border-geist-gray-400 bg-transparent px-3 py-2 text-sm text-geist-gray-1000 focus:outline-none focus:ring-2 focus:ring-geist-blue-700 hover:border-geist-gray-600 transition-colors"
+                className="flex w-full rounded-md border border-geist-gray-400 bg-transparent px-3 py-2 text-sm text-geist-gray-1000 focus:outline-none focus:ring-2 focus:ring-[var(--brand)] hover:border-geist-gray-600 transition-colors"
               >
                 <option value="TOTAL_DECKS_MASTERY">Hoàn thành nhiều bộ thẻ</option>
                 <option value="TOTAL_STREAK_DAYS">Chuỗi ngày học liên tiếp</option>

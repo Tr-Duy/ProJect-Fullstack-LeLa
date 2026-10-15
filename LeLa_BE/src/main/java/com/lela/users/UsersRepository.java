@@ -12,6 +12,10 @@ public interface UsersRepository extends JpaRepository<Users, Long> {
         @org.springframework.data.jpa.repository.EntityGraph(attributePaths = { "currentLevel" })
         Optional<Users> findById(Long id);
 
+        @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+        @org.springframework.data.jpa.repository.Query("SELECT u FROM Users u WHERE u.id = :id")
+        Optional<Users> findByIdForUpdate(@org.springframework.data.repository.query.Param("id") Long id);
+
 
 
         Optional<Users> findByEmail(String email);

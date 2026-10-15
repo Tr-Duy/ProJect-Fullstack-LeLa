@@ -151,7 +151,7 @@ function QuestionOptions({
             <div className="flex-1 flex gap-2">
               <textarea
                 placeholder="Noi dung dap an"
-                className="flex-1 bg-geist-bg-100 resize-none rounded-md border border-geist-gray-400 px-3 py-2 text-sm text-geist-gray-1000 focus:outline-none focus:ring-2 focus:ring-geist-blue-700 transition-colors overflow-hidden"
+                className="flex-1 bg-geist-bg-100 resize-none rounded-md border border-geist-gray-400 px-3 py-2 text-sm text-geist-gray-1000 focus:outline-none focus:ring-2 focus:ring-[var(--brand)] transition-colors overflow-hidden"
                 rows={1}
                 readOnly={isTrueFalse}
                 onInput={(e) => {
@@ -208,7 +208,7 @@ function QuestionCard({
           <div>
             <div className="flex justify-between items-center mb-2">
               <label className="text-sm font-medium text-geist-gray-1000 block">
-                Noi dung cau hoi <span className="text-geist-gray-500 font-mono text-xs ml-1">#{qIndex + 1}</span>
+                Noi dung cau hoi <span className="text-geist-gray-500 font-sans text-xs ml-1">#{qIndex + 1}</span>
               </label>
               <div className="flex items-center gap-4">
                 <label className="flex items-center gap-2 cursor-pointer text-sm font-medium text-geist-gray-1000">
@@ -224,7 +224,7 @@ function QuestionCard({
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="text-geist-blue-700 hover:text-geist-blue-900 hover:bg-geist-blue-50 h-7 px-2"
+                    className="text-[var(--brand-700)] hover:text-[var(--brand-700)] hover:bg-[var(--brand-50)] h-7 px-2"
                     onClick={() => onSaveSingleQuestion(qIndex)}
                   >
                     <Save className="w-3.5 h-3.5 mr-1.5" /> Luu
@@ -243,7 +243,7 @@ function QuestionCard({
             </div>
             <textarea
               {...register(`questions.${qIndex}.questionText`, { required: true })}
-              className="flex w-full resize-none rounded-md border border-geist-gray-400 bg-geist-bg-50 px-3 py-2 text-sm text-geist-gray-1000 focus:outline-none focus:ring-2 focus:ring-geist-blue-700 hover:border-geist-gray-600 transition-colors overflow-hidden"
+              className="flex w-full resize-none rounded-md border border-geist-gray-400 bg-geist-bg-50 px-3 py-2 text-sm text-geist-gray-1000 focus:outline-none focus:ring-2 focus:ring-[var(--brand)] hover:border-geist-gray-600 transition-colors overflow-hidden"
               rows={2}
               onInput={(e) => {
                 e.currentTarget.style.height = 'auto';
@@ -260,7 +260,7 @@ function QuestionCard({
               <select
                 {...register(`questions.${qIndex}.questionType`)}
                 disabled={globalQuizType !== 'MIXED'}
-                className="flex h-9 w-full rounded-md border border-geist-gray-400 bg-transparent px-3 py-1.5 text-sm text-geist-gray-1000 focus:outline-none focus:ring-2 focus:ring-geist-blue-700 hover:border-geist-gray-600 transition-colors disabled:opacity-50 disabled:bg-geist-bg-200"
+                className="flex h-9 w-full rounded-md border border-geist-gray-400 bg-transparent px-3 py-1.5 text-sm text-geist-gray-1000 focus:outline-none focus:ring-2 focus:ring-[var(--brand)] hover:border-geist-gray-600 transition-colors disabled:opacity-50 disabled:bg-geist-bg-200"
               >
                 <option value="MULTIPLE_CHOICE">Trac nghiem</option>
                 <option value="TRUE_FALSE">Dung / Sai</option>
@@ -283,7 +283,7 @@ function QuestionCard({
             <label className="text-sm font-medium text-geist-gray-1000">Giai thich</label>
             <textarea
               {...register(`questions.${qIndex}.explanation`)}
-              className="flex w-full resize-none rounded-md border border-geist-gray-400 bg-transparent px-3 py-2 text-sm text-geist-gray-1000 focus:outline-none focus:ring-2 focus:ring-geist-blue-700 hover:border-geist-gray-600 transition-colors overflow-hidden"
+              className="flex w-full resize-none rounded-md border border-geist-gray-400 bg-transparent px-3 py-2 text-sm text-geist-gray-1000 focus:outline-none focus:ring-2 focus:ring-[var(--brand)] hover:border-geist-gray-600 transition-colors overflow-hidden"
               rows={2}
               onInput={(e) => {
                 e.currentTarget.style.height = 'auto';
@@ -543,7 +543,7 @@ export function QuizBuilderAdminPage() {
               <label className="text-sm font-medium text-geist-gray-1000">Phan loai</label>
               <select
                 {...register('quizCategory', { required: true })}
-                className="flex h-10 w-full rounded-md border border-geist-gray-400 bg-transparent px-3 py-2 text-sm text-geist-gray-1000 focus:outline-none focus:ring-2 focus:ring-geist-blue-700 hover:border-geist-gray-600 transition-colors"
+                className="flex h-10 w-full rounded-md border border-geist-gray-400 bg-transparent px-3 py-2 text-sm text-geist-gray-1000 focus:outline-none focus:ring-2 focus:ring-[var(--brand)] hover:border-geist-gray-600 transition-colors"
                 onChange={(e) => {
                   setValue('quizCategory', e.target.value as any);
                   setValue('deckId', undefined);
@@ -567,7 +567,7 @@ export function QuizBuilderAdminPage() {
                 <label className="text-sm font-medium text-geist-gray-1000">Bo the (Deck)</label>
                 <select
                   {...register('deckId', { required: showDeckField })}
-                  className="flex h-10 w-full rounded-md border border-geist-gray-400 bg-transparent px-3 py-2 text-sm text-geist-gray-1000 focus:outline-none focus:ring-2 focus:ring-geist-blue-700 hover:border-geist-gray-600 transition-colors"
+                  className="flex h-10 w-full rounded-md border border-geist-gray-400 bg-transparent px-3 py-2 text-sm text-geist-gray-1000 focus:outline-none focus:ring-2 focus:ring-[var(--brand)] hover:border-geist-gray-600 transition-colors"
                 >
                   <option value="">-- Chon bo the --</option>
                   {decksData?.content?.map((deck: any) => (
@@ -584,7 +584,7 @@ export function QuizBuilderAdminPage() {
                 <select
                   {...register('levelId', { required: showLevelField })}
                   disabled={!toeicId}
-                  className="flex h-10 w-full rounded-md border border-geist-gray-400 bg-transparent px-3 py-2 text-sm text-geist-gray-1000 focus:outline-none focus:ring-2 focus:ring-geist-blue-700 hover:border-geist-gray-600 transition-colors disabled:opacity-60"
+                  className="flex h-10 w-full rounded-md border border-geist-gray-400 bg-transparent px-3 py-2 text-sm text-geist-gray-1000 focus:outline-none focus:ring-2 focus:ring-[var(--brand)] hover:border-geist-gray-600 transition-colors disabled:opacity-60"
                 >
                   <option value="">-- Chon trinh do --</option>
                   {levelsData?.map((level: any) => (
@@ -606,7 +606,7 @@ export function QuizBuilderAdminPage() {
             <label className="text-sm font-medium text-geist-gray-1000">Mo ta</label>
             <textarea
               {...register('description')}
-              className="flex w-full resize-none rounded-md border border-geist-gray-400 bg-transparent px-3 py-2 text-sm text-geist-gray-1000 focus:outline-none focus:ring-2 focus:ring-geist-blue-700 hover:border-geist-gray-600 transition-colors overflow-hidden"
+              className="flex w-full resize-none rounded-md border border-geist-gray-400 bg-transparent px-3 py-2 text-sm text-geist-gray-1000 focus:outline-none focus:ring-2 focus:ring-[var(--brand)] hover:border-geist-gray-600 transition-colors overflow-hidden"
               rows={2}
               onInput={(e) => {
                 e.currentTarget.style.height = 'auto';
@@ -620,7 +620,7 @@ export function QuizBuilderAdminPage() {
               <label className="text-sm font-medium text-geist-gray-1000">Loai bai kiem tra</label>
               <select
                 {...register('quizType', { required: true })}
-                className="flex h-10 w-full rounded-md border border-geist-gray-400 bg-transparent px-3 py-2 text-sm text-geist-gray-1000 focus:outline-none focus:ring-2 focus:ring-geist-blue-700 hover:border-geist-gray-600 transition-colors"
+                className="flex h-10 w-full rounded-md border border-geist-gray-400 bg-transparent px-3 py-2 text-sm text-geist-gray-1000 focus:outline-none focus:ring-2 focus:ring-[var(--brand)] hover:border-geist-gray-600 transition-colors"
               >
                 <option value="MIXED">Hon hop</option>
                 <option value="MULTIPLE_CHOICE">Trac nghiem</option>

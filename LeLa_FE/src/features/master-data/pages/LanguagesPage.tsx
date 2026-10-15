@@ -105,8 +105,8 @@ export function LanguagesPage() {
                 <tr><td colSpan={6} className="px-4 py-8 text-center text-geist-gray-600">Đang tải...</td></tr>
               ) : data?.data?.map((lang) => (
                 <tr key={lang.id} className="hover:bg-geist-gray-100/50 transition-colors">
-                  <td className="px-4 py-3 font-mono text-geist-gray-900">{lang.id}</td>
-                  <td className="px-4 py-3 font-mono text-geist-gray-900">{lang.languageCode}</td>
+                  <td className="px-4 py-3 font-sans text-geist-gray-900">{lang.id}</td>
+                  <td className="px-4 py-3 font-sans text-geist-gray-900">{lang.languageCode}</td>
                   <td className="px-4 py-3 text-geist-gray-1000 font-medium">{lang.name}</td>
                   <td className="px-4 py-3 text-geist-gray-1000">{lang.nativeName}</td>
                   <td className="px-4 py-3">
@@ -197,7 +197,7 @@ export function LanguagesPage() {
             <input 
               type="checkbox" 
               id="isActive"
-              className="w-4 h-4 rounded border-geist-gray-400 text-geist-blue-700 focus:ring-geist-blue-700 bg-transparent"
+              className="w-4 h-4 rounded border-geist-gray-400 text-[var(--brand-700)] focus:ring-[var(--brand)] bg-transparent"
               {...register('isActive')}
             />
             <label htmlFor="isActive" className="text-sm font-medium text-geist-gray-1000 cursor-pointer">

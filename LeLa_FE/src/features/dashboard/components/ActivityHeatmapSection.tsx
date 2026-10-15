@@ -54,14 +54,14 @@ export const ActivityHeatmapSection: React.FC<ActivityHeatmapSectionProps> = ({
   const getHeatmapColor = (activity?: DailyActivityDto) => {
     if (!activity?.active) return '#F4F3EE';
     const totalActions = (activity.reviewCount || 0) + (activity.cardsLearned || 0) + (activity.quizCount || 0);
-    if (totalActions >= 3) return '#1D2A3A';
+    if (totalActions >= 3) return '#2B1B0E';
     if (totalActions >= 2) return '#2A8B9D';
     return '#70C2D1';
   };
 
   return (
-    <div className="brutal-card brutal-shadow bg-white p-6 md:p-8 mb-8 border-[3px] border-black">
-      <h2 className="text-2xl font-black mb-6 uppercase border-b-[3px] border-black pb-3 text-[#1D2A3A]">
+    <div className="rounded-[var(--radius-card)] shadow-[var(--shadow-md)] bg-white p-6 md:p-8 mb-8 border border-[var(--border)]">
+      <h2 className="text-2xl font-black mb-6  border-b-[3px] border-[var(--border)] pb-3 text-[#2B1B0E]">
         LỊCH SỬ HOẠT ĐỘNG
       </h2>
 
@@ -85,7 +85,7 @@ export const ActivityHeatmapSection: React.FC<ActivityHeatmapSectionProps> = ({
                 <div
                   key={dateStr}
                   title={`${dateStr}: ${dayActivity?.active ? 'Có hoạt động học' : 'Không có hoạt động học'}`}
-                  className="w-4 h-4 border-[2px] border-black transition-transform hover:scale-125 cursor-pointer"
+                  className="w-4 h-4 border border-[var(--border)] transition-transform hover:scale-125 cursor-pointer"
                   style={{ backgroundColor: getHeatmapColor(dayActivity) }}
                   onClick={() => {
                     setSelectedDayDetail({
@@ -102,12 +102,12 @@ export const ActivityHeatmapSection: React.FC<ActivityHeatmapSectionProps> = ({
             })}
           </div>
 
-          <div className="mt-4 flex items-center gap-2 justify-end text-sm font-bold uppercase">
+          <div className="mt-4 flex items-center gap-2 justify-end text-sm font-bold ">
             <span>Ít</span>
-            <div className="w-4 h-4 border-[2px] border-black bg-[#F4F3EE]" />
-            <div className="w-4 h-4 border-[2px] border-black bg-[#70C2D1]" />
-            <div className="w-4 h-4 border-[2px] border-black bg-[#2A8B9D]" />
-            <div className="w-4 h-4 border-[2px] border-black bg-[#1D2A3A]" />
+            <div className="w-4 h-4 border border-[var(--border)] bg-[#F4F3EE]" />
+            <div className="w-4 h-4 border border-[var(--border)] bg-[#70C2D1]" />
+            <div className="w-4 h-4 border border-[var(--border)] bg-[#2A8B9D]" />
+            <div className="w-4 h-4 border border-[var(--border)] bg-[#2B1B0E]" />
             <span>Nhiều</span>
           </div>
         </div>
@@ -123,10 +123,10 @@ export const ActivityHeatmapSection: React.FC<ActivityHeatmapSectionProps> = ({
       >
         {selectedDayDetail && (
           <div className="p-4">
-            <h3 className="text-2xl font-black uppercase mb-4 text-[#1D2A3A] border-b-[3px] border-black pb-2">
+            <h3 className="text-2xl font-black  mb-4 text-[#2B1B0E] border-b-[3px] border-[var(--border)] pb-2">
               Chi tiết hoạt động
             </h3>
-            <div className="space-y-3 font-bold text-base text-[#1D2A3A]">
+            <div className="space-y-3 font-bold text-base text-[#2B1B0E]">
               <div>
                 <span className="text-gray-500 mr-2">Ngày:</span>
                 <span>{formatDisplayDate(selectedDayDetail.date)}</span>
@@ -139,7 +139,7 @@ export const ActivityHeatmapSection: React.FC<ActivityHeatmapSectionProps> = ({
               </div>
 
               {selectedDayDetail.active && (
-                <div className="bg-[#F4F3EE] p-4 border-[2px] border-black rounded-lg space-y-2 mt-4">
+                <div className="bg-[#F4F3EE] p-4 border border-[var(--border)] rounded-lg space-y-2 mt-4">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Thẻ đã học:</span>
                     <span>{selectedDayDetail.cardsLearned}</span>
@@ -162,7 +162,7 @@ export const ActivityHeatmapSection: React.FC<ActivityHeatmapSectionProps> = ({
 
             <div className="mt-6 text-right">
               <Button
-                className="brutal-pill border-black font-black uppercase text-white bg-[#1D2A3A] hover:!bg-[#2A8B9D]"
+                className="brutal-pill border-[var(--border)] font-bold text-white bg-[#2B1B0E] hover:!bg-[#2A8B9D]"
                 onClick={() => setSelectedDayDetail(null)}
               >
                 Đóng

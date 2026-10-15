@@ -88,7 +88,7 @@ export function TagsPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-gray-900 flex items-center gap-2">
-            <TagIcon className="w-6 h-6 text-blue-600" />
+            <TagIcon className="w-6 h-6 text-[var(--brand-700)]" />
             Quản Lý Thẻ Từ Vựng (Tags)
           </h1>
           <p className="text-sm text-gray-500 mt-1">Phân loại và quản lý các chủ đề từ vựng TOEIC</p>
@@ -108,7 +108,7 @@ export function TagsPage() {
             placeholder="Tìm kiếm thẻ theo tên, slug hoặc mô tả..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand)]"
           />
         </div>
         <span className="text-sm font-medium text-gray-500">
@@ -136,13 +136,13 @@ export function TagsPage() {
                 <tr><td colSpan={8} className="px-4 py-12 text-center text-gray-500 font-medium">Đang tải danh sách thẻ...</td></tr>
               ) : filteredTags.map((tag) => (
                 <tr key={tag.id} className="hover:bg-gray-50/80 transition-colors">
-                  <td className="px-4 py-3 font-mono text-xs text-gray-600 font-semibold">{tag.id}</td>
+                  <td className="px-4 py-3 font-sans text-xs text-gray-600 font-semibold">{tag.id}</td>
                   <td className="px-4 py-3 text-gray-900 font-bold">
-                    <span className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-800 px-2.5 py-1 rounded-md border border-blue-200">
+                    <span className="inline-flex items-center gap-1.5 bg-[var(--brand-50)] text-[var(--brand-700)] px-2.5 py-1 rounded-md border border-[var(--border)]">
                       🏷️ {tag.name}
                     </span>
                   </td>
-                  <td className="px-4 py-3 font-mono text-xs text-gray-600">{tag.slug}</td>
+                  <td className="px-4 py-3 font-sans text-xs text-gray-600">{tag.slug}</td>
                   <td className="px-4 py-3 text-gray-600 text-xs max-w-xs truncate">{tag.description || '--'}</td>
                   <td className="px-4 py-3 text-center">
                     <span className="font-bold text-xs px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300">
@@ -237,7 +237,7 @@ export function TagsPage() {
               {...register('description')}
               rows={3}
               placeholder="Mô tả nội dung chủ đề từ vựng..."
-              className="w-full p-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full p-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand)]"
             />
           </div>
         </form>

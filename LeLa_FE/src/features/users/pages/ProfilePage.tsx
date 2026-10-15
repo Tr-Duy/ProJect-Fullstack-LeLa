@@ -126,25 +126,25 @@ export function ProfilePage() {
       className="flex flex-col gap-6 lg:gap-8"
       requiredMark={false}
     >
-      <div className="brutal-card brutal-shadow bg-white border-[3px] border-black p-6 sm:p-8">
-        <h3 className="text-2xl font-black uppercase text-[#1D2A3A] mb-6 border-b-4 border-[#F05A4A] inline-block pb-1">Thông tin tài khoản</h3>
+      <div className="rounded-[var(--radius-card)] shadow-[var(--shadow-md)] bg-white border border-[var(--border)] p-6 sm:p-8">
+        <h3 className="text-2xl font-black  text-[#2B1B0E] mb-6 border-b-4 border-[#F05A4A] inline-block pb-1">Thông tin tài khoản</h3>
         
         <div className="space-y-5">
           <Form.Item
-            label={<span className="font-bold uppercase text-[#1D2A3A]">Họ và Tên</span>}
+            label={<span className="font-bold text-[#2B1B0E]">Họ và Tên</span>}
             name="fullName"
             rules={[{ required: true, message: 'Vui lòng nhập họ tên!' }]}
           >
-            <Input className="brutal-border brutal-shadow-sm h-14 font-black text-lg" prefix={<UserOutlined className="text-gray-400 mr-2" />} />
+            <Input className="border border-[var(--border)] shadow-[var(--shadow-md)]-sm h-14 font-black text-lg" prefix={<UserOutlined className="text-gray-400 mr-2" />} />
           </Form.Item>
 
           <Form.Item
-            label={<span className="font-bold uppercase text-[#1D2A3A]">Ảnh đại diện (URL)</span>}
+            label={<span className="font-bold text-[#2B1B0E]">Ảnh đại diện (URL)</span>}
             name="avatarUrl"
           >
             <div className="flex gap-4">
               <Input 
-                className="brutal-border brutal-shadow-sm h-14 font-black text-lg flex-1" 
+                className="border border-[var(--border)] shadow-[var(--shadow-md)]-sm h-14 font-black text-lg flex-1" 
                 prefix={<PictureOutlined className="text-gray-400 mr-2" />} 
                 placeholder="https://..." 
                 onChange={handleAvatarUrlChange}
@@ -152,7 +152,7 @@ export function ProfilePage() {
               <Button 
                 htmlType="button"
                 onClick={() => setIsAvatarModalOpen(true)}
-                className="brutal-pill brutal-shadow-sm h-14 px-6 font-black text-lg bg-[#FFD700] hover:!bg-[#FFD700] hover:!text-black hover:!-translate-y-1 transition-all shrink-0"
+                className="brutal-pill shadow-[var(--shadow-md)]-sm h-14 px-6 font-black text-lg bg-[#FFD700] hover:!bg-[#FFD700] hover:!text-black hover:!-translate-y-1 transition-all shrink-0"
               >
                 🎲 Chọn Avatar
               </Button>
@@ -160,13 +160,13 @@ export function ProfilePage() {
           </Form.Item>
 
           <Form.Item
-            label={<span className="font-bold uppercase text-[#1D2A3A]">Múi giờ (Timezone)</span>}
+            label={<span className="font-bold text-[#2B1B0E]">Múi giờ (Timezone)</span>}
             name="timezone"
             rules={[{ required: true }]}
           >
             <Select 
               showSearch
-              className="h-14 w-full font-black text-lg [&_.ant-select-selector]:!brutal-border [&_.ant-select-selector]:!brutal-shadow-sm [&_.ant-select-selector]:!rounded-none [&_.ant-select-selector]:!h-14 [&_.ant-select-selection-item]:!leading-[3.25rem] [&_.ant-select-selection-placeholder]:!leading-[3.25rem]"
+              className="h-14 w-full font-black text-lg [&_.ant-select-selector]:!border border-[var(--border)] [&_.ant-select-selector]:!shadow-[var(--shadow-md)]-sm [&_.ant-select-selector]:!rounded-none [&_.ant-select-selector]:!h-14 [&_.ant-select-selection-item]:!leading-[3.25rem] [&_.ant-select-selection-placeholder]:!leading-[3.25rem]"
               options={TIMEZONES.map(tz => ({ label: tz, value: tz }))}
               filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
             />
@@ -174,37 +174,37 @@ export function ProfilePage() {
         </div>
       </div>
 
-      <div className="brutal-card brutal-shadow bg-[#F4F3EE] border-[3px] border-black p-6 sm:p-8">
-        <h3 className="text-2xl font-black uppercase text-[#1D2A3A] mb-6 border-b-4 border-[#2A8B9D] inline-block pb-1">Sở thích học tập</h3>
+      <div className="rounded-[var(--radius-card)] shadow-[var(--shadow-md)] bg-[#F4F3EE] border border-[var(--border)] p-6 sm:p-8">
+        <h3 className="text-2xl font-black  text-[#2B1B0E] mb-6 border-b-4 border-[#2A8B9D] inline-block pb-1">Sở thích học tập</h3>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <Form.Item
             name="nativeLanguageId"
-            label={<span className="font-bold uppercase text-[#1D2A3A]">Ngôn ngữ mẹ đẻ</span>}
+            label={<span className="font-bold text-[#2B1B0E]">Ngôn ngữ mẹ đẻ</span>}
             className="mb-0"
           >
             <Select
               loading={isLoadingLangs}
-              className="h-14 w-full font-black text-lg [&_.ant-select-selector]:!brutal-border [&_.ant-select-selector]:!brutal-shadow-sm [&_.ant-select-selector]:!rounded-none [&_.ant-select-selector]:!h-14 [&_.ant-select-selection-item]:!leading-[3.25rem]"
+              className="h-14 w-full font-black text-lg [&_.ant-select-selector]:!border border-[var(--border)] [&_.ant-select-selector]:!shadow-[var(--shadow-md)]-sm [&_.ant-select-selector]:!rounded-none [&_.ant-select-selector]:!h-14 [&_.ant-select-selection-item]:!leading-[3.25rem]"
               options={languages.map(l => ({ label: l.name, value: l.id }))}
             />
           </Form.Item>
 
           <Form.Item
             name="targetLanguageId"
-            label={<span className="font-bold uppercase text-[#1D2A3A]">Ngôn ngữ muốn học</span>}
+            label={<span className="font-bold text-[#2B1B0E]">Ngôn ngữ muốn học</span>}
             className="mb-0"
           >
             <Select
               loading={isLoadingLangs}
-              className="h-14 w-full font-black text-lg [&_.ant-select-selector]:!brutal-border [&_.ant-select-selector]:!brutal-shadow-sm [&_.ant-select-selector]:!rounded-none [&_.ant-select-selector]:!h-14 [&_.ant-select-selection-item]:!leading-[3.25rem]"
+              className="h-14 w-full font-black text-lg [&_.ant-select-selector]:!border border-[var(--border)] [&_.ant-select-selector]:!shadow-[var(--shadow-md)]-sm [&_.ant-select-selector]:!rounded-none [&_.ant-select-selector]:!h-14 [&_.ant-select-selection-item]:!leading-[3.25rem]"
               options={languages.map(l => ({ label: l.name, value: l.id }))}
             />
           </Form.Item>
         </div>
 
         <Form.Item
-          label={<span className="font-bold uppercase text-[#1D2A3A]">Mục tiêu hàng ngày (Số thẻ)</span>}
+          label={<span className="font-bold text-[#2B1B0E]">Mục tiêu hàng ngày (Số thẻ)</span>}
           name="dailyGoalCards"
           rules={[{ required: true }]}
           className="mb-6"
@@ -215,11 +215,11 @@ export function ProfilePage() {
         <Form.Item
           name="promptDailyGoal"
           valuePropName="checked"
-          className="mb-0 bg-white p-5 brutal-border brutal-shadow-sm flex items-center justify-between transition-transform hover:-translate-y-[2px]"
+          className="mb-0 bg-white p-5 border border-[var(--border)] shadow-[var(--shadow-md)]-sm flex items-center justify-between transition-transform hover:-translate-y-[2px]"
         >
           <div className="flex items-center justify-between w-full gap-4">
             <div className="flex-1">
-              <div className="font-black uppercase text-[#1D2A3A] text-lg">Hỏi mục tiêu mỗi ngày</div>
+              <div className="font-black text-[#2B1B0E] text-lg">Hỏi mục tiêu mỗi ngày</div>
               <div className="text-gray-500 font-bold mt-1 text-sm sm:text-base leading-tight">Hiển thị nhắc nhở nhập số thẻ mục tiêu vào lần học đầu tiên trong ngày.</div>
             </div>
             <Switch className="shrink-0" />
@@ -232,9 +232,9 @@ export function ProfilePage() {
           onClick={() => form.submit()}
           loading={updateMutation.isPending}
           icon={<SaveOutlined />}
-          className="brutal-pill !bg-[#F05A4A] !text-white h-16 px-8 font-black text-xl uppercase tracking-widest shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:!translate-y-[-4px] hover:!shadow-[6px_10px_0px_0px_rgba(0,0,0,1)] transition-all"
+          className="rounded-xl !bg-[var(--brand)] !text-[#2A1300] h-12 px-8 font-semibold text-base shadow-[var(--shadow-sm)] hover:!bg-[var(--brand-600)] transition-all btn-shine cursor-pointer"
         >
-          Lưu Thay Đổi
+          Lưu thay đổi
         </Button>
       </div>
     </Form>
@@ -269,15 +269,15 @@ export function ProfilePage() {
 
   const billingContent = (
     <div className="flex flex-col gap-6 lg:gap-8">
-      <div className="brutal-card brutal-shadow bg-[#1D2A3A] border-[3px] border-black p-6 sm:p-8 text-white">
-        <h3 className="text-2xl font-black uppercase mb-6 border-b-4 border-[#2A8B9D] inline-block pb-1">Gói Cước Hiện Tại</h3>
+      <div className="rounded-[var(--radius-card)] shadow-[var(--shadow-sm)] bg-[var(--surface)] border border-[var(--border)] p-6 sm:p-8 text-[var(--text)]">
+        <h3 className="text-xl font-bold mb-6 border-b-2 border-[var(--brand)] inline-block pb-1 text-[var(--text)]">Gói cước hiện tại</h3>
         {activeSubscription ? (
           <div>
-            <div className="text-xl font-bold mb-2">Bạn đang sử dụng gói: <span className="text-[#FFD700] uppercase font-black">{activePlanName}</span></div>
-            <div className="text-gray-300">Trạng thái: <Tag color="green">Đang Hoạt Động</Tag></div>
-            <div className="text-gray-300 mt-2">Đăng ký ngày: {dayjs(activeSubscription.startedAt).format('DD/MM/YYYY')}</div>
+            <div className="text-lg font-bold mb-2">Bạn đang sử dụng gói: <span className="text-[var(--brand-700)] font-bold">{activePlanName}</span></div>
+            <div className="text-[var(--text-2)] text-sm">Trạng thái: <Tag color="green">Đang Hoạt Động</Tag></div>
+            <div className="text-[var(--text-2)] text-sm mt-2">Đăng ký ngày: {dayjs(activeSubscription.startedAt).format('DD/MM/YYYY')}</div>
             <Button 
-              className="mt-6 brutal-btn !bg-[#FFD700] !text-black font-black uppercase"
+              className="mt-6 rounded-xl !bg-[var(--sun)] !text-[#2A1300] font-semibold h-11 px-6 hover:brightness-105 cursor-pointer"
               onClick={() => navigate('/pricing')}
             >
               Nâng cấp gói khác
@@ -285,20 +285,20 @@ export function ProfilePage() {
           </div>
         ) : (
           <div>
-            <div className="text-xl font-bold mb-2">Bạn đang sử dụng Gói Cơ Bản (Miễn phí)</div>
-            <div className="text-gray-300 mb-6">Bạn chưa đăng ký gói cao cấp nào. Hãy nâng cấp để trải nghiệm thêm nhiều tính năng!</div>
+            <div className="text-lg font-bold mb-2">Bạn đang sử dụng Gói Cơ Bản (Miễn phí)</div>
+            <div className="text-[var(--text-2)] text-sm mb-6">Bạn chưa đăng ký gói cao cấp nào. Hãy nâng cấp để trải nghiệm thêm nhiều tính năng!</div>
             <Button 
-              className="brutal-btn !bg-[#F05A4A] !text-white font-black uppercase"
+              className="rounded-xl !bg-[var(--brand)] !text-[#2A1300] font-semibold h-11 px-6 hover:!bg-[var(--brand-600)] btn-shine cursor-pointer"
               onClick={() => navigate('/pricing')}
             >
-              Xem Bảng Giá & Nâng Cấp
+              Xem bảng giá & nâng cấp
             </Button>
           </div>
         )}
       </div>
 
-      <div className="brutal-card brutal-shadow bg-white border-[3px] border-black p-6 sm:p-8">
-        <h3 className="text-2xl font-black uppercase text-[#1D2A3A] mb-6 border-b-4 border-[#FFD700] inline-block pb-1">Lịch sử giao dịch</h3>
+      <div className="rounded-[var(--radius-card)] shadow-[var(--shadow-md)] bg-white border border-[var(--border)] p-6 sm:p-8">
+        <h3 className="text-2xl font-black  text-[#2B1B0E] mb-6 border-b-4 border-[#FFD700] inline-block pb-1">Lịch sử giao dịch</h3>
         {payments.length > 0 ? (
           <Table 
             columns={paymentColumns} 
@@ -321,16 +321,16 @@ export function ProfilePage() {
     <div className="min-h-[100dvh] bg-[#F4F3EE] p-4 sm:p-8 relative pb-24">
       <div className="max-w-6xl mx-auto">
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 lg:mb-12 gap-4">
-          <h1 className="text-4xl md:text-5xl font-black uppercase tracking-tighter text-[#1D2A3A]">
+          <h1 className="text-4xl md:text-5xl font-black  tracking-tighter text-[#2B1B0E]">
             Hồ Sơ Cá Nhân
           </h1>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
           
-          <div className="lg:col-span-4 brutal-card brutal-shadow bg-[#2A8B9D] border-[3px] border-black p-8 text-center flex flex-col items-center">
+          <div className="lg:col-span-4 rounded-[var(--radius-card)] shadow-[var(--shadow-md)] bg-[#2A8B9D] border border-[var(--border)] p-8 text-center flex flex-col items-center">
             <div 
-              className="w-40 h-40 brutal-border border-black bg-[#F4F3EE] rounded-full shrink-0 overflow-hidden relative shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] mb-6 transition-transform hover:-translate-y-1 group cursor-pointer"
+              className="w-40 h-40 border border-[var(--border)] border-[var(--border)] bg-[#F4F3EE] rounded-full shrink-0 overflow-hidden relative shadow-[var(--shadow-md)] mb-6 transition-transform hover:-translate-y-1 group cursor-pointer"
               onClick={() => setIsAvatarModalOpen(true)}
             >
               {(avatarPreview || profile?.avatarUrl) ? (
@@ -348,19 +348,19 @@ export function ProfilePage() {
                 </div>
               )}
               <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-200">
-                <span className="text-white font-black text-xl uppercase tracking-wider">🎲 Chọn</span>
+                <span className="text-white font-black text-xl ">🎲 Chọn</span>
               </div>
             </div>
             
-            <h2 className="text-3xl font-black uppercase text-white tracking-tight mb-1">{profile?.fullName || 'Học Viên'}</h2>
+            <h2 className="text-3xl font-black  text-white tracking-tight mb-1">{profile?.fullName || 'Học Viên'}</h2>
             <p className="text-[#F4F3EE] font-bold mb-6 truncate w-full px-4">@{profile?.username} &bull; {profile?.email}</p>
             
             <div className="flex flex-col gap-3 w-full">
-              <div className="brutal-border px-4 py-3 bg-[#F4F3EE] flex justify-between items-center font-black text-lg text-[#1D2A3A] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+              <div className="border border-[var(--border)] px-4 py-3 bg-[#F4F3EE] flex justify-between items-center font-black text-lg text-[#2B1B0E] shadow-[var(--shadow-md)]">
                 <span className="text-brand-coral">🔥 Chuỗi</span>
                 <span>{profile?.streakCurrent || 0} ngày</span>
               </div>
-              <div className="brutal-border px-4 py-3 bg-[#FFD700] flex justify-between items-center font-black text-lg text-[#1D2A3A] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+              <div className="border border-[var(--border)] px-4 py-3 bg-[#FFD700] flex justify-between items-center font-black text-lg text-[#2B1B0E] shadow-[var(--shadow-md)]">
                 <span>⭐ Tổng XP</span>
                 <span>{profile?.xpTotal || 0}</span>
               </div>
@@ -370,7 +370,7 @@ export function ProfilePage() {
           <div className="lg:col-span-8 flex flex-col gap-6 lg:gap-8">
             <Tabs 
               defaultActiveKey="1" 
-              className="[&_.ant-tabs-nav::before]:!border-b-[3px] [&_.ant-tabs-nav::before]:!border-black [&_.ant-tabs-tab]:!text-lg [&_.ant-tabs-tab]:!font-black [&_.ant-tabs-tab]:!uppercase [&_.ant-tabs-tab-active_.ant-tabs-tab-btn]:!text-[#F05A4A]"
+              className="[&_.ant-tabs-nav::before]:!border-b-[3px] [&_.ant-tabs-nav::before]:!border-[var(--border)] [&_.ant-tabs-tab]:!text-lg [&_.ant-tabs-tab]:!font-black [&_.ant-tabs-tab]:! [&_.ant-tabs-tab-active_.ant-tabs-tab-btn]:!text-[#F05A4A]"
               items={[
                 { key: '1', label: 'Cài Đặt Chung', children: generalSettingsContent },
                 { key: '2', label: 'Gói Cước & Giao Dịch', children: billingContent }
@@ -382,12 +382,12 @@ export function ProfilePage() {
       </div>
 
       <Modal
-        title={<div className="font-black text-2xl uppercase tracking-tight text-[#1D2A3A] mb-4">Chọn Avatar</div>}
+        title={<div className="font-black text-2xl  tracking-tight text-[#2B1B0E] mb-4">Chọn Avatar</div>}
         open={isAvatarModalOpen}
         onCancel={() => setIsAvatarModalOpen(false)}
         footer={null}
         width={700}
-        className="[&_.ant-modal-content]:!brutal-card [&_.ant-modal-content]:!border-[3px] [&_.ant-modal-content]:!border-black [&_.ant-modal-content]:!p-8 [&_.ant-modal-content]:!rounded-3xl"
+        className="[&_.ant-modal-content]:!rounded-[var(--radius-card)] [&_.ant-modal-content]:!border-[3px] [&_.ant-modal-content]:!border-[var(--border)] [&_.ant-modal-content]:!p-8 [&_.ant-modal-content]:!rounded-3xl"
         centered
       >
         <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-4">
@@ -404,8 +404,8 @@ export function ProfilePage() {
                   setIsAvatarModalOpen(false);
                 }}
                 className={`
-                  aspect-square rounded-full brutal-border border-black overflow-hidden cursor-pointer transition-all duration-200
-                  ${isSelected ? 'bg-[#FFD700] ring-4 ring-[#1D2A3A] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] -translate-y-1' : 'bg-[#F4F3EE] hover:bg-gray-200 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]'}
+                  aspect-square rounded-full border border-[var(--border)] border-[var(--border)] overflow-hidden cursor-pointer transition-all duration-200
+                  ${isSelected ? 'bg-[#FFD700] ring-4 ring-[#2B1B0E] shadow-[var(--shadow-md)] -translate-y-1' : 'bg-[#F4F3EE] hover:bg-gray-200 shadow-[var(--shadow-md)] hover:-translate-y-1 hover:shadow-[var(--shadow-md)]'}
                 `}
               >
                 <img src={url} alt={`Avatar ${seed}`} className="w-full h-full object-cover" loading="lazy" />
@@ -417,7 +417,7 @@ export function ProfilePage() {
           <Button 
             type="default" 
             onClick={() => setIsAvatarModalOpen(false)}
-            className="brutal-pill !bg-gray-200 !text-black h-12 px-8 font-black uppercase tracking-wider hover:!bg-gray-300"
+            className="rounded-xl !bg-[var(--surface-2)] !text-[var(--text)] h-11 px-6 font-semibold border border-[var(--border)] hover:!bg-[var(--border)] cursor-pointer"
           >
             Đóng
           </Button>

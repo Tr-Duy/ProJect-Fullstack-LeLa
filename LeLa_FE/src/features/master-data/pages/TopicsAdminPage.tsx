@@ -127,14 +127,14 @@ export function TopicsAdminPage() {
               ) : (
                 topics.map((topic: any) => (
                   <tr key={topic.id} className="hover:bg-geist-gray-100/50 transition-colors">
-                    <td className="px-4 py-3 font-mono text-geist-gray-900">{topic.id}</td>
+                    <td className="px-4 py-3 font-sans text-geist-gray-900">{topic.id}</td>
                     <td className="px-4 py-3 font-medium text-geist-gray-1000">{topic.name}</td>
                     <td className="px-4 py-3 text-geist-gray-700">{topic.slug}</td>
                     <td className="px-4 py-3 text-geist-gray-700 max-w-xs truncate">{topic.description}</td>
                     <td className="px-4 py-3 text-center">
                       <button
                         onClick={() => updateMutation.mutate({ id: topic.id, values: { isActive: !topic.isActive } })}
-                        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center px-0.5 rounded-full focus:outline-none focus:ring-2 focus:ring-geist-blue-700 focus:ring-offset-2 transition-colors ${topic.isActive ? 'bg-geist-blue-700' : 'bg-geist-gray-400'}`}
+                        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center px-0.5 rounded-full focus:outline-none focus:ring-2 focus:ring-[var(--brand)] focus:ring-offset-2 transition-colors ${topic.isActive ? 'bg-[var(--brand)]' : 'bg-geist-gray-400'}`}
                         role="switch"
                         aria-checked={topic.isActive}
                       >
@@ -186,7 +186,7 @@ export function TopicsAdminPage() {
             <label className="text-sm font-medium text-geist-gray-1000">Mô tả</label>
             <textarea
               {...register('description')}
-              className="flex w-full resize-none rounded-md border border-geist-gray-400 bg-transparent px-3 py-2 text-sm text-geist-gray-1000 focus:outline-none focus:ring-2 focus:ring-geist-blue-700 hover:border-geist-gray-600 transition-colors"
+              className="flex w-full resize-none rounded-md border border-geist-gray-400 bg-transparent px-3 py-2 text-sm text-geist-gray-1000 focus:outline-none focus:ring-2 focus:ring-[var(--brand)] hover:border-geist-gray-600 transition-colors"
               rows={3}
             />
           </div>
@@ -195,7 +195,7 @@ export function TopicsAdminPage() {
             <label className="flex items-center gap-2 cursor-pointer py-2">
               <input 
                 type="checkbox" 
-                className="w-4 h-4 rounded border-geist-gray-400 text-geist-blue-700 focus:ring-geist-blue-700 bg-transparent"
+                className="w-4 h-4 rounded border-geist-gray-400 text-[var(--brand-700)] focus:ring-[var(--brand)] bg-transparent"
                 {...register('isActive')}
               />
               <span className="text-sm font-medium text-geist-gray-1000">Hoạt động</span>

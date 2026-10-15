@@ -48,7 +48,7 @@ export function LearnerAchievementsPage() {
           <Trophy className="w-96 h-96" />
         </div>
         <div className="relative z-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-xs font-bold uppercase tracking-wider mb-3">
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-xs font-bold  mb-3">
             <Sparkles className="w-4 h-4 text-yellow-200" /> Hệ thống Gamification LeLa
           </div>
           <h1 className="text-3xl sm:text-4xl font-black mb-2">Bảng Thành Tựu & Danh Hiệu</h1>
@@ -162,7 +162,7 @@ function AchievementCard({ item }: { item: UserAchievementProgressResponse }) {
             {item.iconUrl || '🏆'}
           </div>
           <span
-            className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
+            className={`px-3 py-1 rounded-full text-xs font-black  ${
               isUnlocked
                 ? 'bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1'
                 : 'bg-gray-100 text-gray-600 border border-gray-200 flex items-center gap-1'
@@ -193,7 +193,7 @@ function AchievementCard({ item }: { item: UserAchievementProgressResponse }) {
               className={`h-full rounded-full transition-all duration-500 ${
                 isUnlocked
                   ? 'bg-gradient-to-r from-amber-400 to-yellow-500'
-                  : 'bg-gradient-to-r from-blue-400 to-indigo-500'
+                  : 'bg-gradient-to-r from-[var(--brand)] to-[var(--brand-600)]'
               }`}
               style={{ width: `${Math.min(100, Math.max(0, percent))}%` }}
             />
@@ -202,7 +202,7 @@ function AchievementCard({ item }: { item: UserAchievementProgressResponse }) {
 
         {/* FOOTER REWARD XP */}
         <div className="flex justify-between items-center pt-3 border-t border-gray-200/60">
-          <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Phần thưởng</span>
+          <span className="text-xs font-bold text-gray-500 ">Phần thưởng</span>
           <span className="font-black text-xs px-2.5 py-1 rounded-md bg-amber-100 text-amber-900 border border-amber-300 flex items-center gap-1">
             <Award className="w-3.5 h-3.5 text-amber-600" /> +{item.xpReward} XP
           </span>

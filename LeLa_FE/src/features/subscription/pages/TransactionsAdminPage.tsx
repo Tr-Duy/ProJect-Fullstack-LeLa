@@ -11,7 +11,7 @@ const STATUS_MAP: Record<string, { label: string; colorClass: string }> = {
   SUCCEEDED: { label: 'Thành công', colorClass: 'bg-geist-success-100 text-geist-success-800' },
   PENDING: { label: 'Đang xử lý', colorClass: 'bg-geist-warning-100 text-geist-warning-900' },
   FAILED: { label: 'Thất bại', colorClass: 'bg-geist-error-100 text-geist-error-800' },
-  REFUNDED: { label: 'Hoàn tiền', colorClass: 'bg-geist-blue-100 text-geist-blue-800' },
+  REFUNDED: { label: 'Hoàn tiền', colorClass: 'bg-[var(--brand-50)] text-[var(--brand-700)]' },
   CANCELLED: { label: 'Đã hủy', colorClass: 'bg-geist-gray-200 text-geist-gray-700' },
 };
 
@@ -106,18 +106,18 @@ export function TransactionsAdminPage() {
                 const statusInfo = STATUS_MAP[txn.status] || { label: txn.status, colorClass: 'bg-geist-gray-200 text-geist-gray-700' };
                 return (
                 <tr key={txn.id} className="hover:bg-geist-gray-100/50 transition-colors">
-                  <td className="px-4 py-3 font-mono text-geist-gray-900 font-medium">{txn.id}</td>
+                  <td className="px-4 py-3 font-sans text-geist-gray-900 font-medium">{txn.id}</td>
                   <td className="px-4 py-3">
                     <div className="font-semibold">User {txn.userId}</div>
-                    <div className="text-xs text-geist-gray-500 font-mono">ID: {txn.userId}</div>
+                    <div className="text-xs text-geist-gray-500 font-sans">ID: {txn.userId}</div>
                   </td>
                   <td className="px-4 py-3 text-geist-gray-1000">{txn.provider || '-'}</td>
-                  <td className="px-4 py-3 text-right font-mono text-geist-gray-1000">{formatCurrency(txn.amount, txn.currencyCode)}</td>
+                  <td className="px-4 py-3 text-right font-sans text-geist-gray-1000">{formatCurrency(txn.amount, txn.currencyCode)}</td>
                   <td className="px-4 py-3 text-geist-gray-700">
                     {txn.createdAt ? new Date(txn.createdAt).toLocaleString('vi-VN') : '-'}
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wider ${statusInfo.colorClass}`}>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-normal ${statusInfo.colorClass}`}>
                       {statusInfo.label}
                     </span>
                   </td>
@@ -152,7 +152,7 @@ export function TransactionsAdminPage() {
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-4 py-2 border-b border-geist-gray-300">
               <div className="text-sm text-geist-gray-700">ID giao dịch</div>
-              <div className="text-sm font-mono font-medium text-right">{selectedTxn.id}</div>
+              <div className="text-sm font-sans font-medium text-right">{selectedTxn.id}</div>
             </div>
             <div className="grid grid-cols-2 gap-4 py-2 border-b border-geist-gray-300">
               <div className="text-sm text-geist-gray-700">Người thanh toán</div>
@@ -167,17 +167,17 @@ export function TransactionsAdminPage() {
             {selectedTxn.providerTransactionId && (
               <div className="grid grid-cols-2 gap-4 py-2 border-b border-geist-gray-300">
                 <div className="text-sm text-geist-gray-700">Mã GD nhà cung cấp</div>
-                <div className="text-sm font-mono text-right">{selectedTxn.providerTransactionId}</div>
+                <div className="text-sm font-sans text-right">{selectedTxn.providerTransactionId}</div>
               </div>
             )}
             <div className="grid grid-cols-2 gap-4 py-2 border-b border-geist-gray-300">
               <div className="text-sm text-geist-gray-700">Số tiền</div>
-              <div className="text-sm font-mono font-bold text-right text-geist-blue-700">{formatCurrency(selectedTxn.amount, selectedTxn.currencyCode)}</div>
+              <div className="text-sm font-sans font-bold text-right text-[var(--brand-700)]">{formatCurrency(selectedTxn.amount, selectedTxn.currencyCode)}</div>
             </div>
             <div className="grid grid-cols-2 gap-4 py-2 border-b border-geist-gray-300">
               <div className="text-sm text-geist-gray-700">Trạng thái</div>
               <div className="text-right">
-                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wider ${STATUS_MAP[selectedTxn.status]?.colorClass || 'bg-geist-gray-200'}`}>
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-normal ${STATUS_MAP[selectedTxn.status]?.colorClass || 'bg-geist-gray-200'}`}>
                   {STATUS_MAP[selectedTxn.status]?.label || selectedTxn.status}
                 </span>
               </div>

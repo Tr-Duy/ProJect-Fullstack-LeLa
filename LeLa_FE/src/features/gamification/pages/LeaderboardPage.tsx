@@ -37,7 +37,7 @@ export function LeaderboardPage() {
       render: (_: any, __: any, index: number) => {
         return (
           <div 
-            className="w-10 h-10 flex items-center justify-center brutal-border brutal-shadow-sm font-black text-lg bg-[#F4F3EE]"
+            className="w-10 h-10 flex items-center justify-center border border-[var(--border)] shadow-[var(--shadow-md)]-sm font-black text-lg bg-[#F4F3EE]"
           >
             {index + 4}
           </div>
@@ -57,7 +57,7 @@ export function LeaderboardPage() {
             <img 
               src={avatar} 
               alt="avatar" 
-              className="w-10 h-10 rounded-full brutal-border bg-white object-cover" 
+              className="w-10 h-10 rounded-full border border-[var(--border)] bg-white object-cover" 
               referrerPolicy="no-referrer"
               onError={(e) => { e.currentTarget.src = `https://api.dicebear.com/9.x/notionists/svg?seed=${record.userId}`; }}
             />
@@ -74,33 +74,33 @@ export function LeaderboardPage() {
       <div className="max-w-4xl mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
           <div>
-            <h1 className="text-4xl font-black uppercase tracking-tighter text-[#1D2A3A]">Bảng xếp hạng</h1>
+            <h1 className="text-4xl font-black  tracking-tighter text-[#2B1B0E]">Bảng xếp hạng</h1>
             <p className="text-gray-600 font-medium mt-1">Đua top cùng những người học khác!</p>
           </div>
-          <Button onClick={() => navigate('/my-decks')} className="brutal-border font-bold">&larr; Về trang chủ</Button>
+          <Button onClick={() => navigate('/my-decks')} className="border border-[var(--border)] font-bold">&larr; Về trang chủ</Button>
         </div>
 
         <div className="flex gap-4 mb-8 overflow-x-auto pb-2">
           <Button 
-            className={`brutal-border font-bold shrink-0 ${period === 'daily' ? '!bg-[#1D2A3A] !text-white' : 'bg-white'}`}
+            className={`border border-[var(--border)] font-bold shrink-0 ${period === 'daily' ? '!bg-[#2B1B0E] !text-white' : 'bg-white'}`}
             onClick={() => setPeriod('daily')}
           >
             Hôm nay
           </Button>
           <Button 
-            className={`brutal-border font-bold shrink-0 ${period === 'weekly' ? '!bg-[#1D2A3A] !text-white' : 'bg-white'}`}
+            className={`border border-[var(--border)] font-bold shrink-0 ${period === 'weekly' ? '!bg-[#2B1B0E] !text-white' : 'bg-white'}`}
             onClick={() => setPeriod('weekly')}
           >
             Tuần này
           </Button>
           <Button 
-            className={`brutal-border font-bold shrink-0 ${period === 'monthly' ? '!bg-[#1D2A3A] !text-white' : 'bg-white'}`}
+            className={`border border-[var(--border)] font-bold shrink-0 ${period === 'monthly' ? '!bg-[#2B1B0E] !text-white' : 'bg-white'}`}
             onClick={() => setPeriod('monthly')}
           >
             Tháng này
           </Button>
           <Button 
-            className={`brutal-border font-bold shrink-0 ${period === 'top' ? '!bg-[#1D2A3A] !text-white' : 'bg-white'}`}
+            className={`border border-[var(--border)] font-bold shrink-0 ${period === 'top' ? '!bg-[#2B1B0E] !text-white' : 'bg-white'}`}
             onClick={() => setPeriod('top')}
           >
             Mọi thời đại
@@ -108,7 +108,7 @@ export function LeaderboardPage() {
         </div>
 
         {isLoading ? (
-          <div className="brutal-card bg-white p-6">
+          <div className="rounded-[var(--radius-card)] bg-white p-6">
             <Skeleton active />
           </div>
         ) : (
@@ -121,11 +121,11 @@ export function LeaderboardPage() {
                     return (
                       <div key={pos.rank} className="flex flex-col items-center justify-end w-24 md:w-32 opacity-60">
                         <div className="mb-3 relative group">
-                          <div className="w-16 h-16 md:w-20 md:h-20 rounded-full brutal-border bg-gray-200 border-dashed relative z-10 flex items-center justify-center text-gray-400 font-bold text-2xl">
+                          <div className="w-16 h-16 md:w-20 md:h-20 rounded-full border border-[var(--border)] bg-gray-200 border-dashed relative z-10 flex items-center justify-center text-gray-400 font-bold text-2xl">
                             ?
                           </div>
                           <div 
-                            className="absolute -bottom-2 md:-bottom-3 left-1/2 -translate-x-1/2 w-6 h-6 md:w-8 md:h-8 rounded-full brutal-border flex items-center justify-center font-bold text-xs md:text-sm z-20 bg-gray-300 text-gray-600" 
+                            className="absolute -bottom-2 md:-bottom-3 left-1/2 -translate-x-1/2 w-6 h-6 md:w-8 md:h-8 rounded-full border border-[var(--border)] flex items-center justify-center font-bold text-xs md:text-sm z-20 bg-gray-300 text-gray-600" 
                           >
                             {pos.rank}
                           </div>
@@ -137,7 +137,7 @@ export function LeaderboardPage() {
                           0 XP
                         </div>
                         <div 
-                          className={`w-full ${pos.height} brutal-border flex items-center justify-center font-black text-2xl md:text-4xl bg-gray-200 text-gray-400`} 
+                          className={`w-full ${pos.height} border border-[var(--border)] flex items-center justify-center font-black text-2xl md:text-4xl bg-gray-200 text-gray-400`} 
                         >
                           {pos.rank}
                         </div>
@@ -155,25 +155,25 @@ export function LeaderboardPage() {
                         <img 
                           src={avatar} 
                           alt="avatar" 
-                          className="w-16 h-16 md:w-20 md:h-20 rounded-full brutal-border brutal-shadow-sm bg-white relative z-10 object-cover" 
+                          className="w-16 h-16 md:w-20 md:h-20 rounded-full border border-[var(--border)] shadow-[var(--shadow-md)]-sm bg-white relative z-10 object-cover" 
                           referrerPolicy="no-referrer"
                           onError={(e) => { e.currentTarget.src = `https://api.dicebear.com/9.x/notionists/svg?seed=${pos.data.userId}`; }}
                         />
                         <div 
-                          className="absolute -bottom-2 md:-bottom-3 left-1/2 -translate-x-1/2 w-6 h-6 md:w-8 md:h-8 rounded-full brutal-border flex items-center justify-center font-bold text-xs md:text-sm z-20 brutal-shadow-sm" 
+                          className="absolute -bottom-2 md:-bottom-3 left-1/2 -translate-x-1/2 w-6 h-6 md:w-8 md:h-8 rounded-full border border-[var(--border)] flex items-center justify-center font-bold text-xs md:text-sm z-20 shadow-[var(--shadow-md)]-sm" 
                           style={{ backgroundColor: pos.color }}
                         >
                           {pos.rank}
                         </div>
                       </div>
-                      <div className="font-bold text-center mb-1 text-xs md:text-sm truncate w-full px-1 text-[#1D2A3A]" title={displayName}>
+                      <div className="font-bold text-center mb-1 text-xs md:text-sm truncate w-full px-1 text-[#2B1B0E]" title={displayName}>
                         {displayName}
                       </div>
                       <div className="text-[#F05A4A] font-black text-xs md:text-sm mb-2">
                         {pos.data.xpScore} XP
                       </div>
                       <div 
-                        className={`w-full ${pos.height} brutal-border brutal-shadow-sm flex items-center justify-center font-black text-2xl md:text-4xl transition-all hover:-translate-y-1`} 
+                        className={`w-full ${pos.height} border border-[var(--border)] shadow-[var(--shadow-md)]-sm flex items-center justify-center font-black text-2xl md:text-4xl transition-all hover:-translate-y-1`} 
                         style={{ backgroundColor: pos.color }}
                       >
                         {pos.rank}
@@ -186,7 +186,7 @@ export function LeaderboardPage() {
 
             {/* Rest of the list */}
             {rest.length > 0 && (
-              <div className="brutal-card bg-white p-4">
+              <div className="rounded-[var(--radius-card)] bg-white p-4">
                 <Table 
                   dataSource={rest} 
                   columns={columns} 
@@ -198,7 +198,7 @@ export function LeaderboardPage() {
             )}
             
             {leaderboardData.length === 0 && (
-              <div className="brutal-card bg-white p-12 text-center">
+              <div className="rounded-[var(--radius-card)] bg-white p-12 text-center">
                 <div className="text-6xl mb-4">🏆</div>
                 <h3 className="text-xl font-bold mb-2">Chưa có ai trên bảng xếp hạng</h3>
                 <p className="text-gray-500">Hãy học ngay để chiếm vị trí top 1!</p>

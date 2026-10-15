@@ -221,7 +221,7 @@ export function UsersAdminPage() {
 
                 return (
                 <tr key={user.id} className="hover:bg-geist-gray-100/50 transition-colors">
-                  <td className="px-4 py-3 font-mono text-geist-gray-900">{user.id}</td>
+                  <td className="px-4 py-3 font-sans text-geist-gray-900">{user.id}</td>
                   <td className="px-4 py-3">
                     <div className="font-medium text-geist-gray-1000">{user.fullName || user.username}</div>
                     <div className="text-geist-gray-700">{user.email}</div>
@@ -229,7 +229,7 @@ export function UsersAdminPage() {
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap gap-1">
                       {userRoles.map(role => (
-                        <span key={role} className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold tracking-wider ${role === 'ADMIN' ? 'bg-geist-blue-100 text-geist-blue-800' : 'bg-geist-gray-200 text-geist-gray-800'}`}>
+                        <span key={role} className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold tracking-normal ${role === 'ADMIN' ? 'bg-[var(--brand-50)] text-[var(--brand-700)]' : 'bg-geist-gray-200 text-geist-gray-800'}`}>
                           {role}
                         </span>
                       ))}
@@ -242,13 +242,13 @@ export function UsersAdminPage() {
                       : '—'}
                   </td>
                   <td className="px-4 py-3 text-geist-gray-900">
-                    <span className="font-mono">{user.xpTotal ?? 0}</span> XP / <span className="font-mono">{user.streakCurrent ?? 0}</span> ngày
+                    <span className="font-sans">{user.xpTotal ?? 0}</span> XP / <span className="font-sans">{user.streakCurrent ?? 0}</span> ngày
                   </td>
                   <td className="px-4 py-3 text-geist-gray-700">
                     {user.createdAt ? new Date(user.createdAt).toLocaleDateString('vi-VN') : '-'}
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wider ${statusInfo.colorClass}`}>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-normal ${statusInfo.colorClass}`}>
                       {statusInfo.label}
                     </span>
                   </td>
@@ -257,7 +257,7 @@ export function UsersAdminPage() {
                       <Button 
                         variant="ghost" 
                         size="icon"
-                        className="text-geist-blue-700 hover:text-geist-blue-900 hover:bg-geist-blue-100"
+                        className="text-[var(--brand-700)] hover:text-[var(--brand-700)] hover:bg-[var(--brand-50)]"
                         title="Phân quyền"
                         onClick={() => {
                           setSelectedUser(user);
@@ -336,7 +336,7 @@ export function UsersAdminPage() {
                     <div>
                       <div className="font-medium text-geist-gray-1000 text-sm flex items-center gap-2">
                         {role.roleName} 
-                        <span className="text-[10px] font-mono bg-geist-gray-200 px-1.5 py-0.5 rounded text-geist-gray-700">{role.roleCode}</span>
+                        <span className="text-[10px] font-sans bg-geist-gray-200 px-1.5 py-0.5 rounded text-geist-gray-700">{role.roleCode}</span>
                       </div>
                       <div className="text-xs text-geist-gray-600 mt-0.5">{role.description}</div>
                     </div>

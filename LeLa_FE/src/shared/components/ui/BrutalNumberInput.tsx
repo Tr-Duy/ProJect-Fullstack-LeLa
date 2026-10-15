@@ -33,13 +33,13 @@ export const BrutalNumberInput: React.FC<BrutalNumberInputProps> = ({
           step={step}
           value={value}
           onChange={handleChange}
-          className="flex-1 h-6 bg-white brutal-border brutal-shadow-sm outline-none appearance-none cursor-pointer
+          className="flex-1 h-6 bg-white border border-[var(--border)] shadow-[var(--shadow-md)]-sm outline-none appearance-none cursor-pointer
             [&::-webkit-slider-thumb]:appearance-none 
             [&::-webkit-slider-thumb]:w-8 
             [&::-webkit-slider-thumb]:h-10 
             [&::-webkit-slider-thumb]:bg-brand-coral 
             [&::-webkit-slider-thumb]:border-[3px] 
-            [&::-webkit-slider-thumb]:border-black 
+            [&::-webkit-slider-thumb]:border-[var(--border)] 
             [&::-webkit-slider-thumb]:cursor-grab
             [&::-webkit-slider-thumb]:active:cursor-grabbing
             [&::-webkit-slider-thumb]:hover:bg-brand-navy
@@ -47,7 +47,7 @@ export const BrutalNumberInput: React.FC<BrutalNumberInputProps> = ({
         />
         
         {/* Value Display */}
-        <div className="w-24 h-14 bg-white text-brand-navy brutal-border brutal-shadow-sm flex items-center justify-center font-black text-2xl relative">
+        <div className="w-24 h-14 bg-white text-brand-navy border border-[var(--border)] shadow-[var(--shadow-md)]-sm flex items-center justify-center font-black text-2xl relative">
           <input
             type="number"
             min={min}

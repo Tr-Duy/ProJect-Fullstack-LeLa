@@ -77,7 +77,7 @@ export const GuestChatForm: React.FC<GuestChatFormProps> = ({ onSubmit, isLoadin
 
         {/* Quick Questions 1-Click */}
         <div>
-          <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">Chủ đề thường gặp (1-click):</label>
+          <label className="block text-[11px] font-bold  text-slate-400 mb-2">Chủ đề thường gặp (1-click):</label>
           <div className="flex flex-wrap gap-1.5">
             {quickQuestions.map((q, i) => (
               <button

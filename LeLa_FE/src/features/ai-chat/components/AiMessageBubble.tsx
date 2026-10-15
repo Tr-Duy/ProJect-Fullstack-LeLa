@@ -28,7 +28,7 @@ export const AiMessageBubble: React.FC<AiMessageBubbleProps> = ({ message, isGen
 
         {/* Message Content */}
         <div className="flex flex-col group min-w-[100px]">
-          <div className={`px-4 py-3 rounded-2xl border-2 border-brand-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${isAi ? 'bg-white rounded-tl-none' : 'bg-brand-coral text-white rounded-tr-none'}`}>
+          <div className={`px-4 py-3 rounded-2xl border-2 border-brand-black shadow-[var(--shadow-md)] ${isAi ? 'bg-white rounded-tl-none' : 'bg-brand-coral text-white rounded-tr-none'}`}>
             {isAi ? (
               <div className="prose prose-sm max-w-none text-gray-800 prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-li:my-0">
                 {message.content ? (

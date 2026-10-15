@@ -31,7 +31,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
             {icon}
           </div>
         ) : useMascot ? (
-          <LelaMascot size={72} mood="encouraging" />
+          <LelaMascot size={72} mood="happy" />
         ) : null}
       </div>
 

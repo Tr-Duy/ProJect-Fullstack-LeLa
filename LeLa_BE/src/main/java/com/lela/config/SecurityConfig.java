@@ -76,6 +76,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/decks").permitAll()
                         .requestMatchers(HttpMethod.GET, "/decks/{id}").permitAll()
                         .requestMatchers(HttpMethod.GET, "/flashcards/deck/{deckId}").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/study/decks/{deckId}/cards").permitAll()
                         .requestMatchers(HttpMethod.GET, "/quizzes/deck/{deckId}").permitAll()
                         .requestMatchers(HttpMethod.GET, "/leaderboard/**").permitAll()
 

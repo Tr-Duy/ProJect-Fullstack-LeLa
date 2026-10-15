@@ -45,6 +45,9 @@ public class DailyLearningActivity extends AuditableEntity {
     @Column(name = "xp_earned", nullable = false)
     private Integer xpEarned = 0; // XP kiếm được trong ngày.
 
+    @Column(name = "voice_session_count", nullable = false)
+    private Integer voiceSessionCount = 0; // Số phiên thoại hoàn thành trong ngày.
+
     @Column(name = "goal_met", nullable = false)
     private Boolean goalMet = false; // Người dùng đã đạt mục tiêu ngày hay chưa.
 }

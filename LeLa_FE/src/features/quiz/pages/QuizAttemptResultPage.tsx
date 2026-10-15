@@ -195,13 +195,13 @@ export function QuizAttemptResultPage() {
 
     return (
       <div className="min-h-screen bg-[#F4F3EE] p-4 md:p-8 flex flex-col items-center justify-center">
-        <div className="max-w-3xl w-full bg-white p-6 md:p-10 border-[3px] border-black brutal-shadow">
-          <div className="flex justify-between items-center mb-6 pb-4 border-b-[2px] border-black">
-            <h2 className="text-2xl font-black text-[#1D2A3A] uppercase">
+        <div className="max-w-3xl w-full bg-white p-6 md:p-10 border border-[var(--border)] shadow-[var(--shadow-md)]">
+          <div className="flex justify-between items-center mb-6 pb-4 border-b-[2px] border-[var(--border)]">
+            <h2 className="text-2xl font-black text-[#2B1B0E] ">
               🔁 Ôn lại câu sai ({reviewCurrentIndex + 1} / {incorrectQuestions.length})
             </h2>
             <Button
-              className="brutal-border font-bold bg-gray-100 hover:bg-gray-200"
+              className="border border-[var(--border)] font-bold bg-gray-100 hover:bg-gray-200"
               onClick={() => {
                 setIsReviewMode(false);
                 setReviewCurrentIndex(0);
@@ -214,26 +214,26 @@ export function QuizAttemptResultPage() {
           </div>
 
           <div className="mb-6">
-            <h3 className="text-xl md:text-2xl font-bold text-[#1D2A3A] mb-4">
+            <h3 className="text-xl md:text-2xl font-bold text-[#2B1B0E] mb-4">
               {currentReviewQuestion.questionText}
             </h3>
 
             <div className="flex flex-col gap-3.5">
               {currentReviewQuestion.options?.map((option: any, index: number) => {
                 const letter = String.fromCharCode(65 + index);
-                let btnStyle = 'bg-white hover:bg-[#F4F3EE] text-[#1D2A3A] border-black';
-                let badgeStyle = 'bg-[#F4F3EE] text-[#1D2A3A]';
+                let btnStyle = 'bg-white hover:bg-[#F4F3EE] text-[#2B1B0E] border-[var(--border)]';
+                let badgeStyle = 'bg-[#F4F3EE] text-[#2B1B0E]';
 
                 if (reviewSelectedOption === option.id) {
                   if (option.isCorrect) {
-                    btnStyle = 'bg-[#2A8B9D] text-white border-black shadow-[3px_3px_0px_0px_#000]';
+                    btnStyle = 'bg-[#2A8B9D] text-white border-[var(--border)] shadow-[var(--shadow-sm)]';
                     badgeStyle = 'bg-white text-[#2A8B9D]';
                   } else {
-                    btnStyle = 'bg-[#F05A4A] text-white border-black shadow-[3px_3px_0px_0px_#000]';
+                    btnStyle = 'bg-[#F05A4A] text-white border-[var(--border)] shadow-[var(--shadow-sm)]';
                     badgeStyle = 'bg-white text-[#F05A4A]';
                   }
                 } else if (reviewFeedback && option.isCorrect) {
-                  btnStyle = 'bg-[#2A8B9D] text-white border-black shadow-[3px_3px_0px_0px_#000]';
+                  btnStyle = 'bg-[#2A8B9D] text-white border-[var(--border)] shadow-[var(--shadow-sm)]';
                   badgeStyle = 'bg-white text-[#2A8B9D]';
                 }
 
@@ -244,7 +244,7 @@ export function QuizAttemptResultPage() {
                     disabled={!!reviewFeedback}
                     className={`w-full flex items-center gap-4 p-4 md:p-4.5 border-[3px] rounded-xl font-bold text-lg text-left transition-all ${btnStyle}`}
                   >
-                    <div className={`w-9 h-9 border-[2px] border-black rounded-lg flex items-center justify-center font-black text-base shrink-0 ${badgeStyle}`}>
+                    <div className={`w-9 h-9 border border-[var(--border)] rounded-lg flex items-center justify-center font-black text-base shrink-0 ${badgeStyle}`}>
                       {letter}
                     </div>
                     <span className="flex-1 leading-snug">{option.optionText}</span>
@@ -255,7 +255,7 @@ export function QuizAttemptResultPage() {
           </div>
 
           {reviewFeedback && (
-            <div className="mb-6 p-4 border-[3px] border-black bg-white brutal-shadow">
+            <div className="mb-6 p-4 border border-[var(--border)] bg-white shadow-[var(--shadow-md)]">
               <p className={`font-black text-xl mb-2 ${reviewFeedback === 'CORRECT' ? 'text-[#2A8B9D]' : 'text-[#F05A4A]'}`}>
                 {reviewFeedback === 'CORRECT' ? '🎉 Chính xác!' : '❌ Chưa chính xác!'}
               </p>
@@ -268,7 +268,7 @@ export function QuizAttemptResultPage() {
           {reviewFeedback && (
             <div className="flex justify-end">
               <Button
-                className="brutal-pill font-black h-12 px-8 uppercase !bg-[#1D2A3A] !text-white text-lg hover:-translate-y-1 transition-transform"
+                className="brutal-pill font-black h-12 px-8 !bg-[#2B1B0E] !text-white text-lg hover:-translate-y-1 transition-transform"
                 onClick={handleNextReview}
               >
                 {reviewCurrentIndex + 1 < incorrectQuestions.length ? 'Câu tiếp theo ➔' : 'Hoàn thành ôn luyện ✓'}
@@ -284,16 +284,16 @@ export function QuizAttemptResultPage() {
     <div className="min-h-screen bg-[#F4F3EE] p-4 md:p-8">
       <div className="max-w-4xl mx-auto">
         <div className="flex justify-between items-center mb-8 flex-wrap gap-4">
-          <Button onClick={() => navigate('/my-quiz-attempts')} className="brutal-border font-bold h-12 px-6 shadow-[2px_2px_0px_0px_#000] hover:-translate-y-1 transition-transform">
+          <Button onClick={() => navigate('/my-quiz-attempts')} className="border border-[var(--border)] font-bold h-12 px-6 shadow-[var(--shadow-sm)] hover:-translate-y-1 transition-transform">
             &larr; LỊCH SỬ THI
           </Button>
-          <div className="text-xl font-bold brutal-border bg-white px-6 py-2 shadow-[2px_2px_0px_0px_#000] border-[3px]">
+          <div className="text-xl font-bold border border-[var(--border)] bg-white px-6 py-2 shadow-[var(--shadow-sm)] border-[3px]">
             Kết quả: {attemptDetail.quizTitle}
           </div>
           <div className="flex gap-4 flex-wrap">
             {incorrectQuestions.length > 0 && (
               <Button
-                className="brutal-border font-bold h-12 px-6 !bg-[#F05A4A] !text-white shadow-[2px_2px_0px_0px_#000] hover:!translate-y-[-2px] transition-transform"
+                className="border border-[var(--border)] font-bold h-12 px-6 !bg-[#F05A4A] !text-white shadow-[var(--shadow-sm)] hover:!translate-y-[-2px] transition-transform"
                 onClick={() => setIsReviewMode(true)}
               >
                 🔁 ÔN LẠI {incorrectQuestions.length} CÂU SAI
@@ -301,7 +301,7 @@ export function QuizAttemptResultPage() {
             )}
             {!isPlacement && (
               <Button
-                className="brutal-border font-bold h-12 px-6 !bg-[#1D2A3A] !text-white shadow-[2px_2px_0px_0px_#000] hover:!translate-y-[-2px] transition-transform"
+                className="border border-[var(--border)] font-bold h-12 px-6 !bg-[#2B1B0E] !text-white shadow-[var(--shadow-sm)] hover:!translate-y-[-2px] transition-transform"
                 onClick={() => retryMutation.mutate()}
                 loading={retryMutation.isPending}
               >
@@ -312,8 +312,8 @@ export function QuizAttemptResultPage() {
         </div>
 
         {isNormal && (
-          <div className="brutal-card bg-white p-6 md:p-10 mb-8 border-[3px] border-black shadow-[6px_6px_0px_0px_#000] flex flex-col items-center">
-            <h2 className="text-3xl font-black mb-4 text-[#1D2A3A] uppercase">Tổng kết bài làm</h2>
+          <div className="rounded-[var(--radius-card)] bg-white p-6 md:p-10 mb-8 border border-[var(--border)] shadow-[var(--shadow-sm)] flex flex-col items-center">
+            <h2 className="text-3xl font-black mb-4 text-[#2B1B0E] ">Tổng kết bài làm</h2>
 
             <div className="flex flex-wrap gap-8 justify-center items-center w-full my-6">
               <div className="flex flex-col items-center">
@@ -326,33 +326,33 @@ export function QuizAttemptResultPage() {
 
               <div className="flex flex-col items-center">
                 <span className="text-gray-500 font-bold mb-1">Số câu đúng</span>
-                <span className="text-4xl font-black text-[#1D2A3A]">
+                <span className="text-4xl font-black text-[#2B1B0E]">
                   {attemptDetail.correctAnswers} / {attemptDetail.totalQuestions}
                 </span>
               </div>
               <div className="w-[3px] h-16 bg-black hidden md:block"></div>
               <div className="flex flex-col items-center">
                 <span className="text-gray-500 font-bold mb-1">Thời gian làm</span>
-                <span className="text-4xl font-black text-[#1D2A3A]">
+                <span className="text-4xl font-black text-[#2B1B0E]">
                   {formatTime(attemptDetail.timeSpentSeconds)}
                 </span>
               </div>
             </div>
 
-            <Tag color={attemptDetail.passed ? '#2A8B9D' : '#F05A4A'} className="brutal-border font-black text-xl px-8 py-2 mt-2">
+            <Tag color={attemptDetail.passed ? '#2A8B9D' : '#F05A4A'} className="border border-[var(--border)] font-black text-xl px-8 py-2 mt-2">
               {attemptDetail.passed ? 'ĐẠT' : 'CHƯA ĐẠT'}
             </Tag>
           </div>
         )}
 
         {isLevelUp && (
-          <div className="w-full mt-6 flex flex-col items-center border-[3px] border-black p-6 bg-[#f4f3ee]">
-            <h3 className="text-2xl font-black mb-6 uppercase text-[#1D2A3A]">TỔNG KẾT KIỂM TRA THĂNG CẤP</h3>
+          <div className="w-full mt-6 flex flex-col items-center border border-[var(--border)] p-6 bg-[#f4f3ee]">
+            <h3 className="text-2xl font-black mb-6  text-[#2B1B0E]">TỔNG KẾT KIỂM TRA THĂNG CẤP</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full mb-8">
-              <div className="flex flex-col items-center p-4 bg-white border-[2px] border-black brutal-shadow">
+              <div className="flex flex-col items-center p-4 bg-white border border-[var(--border)] shadow-[var(--shadow-md)]">
                 <span className="text-gray-500 font-bold mb-2">ĐIỂM BÀI TEST</span>
-                <span className="text-4xl font-black text-[#1D2A3A]">
+                <span className="text-4xl font-black text-[#2B1B0E]">
                   {(() => {
                     const toInt = (v: any) => {
                       if (v === undefined || v === null) return 0;
@@ -365,19 +365,19 @@ export function QuizAttemptResultPage() {
                   })()}
                 </span>
               </div>
-              <div className="flex flex-col items-center p-4 bg-white border-[2px] border-black brutal-shadow">
+              <div className="flex flex-col items-center p-4 bg-white border border-[var(--border)] shadow-[var(--shadow-md)]">
                 <span className="text-gray-500 font-bold mb-2">TRẠNG THÁI</span>
                 <span className="text-4xl font-black" style={{ color: attemptDetail.levelUpPassed ? '#2A8B9D' : '#F05A4A' }}>
                   {attemptDetail.levelUpPassed ? 'ĐẠT' : 'CHƯA ĐẠT'}
                 </span>
               </div>
-              <div className="flex flex-col items-center p-4 bg-white border-[2px] border-black brutal-shadow">
+              <div className="flex flex-col items-center p-4 bg-white border border-[var(--border)] shadow-[var(--shadow-md)]">
                 <span className="text-gray-500 font-bold mb-2">TRÌNH ĐỘ MỤC TIÊU</span>
-                <span className="text-xl font-black text-[#1D2A3A] text-center">
+                <span className="text-xl font-black text-[#2B1B0E] text-center">
                   {attemptDetail.levelUpTargetLevel?.name || 'Không xác định'}
                 </span>
               </div>
-            <div className="flex flex-col items-center p-4 bg-white border-[2px] border-black brutal-shadow md:col-span-2">
+            <div className="flex flex-col items-center p-4 bg-white border border-[var(--border)] shadow-[var(--shadow-md)] md:col-span-2">
                 <span className="text-xl font-black text-center mt-2" style={{ color: attemptDetail.levelUpPassed ? '#2A8B9D' : '#F05A4A' }}>
                   {(() => {
                     const toInt = (v: any) => {
@@ -399,7 +399,7 @@ export function QuizAttemptResultPage() {
             
             {attemptDetail.levelUpPassed ? (
               <Button
-                className="w-full max-w-sm mt-4 brutal-pill h-14 font-black uppercase text-xl bg-[#2A8B9D] text-white border-[2px] border-black shadow-[4px_4px_0px_0px_#000] hover:-translate-y-1 transition-transform"
+                className="w-full max-w-sm mt-4 brutal-pill h-14 font-bold text-xl bg-[#2A8B9D] text-white border border-[var(--border)] shadow-[var(--shadow-sm)] hover:-translate-y-1 transition-transform"
                 onClick={async () => {
                    await refreshUser();
                    navigate('/dashboard');
@@ -409,7 +409,7 @@ export function QuizAttemptResultPage() {
               </Button>
             ) : (
               <Button
-                className="w-full max-w-sm mt-4 brutal-pill h-14 font-black uppercase text-xl bg-[#F05A4A] text-white border-[2px] border-black shadow-[4px_4px_0px_0px_#000] hover:-translate-y-1 transition-transform"
+                className="w-full max-w-sm mt-4 brutal-pill h-14 font-bold text-xl bg-[#F05A4A] text-white border border-[var(--border)] shadow-[var(--shadow-sm)] hover:-translate-y-1 transition-transform"
                 onClick={async () => {
                    await refreshUser();
                    navigate('/dashboard');
@@ -422,8 +422,8 @@ export function QuizAttemptResultPage() {
         )}
 
         {isFinal && (
-          <div className="w-full mt-6 flex flex-col items-center border-[3px] border-black p-6 bg-[#f4f3ee]">
-            <h3 className="text-2xl font-black mb-6 uppercase text-[#1D2A3A]">TỔNG KẾT KIỂM TRA KẾT THÚC TOEIC</h3>
+          <div className="w-full mt-6 flex flex-col items-center border border-[var(--border)] p-6 bg-[#f4f3ee]">
+            <h3 className="text-2xl font-black mb-6  text-[#2B1B0E]">TỔNG KẾT KIỂM TRA KẾT THÚC TOEIC</h3>
             
             {attemptDetail && (
               <div className={`w-full mb-6 p-4 border-2 rounded font-bold text-center text-lg ${
@@ -446,27 +446,27 @@ export function QuizAttemptResultPage() {
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full mb-8">
-              <div className="flex flex-col items-center p-4 bg-white border-[2px] border-black brutal-shadow">
+              <div className="flex flex-col items-center p-4 bg-white border border-[var(--border)] shadow-[var(--shadow-md)]">
                 <span className="text-gray-500 font-bold mb-2">Số câu đúng</span>
-                <span className="text-4xl font-black text-[#1D2A3A]">
+                <span className="text-4xl font-black text-[#2B1B0E]">
                   {attemptDetail.correctAnswers} / {attemptDetail.totalQuestions}
                 </span>
               </div>
-              <div className="flex flex-col items-center p-4 bg-white border-[2px] border-black brutal-shadow">
+              <div className="flex flex-col items-center p-4 bg-white border border-[var(--border)] shadow-[var(--shadow-md)]">
                 <span className="text-gray-500 font-bold mb-2">Tỷ lệ đúng</span>
                 <span className="text-4xl font-black text-[#2A8B9D]">
                   {attemptDetail.totalQuestions > 0 ? Number(((attemptDetail.correctAnswers / attemptDetail.totalQuestions) * 100).toFixed(0)) : 0}%
                 </span>
               </div>
-              <div className="flex flex-col items-center p-4 bg-white border-[2px] border-black brutal-shadow">
+              <div className="flex flex-col items-center p-4 bg-white border border-[var(--border)] shadow-[var(--shadow-md)]">
                 <span className="text-gray-500 font-bold mb-2">ĐIỂM TOEIC LẦN NÀY</span>
                 <span className="text-4xl font-black text-[#2A8B9D]">
                   {attemptDetail.maxScore != null ? `${attemptDetail.estimatedToeicScore ?? 0} / ${attemptDetail.maxScore}` : `${attemptDetail.estimatedToeicScore ?? 0}`}
                 </span>
               </div>
-              <div className="flex flex-col items-center p-4 bg-white border-[2px] border-black brutal-shadow">
+              <div className="flex flex-col items-center p-4 bg-white border border-[var(--border)] shadow-[var(--shadow-md)]">
                 <span className="text-gray-500 font-bold mb-2">KẾT QUẢ TỐT NHẤT</span>
-                <span className="text-4xl font-black text-[#1D2A3A]">
+                <span className="text-4xl font-black text-[#2B1B0E]">
                   {attemptDetail.maxScore != null ? `${attemptDetail.bestEstimatedToeicScore ?? attemptDetail.estimatedToeicScore ?? 0} / ${attemptDetail.maxScore}` : `${attemptDetail.bestEstimatedToeicScore ?? attemptDetail.estimatedToeicScore ?? 0}`}
                 </span>
               </div>
@@ -474,7 +474,7 @@ export function QuizAttemptResultPage() {
             {attemptDetail.levelAtAttempt && (
                 <div className="mt-4 p-4 text-center">
                    <span className="text-gray-500 font-bold">Trình độ lúc làm bài: </span>
-                   <span className="font-black text-[#1D2A3A]">{attemptDetail.levelAtAttempt.name}</span>
+                   <span className="font-black text-[#2B1B0E]">{attemptDetail.levelAtAttempt.name}</span>
                 </div>
             )}
           </div>
@@ -494,29 +494,29 @@ export function QuizAttemptResultPage() {
               'Cơ bản (Dưới 500)';
 
             return (
-              <div className="w-full mt-6 flex flex-col items-center border-[3px] border-black p-6 bg-[#f4f3ee]">
-                <h3 className="text-2xl font-black mb-6 uppercase text-[#1D2A3A]">TỔNG KẾT XÁC ĐỊNH TRÌNH ĐỘ TOEIC</h3>
+              <div className="w-full mt-6 flex flex-col items-center border border-[var(--border)] p-6 bg-[#f4f3ee]">
+                <h3 className="text-2xl font-black mb-6  text-[#2B1B0E]">TỔNG KẾT XÁC ĐỊNH TRÌNH ĐỘ TOEIC</h3>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full mb-8">
-                  <div className="flex flex-col items-center p-4 bg-white border-[2px] border-black brutal-shadow">
+                  <div className="flex flex-col items-center p-4 bg-white border border-[var(--border)] shadow-[var(--shadow-md)]">
                     <span className="text-gray-500 font-bold mb-2">Số câu đúng</span>
-                    <span className="text-4xl font-black text-[#1D2A3A]">
+                    <span className="text-4xl font-black text-[#2B1B0E]">
                       {attemptDetail.correctAnswers} / {attemptDetail.totalQuestions}
                     </span>
                   </div>
-                  <div className="flex flex-col items-center p-4 bg-white border-[2px] border-black brutal-shadow">
+                  <div className="flex flex-col items-center p-4 bg-white border border-[var(--border)] shadow-[var(--shadow-md)]">
                     <span className="text-gray-500 font-bold mb-2">Tỷ lệ đúng</span>
                     <span className="text-4xl font-black text-[#2A8B9D]">
                       {attemptDetail.totalQuestions > 0 ? Number(((attemptDetail.correctAnswers / attemptDetail.totalQuestions) * 100).toFixed(0)) : 0}%
                     </span>
                   </div>
-                  <div className="flex flex-col items-center p-4 bg-white border-[2px] border-black brutal-shadow">
+                  <div className="flex flex-col items-center p-4 bg-white border border-[var(--border)] shadow-[var(--shadow-md)]">
                     <span className="text-gray-500 font-bold mb-2">Quy đổi chuẩn hóa</span>
-                    <span className="text-4xl font-black text-[#1D2A3A]">
+                    <span className="text-4xl font-black text-[#2B1B0E]">
                       {attemptDetail.totalQuestions > 0 ? Number(((attemptDetail.correctAnswers / attemptDetail.totalQuestions) * 30).toFixed(2)) : 0} / 30
                     </span>
                   </div>
-                  <div className="flex flex-col items-center p-4 bg-white border-[2px] border-black brutal-shadow">
+                  <div className="flex flex-col items-center p-4 bg-white border border-[var(--border)] shadow-[var(--shadow-md)]">
                     <span className="text-gray-500 font-bold mb-2">ĐIỂM TOEIC ƯỚC LƯỢNG</span>
                     <span className="text-4xl font-black text-[#2A8B9D]">
                       {attemptDetail.maxScore != null ? (attemptDetail.estimatedToeicScore != null ? `${attemptDetail.estimatedToeicScore} / ${attemptDetail.maxScore}` : `${placementResult?.estimatedToeicScore || 0} / ${attemptDetail.maxScore}`) : (attemptDetail.estimatedToeicScore != null ? `${attemptDetail.estimatedToeicScore}` : `${placementResult?.estimatedToeicScore || 0}`)}
@@ -532,16 +532,16 @@ export function QuizAttemptResultPage() {
                       <div className="text-base font-normal mt-1">Trình độ của bạn đã được cập nhật thành công!</div>
                     </div>
 
-                    <div className="w-full flex flex-col items-center bg-[#2A8B9D] text-white p-6 border-[3px] border-black brutal-shadow mb-6">
-                      <span className="font-bold text-base mb-1 tracking-wider uppercase">TRÌNH ĐỘ ĐẠT ĐƯỢC</span>
-                      <span className="text-3xl font-black uppercase text-center">
+                    <div className="w-full flex flex-col items-center bg-[#2A8B9D] text-white p-6 border border-[var(--border)] shadow-[var(--shadow-md)] mb-6">
+                      <span className="font-bold text-base mb-1 tracking-normal ">TRÌNH ĐỘ ĐẠT ĐƯỢC</span>
+                      <span className="text-3xl font-black  text-center">
                         {targetLevelName}
                       </span>
                     </div>
 
                     <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
                       <Button
-                        className="brutal-border font-black text-lg h-14 px-8 !bg-[#1D2A3A] !text-white shadow-[4px_4px_0px_0px_#000] hover:!translate-y-[-2px] transition-transform"
+                        className="border border-[var(--border)] font-black text-lg h-14 px-8 !bg-[#2B1B0E] !text-white shadow-[var(--shadow-sm)] hover:!translate-y-[-2px] transition-transform"
                         onClick={handlePlacementConfirm}
                       >
                         BẮT ĐẦU HỌC TẠI TRÌNH ĐỘ MỚI ➔
@@ -553,21 +553,21 @@ export function QuizAttemptResultPage() {
                 {/* Case 2: FAILED AT LOWEST LEVEL (DƯỚI 500) -> AUTOMATICALLY ASSIGN LOWEST LEVEL */}
                 {!isPassed && isLowest && (
                   <>
-                    <div className="w-full mb-6 p-4 border-2 rounded font-bold text-center text-lg bg-blue-50 border-blue-500 text-[#1D2A3A]">
-                      <div className="text-xl font-black text-[#1D2A3A] mb-1">
+                    <div className="w-full mb-6 p-4 border-2 rounded font-bold text-center text-lg bg-[var(--brand-50)] border-[var(--border)] text-[#2B1B0E]">
+                      <div className="text-xl font-black text-[#2B1B0E] mb-1">
                         🎯 KẾT QUẢ XÁC ĐỊNH TRÌNH ĐỘ
                       </div>
                       <div className="text-base font-normal mt-1 text-gray-700">
                         Số câu đúng: <span className="font-black">{attemptDetail.correctAnswers} / {attemptDetail.totalQuestions}</span> ({attemptDetail.scorePercent != null ? Number(attemptDetail.scorePercent).toFixed(0) : 0}%)
                       </div>
-                      <div className="mt-3 p-3 bg-white border-2 border-black rounded text-sm text-gray-800 font-semibold">
+                      <div className="mt-3 p-3 bg-white border-2 border-[var(--border)] rounded text-sm text-gray-800 font-semibold">
                         Vì <span className="font-black text-[#2A8B9D]">Cơ bản (Dưới 500)</span> là trình độ thấp nhất trong hệ thống, hệ thống đã xếp bạn vào trình độ Cơ bản để có thể bắt đầu học ngay!
                       </div>
                     </div>
 
-                    <div className="w-full flex flex-col items-center bg-[#2A8B9D] text-white p-6 border-[3px] border-black brutal-shadow mb-6">
-                      <span className="font-bold text-base mb-1 tracking-wider uppercase">TRÌNH ĐỘ ĐƯỢC XẾP</span>
-                      <span className="text-3xl font-black uppercase text-center">
+                    <div className="w-full flex flex-col items-center bg-[#2A8B9D] text-white p-6 border border-[var(--border)] shadow-[var(--shadow-md)] mb-6">
+                      <span className="font-bold text-base mb-1 tracking-normal ">TRÌNH ĐỘ ĐƯỢC XẾP</span>
+                      <span className="text-3xl font-black  text-center">
                         Cơ bản (Dưới 500)
                       </span>
                       <span className="text-xs text-white/90 mt-2 font-medium">Bạn có thể bắt đầu lộ trình học từ vựng và bài tập ngay bây giờ!</span>
@@ -575,13 +575,13 @@ export function QuizAttemptResultPage() {
 
                     <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
                       <Button
-                        className="brutal-border font-black text-lg h-14 px-8 !bg-[#1D2A3A] !text-white shadow-[4px_4px_0px_0px_#000] hover:!translate-y-[-2px] transition-transform"
+                        className="border border-[var(--border)] font-black text-lg h-14 px-8 !bg-[#2B1B0E] !text-white shadow-[var(--shadow-sm)] hover:!translate-y-[-2px] transition-transform"
                         onClick={handlePlacementConfirm}
                       >
                         BẮT ĐẦU HỌC ➔
                       </Button>
                       <Button
-                        className="brutal-border font-bold text-lg h-14 px-8 !bg-white !text-black border-2 border-black shadow-[4px_4px_0px_0px_#000] hover:!translate-y-[-2px] transition-transform"
+                        className="border border-[var(--border)] font-bold text-lg h-14 px-8 !bg-white !text-black border-2 border-[var(--border)] shadow-[var(--shadow-sm)] hover:!translate-y-[-2px] transition-transform"
                         onClick={() => {
                           window.scrollTo({ top: 700, behavior: 'smooth' });
                         }}
@@ -602,19 +602,19 @@ export function QuizAttemptResultPage() {
                       </div>
                     </div>
 
-                    <div className="w-full p-4 bg-white border-2 border-black mb-6">
-                      <div className="text-center font-black text-sm uppercase text-gray-600 mb-3">
+                    <div className="w-full p-4 bg-white border-2 border-[var(--border)] mb-6">
+                      <div className="text-center font-black text-sm  text-gray-600 mb-3">
                         GỢI Ý LỰA CHỌN TRÌNH ĐỘ PHÙ HỢP
                       </div>
                       <div className="flex flex-wrap justify-center gap-3">
                         <Button
-                          className="brutal-pill font-black bg-[#2A8B9D] text-white border-2 border-black h-11 px-5 text-sm shadow-[2px_2px_0px_0px_#000]"
+                          className="brutal-pill font-black bg-[#2A8B9D] text-white border-2 border-[var(--border)] h-11 px-5 text-sm shadow-[var(--shadow-sm)]"
                           onClick={() => navigate('/placement-tests')}
                         >
                           📋 XEM DANH SÁCH BÀI KIỂM TRA TRÌNH ĐỘ ➔
                         </Button>
                         <Button
-                          className="brutal-pill font-bold bg-gray-100 text-gray-800 border-2 border-black h-11 px-5 text-sm"
+                          className="brutal-pill font-bold bg-gray-100 text-gray-800 border-2 border-[var(--border)] h-11 px-5 text-sm"
                           onClick={() => navigate('/dashboard')}
                         >
                           VỀ BẢNG ĐIỀU KHIỂN HỌC ➔
@@ -627,7 +627,7 @@ export function QuizAttemptResultPage() {
             );
           })()}
 
-        <h3 className="text-2xl font-black mb-6 uppercase text-[#1D2A3A]">Chi tiết đáp án</h3>
+        <h3 className="text-2xl font-black mb-6  text-[#2B1B0E]">Chi tiết đáp án</h3>
 
         {questions.map((question: any, index: number) => {
           const answer = getAnswerForQuestion(question.id);

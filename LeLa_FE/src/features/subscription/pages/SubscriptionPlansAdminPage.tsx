@@ -139,7 +139,7 @@ export function SubscriptionPlansAdminPage() {
                 <tr><td colSpan={6} className="px-4 py-8 text-center text-geist-gray-600">Đang tải...</td></tr>
               ) : data?.data?.map((plan) => (
                 <tr key={plan.id} className="hover:bg-geist-gray-100/50 transition-colors">
-                  <td className="px-4 py-3 font-mono text-geist-gray-900">{plan.planCode}</td>
+                  <td className="px-4 py-3 font-sans text-geist-gray-900">{plan.planCode}</td>
                   <td className="px-4 py-3 text-geist-gray-1000 font-medium">{plan.name}</td>
                   <td className="px-4 py-3 text-geist-gray-1000">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: plan.currencyCode }).format(plan.price)}</td>
                   <td className="px-4 py-3 text-geist-gray-700">{plan.billingIntervalCount} {plan.billingCycle}</td>
@@ -250,15 +250,15 @@ export function SubscriptionPlansAdminPage() {
 
           <div className="grid grid-cols-2 gap-4 pt-4 border-t border-geist-gray-300">
             <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" {...register('quizEnabled')} className="rounded border-geist-gray-400 text-geist-blue-700 focus:ring-geist-blue-700 bg-transparent" />
+              <input type="checkbox" {...register('quizEnabled')} className="rounded border-geist-gray-400 text-[var(--brand-700)] focus:ring-[var(--brand)] bg-transparent" />
               <span className="text-sm font-medium text-geist-gray-1000">Kích hoạt Quiz</span>
             </label>
             <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" {...register('leaderboardEnabled')} className="rounded border-geist-gray-400 text-geist-blue-700 focus:ring-geist-blue-700 bg-transparent" />
+              <input type="checkbox" {...register('leaderboardEnabled')} className="rounded border-geist-gray-400 text-[var(--brand-700)] focus:ring-[var(--brand)] bg-transparent" />
               <span className="text-sm font-medium text-geist-gray-1000">Tham gia Bảng xếp hạng</span>
             </label>
             <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" {...register('isActive')} className="rounded border-geist-gray-400 text-geist-blue-700 focus:ring-geist-blue-700 bg-transparent" />
+              <input type="checkbox" {...register('isActive')} className="rounded border-geist-gray-400 text-[var(--brand-700)] focus:ring-[var(--brand)] bg-transparent" />
               <span className="text-sm font-medium text-geist-gray-1000">Đang hoạt động</span>
             </label>
           </div>

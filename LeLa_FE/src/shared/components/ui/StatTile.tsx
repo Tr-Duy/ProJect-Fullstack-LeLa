@@ -31,7 +31,7 @@ export const StatTile: React.FC<StatTileProps> = ({
   return (
     <div className={`p-4 rounded-[var(--radius-card)] ${bgStyles} ${className}`}>
       <div className="flex items-center justify-between gap-2 mb-1.5">
-        <span className={`text-xs font-mono font-bold uppercase tracking-wider ${labelColor}`}>
+        <span className={`text-xs font-sans font-bold  ${labelColor}`}>
           {label}
         </span>
         {icon && <span className="opacity-80">{icon}</span>}
@@ -41,7 +41,7 @@ export const StatTile: React.FC<StatTileProps> = ({
           {value}
         </span>
         {unit && (
-          <span className="text-xs font-mono font-semibold uppercase opacity-75">
+          <span className="text-xs font-sans font-semibold opacity-75">
             {unit}
           </span>
         )}

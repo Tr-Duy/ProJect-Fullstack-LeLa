@@ -36,7 +36,7 @@ export function AdminLayout() {
   ];
 
   return (
-    <div className="flex min-h-screen bg-geist-bg-100 text-geist-gray-1000 font-sans selection:bg-geist-blue-200">
+    <div className="flex min-h-screen bg-geist-bg-100 text-geist-gray-1000 font-sans selection:bg-[var(--brand-100)]">
       {/* Sidebar */}
       <aside className="w-64 sticky top-0 h-screen shrink-0 border-r border-geist-gray-300 overflow-y-auto hidden md:flex md:flex-col bg-geist-bg-100">
         {/* Top Section: Logo + Nav */}

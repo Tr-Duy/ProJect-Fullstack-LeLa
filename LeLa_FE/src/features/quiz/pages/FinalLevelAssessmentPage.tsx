@@ -74,13 +74,13 @@ export function FinalLevelAssessmentPage() {
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto min-h-screen bg-[#F4F3EE]">
       {/* Header section */}
-      <div className="mb-8 brutal-card bg-white p-6 border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+      <div className="mb-8 rounded-[var(--radius-card)] bg-white p-6 border-4 border-[var(--border)] shadow-[var(--shadow-md)]">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <div className="inline-block bg-[#2A8B9D] text-white font-black text-xs px-3 py-1 mb-2 uppercase border-2 border-black">
+            <div className="inline-block bg-[#2A8B9D] text-white font-black text-xs px-3 py-1 mb-2  border-2 border-[var(--border)]">
               🏆 THI KẾT THÚC LEVEL
             </div>
-            <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tight text-[#1D2A3A] mb-2 flex items-center gap-3">
+            <h1 className="text-3xl md:text-5xl font-black  tracking-tight text-[#2B1B0E] mb-2 flex items-center gap-3">
               <TrophyOutlined className="text-[#F59E0B]" />
               BÀI THI KẾT THÚC LEVEL
             </h1>
@@ -89,18 +89,18 @@ export function FinalLevelAssessmentPage() {
             </p>
           </div>
 
-          <div className="bg-[#FEF3C7] border-2 border-[#F59E0B] p-4 rounded-lg flex flex-col min-w-[220px] shadow-[3px_3px_0px_0px_#000]">
-            <span className="text-xs font-black uppercase text-gray-600">Trình độ hiện tại</span>
+          <div className="bg-[#FEF3C7] border-2 border-[#F59E0B] p-4 rounded-lg flex flex-col min-w-[220px] shadow-[var(--shadow-sm)]">
+            <span className="text-xs font-bold text-gray-600">Trình độ hiện tại</span>
             <span className="text-xl font-black text-[#B45309]">{currentLevelName}</span>
           </div>
         </div>
       </div>
 
       {/* Deck Completion Progress Banner */}
-      <div className="mb-8 brutal-card bg-white p-6 border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+      <div className="mb-8 rounded-[var(--radius-card)] bg-white p-6 border-4 border-[var(--border)] shadow-[var(--shadow-md)]">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
           <div>
-            <h2 className="text-xl font-black uppercase text-[#1D2A3A] flex items-center gap-2">
+            <h2 className="text-xl font-bold text-[#2B1B0E] flex items-center gap-2">
               {isEligible ? '✅ BẠN ĐÃ ĐỦ ĐIỀU KIỆN THI' : '⚠️ BẠN CHƯA ĐỦ ĐIỀU KIỆN THI'}
             </h2>
             <p className="text-gray-600 font-medium text-sm mt-1">
@@ -117,7 +117,7 @@ export function FinalLevelAssessmentPage() {
               </span>
               <Button
                 size="small"
-                className="brutal-pill font-bold text-xs bg-gray-100 hover:bg-gray-200 border-2 border-black"
+                className="brutal-pill font-bold text-xs bg-gray-100 hover:bg-gray-200 border-2 border-[var(--border)]"
                 onClick={() => setShowDecksDetail(!showDecksDetail)}
               >
                 {showDecksDetail ? 'Ẩn danh sách bộ thẻ ▲' : 'Xem danh sách bộ thẻ ▼'}
@@ -141,28 +141,28 @@ export function FinalLevelAssessmentPage() {
         {/* Decks detail list dropdown */}
         {showDecksDetail && (
           <div className="mt-6 pt-4 border-t-2 border-dashed border-gray-300">
-            <h4 className="font-black uppercase text-sm text-gray-700 mb-3">Danh sách bộ thẻ thuộc trình độ {currentLevelName}:</h4>
+            <h4 className="font-black text-sm text-gray-700 mb-3">Danh sách bộ thẻ thuộc trình độ {currentLevelName}:</h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {decks.map((d: any) => (
                 <div
                   key={d.id}
-                  className={`p-3 border-2 border-black rounded flex justify-between items-center text-xs font-bold ${
+                  className={`p-3 border-2 border-[var(--border)] rounded flex justify-between items-center text-xs font-bold ${
                     d.isCompleted ? 'bg-[#F0FDF4] border-[#22C55E]' : 'bg-[#FFFBEB] border-[#F59E0B]'
                   }`}
                 >
                   <div>
-                    <span className="block font-black text-sm text-[#1D2A3A]">{d.title}</span>
+                    <span className="block font-black text-sm text-[#2B1B0E]">{d.title}</span>
                     <span className="text-gray-500">
                       {d.masteredCards || 0}/{d.totalCards || 16} thẻ đã thuộc
                     </span>
                   </div>
                   {d.isCompleted ? (
-                    <Tag color="success" className="font-black border-black">✅ ĐÃ HOÀN THÀNH</Tag>
+                    <Tag color="success" className="font-black border-[var(--border)]">✅ ĐÃ HOÀN THÀNH</Tag>
                   ) : (
                     <Button
                       size="small"
                       loading={completeDeckMutation.isPending}
-                      className="brutal-pill font-black text-[10px] bg-[#F05A4A] text-white hover:!bg-[#d94f41] border border-black"
+                      className="brutal-pill font-black text-[10px] bg-[#F05A4A] text-white hover:!bg-[#d94f41] border border-[var(--border)]"
                       onClick={() => completeDeckMutation.mutate(d.id)}
                     >
                       ⚡ MÔ PHỎNG XONG
@@ -177,9 +177,9 @@ export function FinalLevelAssessmentPage() {
 
       {/* Cycle Status Banners */}
       {cycleStatus === 'REQUIRES_REVIEW' && (
-        <div className="mb-8 brutal-card bg-[#FEF2F2] border-4 border-[#EF4444] p-6 shadow-[6px_6px_0px_0px_rgba(239,68,68,1)] flex flex-col md:flex-row justify-between items-center gap-4">
+        <div className="mb-8 rounded-[var(--radius-card)] bg-[#FEF2F2] border-4 border-[#EF4444] p-6 shadow-[6px_6px_0px_0px_rgba(239,68,68,1)] flex flex-col md:flex-row justify-between items-center gap-4">
           <div>
-            <h3 className="text-xl font-black text-[#EF4444] uppercase mb-1 flex items-center gap-2">
+            <h3 className="text-xl font-black text-[#EF4444]  mb-1 flex items-center gap-2">
               <ExclamationCircleOutlined /> ❌ CHƯA ĐẠT TRÌNH ĐỘ TRONG CHU KỲ NÀY
             </h3>
             <p className="text-gray-700 font-medium">
@@ -190,7 +190,7 @@ export function FinalLevelAssessmentPage() {
             <Button
               size="large"
               icon={<BookOutlined />}
-              className="brutal-pill font-black uppercase bg-[#2A8B9D] text-white hover:!bg-[#1F6B79] border-2 border-black h-12 px-5"
+              className="brutal-pill font-bold bg-[#2A8B9D] text-white hover:!bg-[#1F6B79] border-2 border-[var(--border)] h-12 px-5"
               onClick={() => navigate('/decks')}
             >
               Ôn Tập Từ Vựng ➔
@@ -199,7 +199,7 @@ export function FinalLevelAssessmentPage() {
               size="large"
               icon={<ReloadOutlined />}
               loading={resetCycleMutation.isPending}
-              className="brutal-pill font-black uppercase bg-[#F05A4A] text-white hover:!bg-[#d94f41] border-2 border-black h-12 px-5"
+              className="brutal-pill font-bold bg-[#F05A4A] text-white hover:!bg-[#d94f41] border-2 border-[var(--border)] h-12 px-5"
               onClick={() => resetCycleMutation.mutate()}
             >
               Mở Chu Kỳ Mới ➔
@@ -209,10 +209,10 @@ export function FinalLevelAssessmentPage() {
       )}
 
       {isCooldownActive && (
-        <div className="mb-8 brutal-card bg-[#FFFBEB] border-4 border-[#F59E0B] p-6 shadow-[6px_6px_0px_0px_rgba(245,158,11,1)] flex items-center gap-4">
+        <div className="mb-8 rounded-[var(--radius-card)] bg-[#FFFBEB] border-4 border-[#F59E0B] p-6 shadow-[6px_6px_0px_0px_rgba(245,158,11,1)] flex items-center gap-4">
           <ClockCircleOutlined className="text-3xl text-[#D97706]" />
           <div>
-            <h3 className="text-lg font-black text-[#92400E] uppercase mb-1">
+            <h3 className="text-lg font-black text-[#92400E]  mb-1">
               🔒 TẤT CẢ BÀI THI ĐANG TẠM KHÓA 12 GIỜ
             </h3>
             <p className="text-gray-700 font-medium">
@@ -231,7 +231,7 @@ export function FinalLevelAssessmentPage() {
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3, 4, 5, 6].map(i => (
-            <Card key={i} className="brutal-card w-full h-[200px]">
+            <Card key={i} className="rounded-[var(--radius-card)] w-full h-[200px]">
               <Skeleton active />
             </Card>
           ))}
@@ -248,11 +248,11 @@ export function FinalLevelAssessmentPage() {
             return (
               <div
                 key={quiz.id}
-                className={`brutal-card bg-white p-6 border-4 border-black flex flex-col justify-between transition-all ${
+                className={`rounded-[var(--radius-card)] bg-white p-6 border-4 border-[var(--border)] flex flex-col justify-between transition-all ${
                   isPassed
                     ? 'bg-[#F0FDF4] border-[#22C55E] shadow-[6px_6px_0px_0px_rgba(34,197,94,1)]'
                     : isAvailable
-                      ? 'shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[-2px] border-black bg-white'
+                      ? 'shadow-[var(--shadow-md)] hover:translate-y-[-2px] border-[var(--border)] bg-white'
                       : isFailed
                         ? 'bg-[#FEF2F2] border-[#EF4444] opacity-90 shadow-[4px_4px_0px_0px_rgba(239,68,68,0.4)]'
                         : 'bg-[#FAF9F6] opacity-80 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)]'
@@ -260,27 +260,27 @@ export function FinalLevelAssessmentPage() {
               >
                 <div>
                   <div className="flex justify-between items-start mb-2 gap-2">
-                    <h3 className="text-xl font-black uppercase text-[#1D2A3A] leading-tight">
+                    <h3 className="text-xl font-bold text-[#2B1B0E] leading-tight">
                       {quiz.title || `Final Test #${idx + 1}`}
                     </h3>
                     {isPassed ? (
-                      <Tag color="success" className="font-bold text-xs border-black px-2 py-0.5">
+                      <Tag color="success" className="font-bold text-xs border-[var(--border)] px-2 py-0.5">
                         <CheckCircleOutlined /> ĐÃ ĐẠT
                       </Tag>
                     ) : isFailed ? (
-                      <Tag color="error" className="font-bold text-xs border-black px-2 py-0.5">
+                      <Tag color="error" className="font-bold text-xs border-[var(--border)] px-2 py-0.5">
                         ❌ ĐÃ THI - KHÔNG ĐẠT
                       </Tag>
                     ) : isCooldown ? (
-                      <Tag color="warning" className="font-bold text-xs border-black px-2 py-0.5">
+                      <Tag color="warning" className="font-bold text-xs border-[var(--border)] px-2 py-0.5">
                         <LockOutlined /> TẠM KHÓA 12H
                       </Tag>
                     ) : isAvailable ? (
-                      <Tag color="processing" className="font-bold text-xs border-black px-2 py-0.5">
+                      <Tag color="processing" className="font-bold text-xs border-[var(--border)] px-2 py-0.5">
                         🟢 SẴN SÀNG
                       </Tag>
                     ) : (
-                      <Tag color="default" className="font-bold text-xs border-black px-2 py-0.5">
+                      <Tag color="default" className="font-bold text-xs border-[var(--border)] px-2 py-0.5">
                         <LockOutlined /> KHÓA
                       </Tag>
                     )}
@@ -300,7 +300,7 @@ export function FinalLevelAssessmentPage() {
 
                 <Button
                   disabled={!isAvailable}
-                  className={`w-full brutal-pill font-black uppercase h-11 border-2 border-black text-sm transition-all ${
+                  className={`w-full brutal-pill font-black h-11 border-2 border-[var(--border)] text-sm transition-all ${
                     isPassed
                       ? '!bg-[#22C55E] !text-white cursor-not-allowed opacity-90'
                       : isAvailable
@@ -328,7 +328,7 @@ export function FinalLevelAssessmentPage() {
       {/* Instruction Modal (Requirement 28) */}
       <Modal
         title={
-          <div className="text-xl font-black uppercase text-[#1D2A3A] flex items-center gap-2">
+          <div className="text-xl font-bold text-[#2B1B0E] flex items-center gap-2">
             <TrophyOutlined className="text-[#F59E0B]" />
             🎯 BÀI THI KẾT THÚC LEVEL
           </div>
@@ -339,7 +339,7 @@ export function FinalLevelAssessmentPage() {
           <Button
             key="cancel"
             size="large"
-            className="brutal-pill font-bold border-2 border-black"
+            className="brutal-pill font-bold border-2 border-[var(--border)]"
             onClick={() => setSelectedQuizForModal(null)}
           >
             HỦY
@@ -347,7 +347,7 @@ export function FinalLevelAssessmentPage() {
           <Button
             key="confirm"
             size="large"
-            className="brutal-pill font-black uppercase bg-[#F05A4A] text-white hover:!bg-[#D94F41] border-2 border-black px-6"
+            className="brutal-pill font-bold bg-[#F05A4A] text-white hover:!bg-[#D94F41] border-2 border-[var(--border)] px-6"
             onClick={handleConfirmStart}
           >
             BẮT ĐẦU BÀI THI ➔
@@ -361,7 +361,7 @@ export function FinalLevelAssessmentPage() {
               <span className="text-xs text-gray-600">Đề thi: {selectedQuizForModal.title}</span>
             </div>
 
-            <h4 className="font-black uppercase text-gray-800 text-sm mt-4">📋 QUY ĐỊNH BÀI THI:</h4>
+            <h4 className="font-black text-gray-800 text-sm mt-4">📋 QUY ĐỊNH BÀI THI:</h4>
             <ul className="list-disc list-inside space-y-1 text-sm">
               <li>Số lượng: <strong>20 câu hỏi trắc nghiệm</strong></li>
               <li>Thời gian: <strong>20 phút</strong></li>

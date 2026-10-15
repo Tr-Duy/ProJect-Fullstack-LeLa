@@ -96,12 +96,12 @@ export const OnboardingPage = () => {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#F4F3EE] p-4">
-      <Card className="w-full max-w-lg brutal-card border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] bg-white p-2 sm:p-4">
+      <Card className="w-full max-w-lg rounded-[var(--radius-card)] border-4 border-[var(--border)] shadow-[var(--shadow-md)] bg-white p-2 sm:p-4">
         <div className="text-center mb-6">
-          <div className="inline-block bg-black text-yellow-300 font-black text-xs px-3 py-1 mb-2 uppercase tracking-wider border-2 border-black">
+          <div className="inline-block bg-black text-yellow-300 font-black text-xs px-3 py-1 mb-2  border-2 border-[var(--border)]">
             ⚡ HỆ THỐNG TRÌNH ĐỘ TOEIC
           </div>
-          <h2 className="text-2xl sm:text-3xl font-black uppercase text-[#1D2A3A] flex items-center justify-center gap-2">
+          <h2 className="text-2xl sm:text-3xl font-black  text-[#2B1B0E] flex items-center justify-center gap-2">
             <RocketOutlined className="text-[#F05A4A]" />
             Chọn trình độ bắt đầu
           </h2>
@@ -118,17 +118,17 @@ export const OnboardingPage = () => {
                 return (
                   <div 
                     key={lvl.id} 
-                    className="flex justify-between items-center p-4 border-3 border-black shadow-[3px_3px_0px_0px_#000] transition-transform bg-white hover:-translate-y-0.5"
+                    className="flex justify-between items-center p-4 border-3 border-[var(--border)] shadow-[var(--shadow-sm)] transition-transform bg-white hover:-translate-y-0.5"
                   >
                      <div className="flex flex-col">
-                       <span className="font-black text-lg text-[#1D2A3A]">{lvl.name}</span>
+                       <span className="font-black text-lg text-[#2B1B0E]">{lvl.name}</span>
                        <span className="text-xs font-bold text-gray-500">
                          {lvl.minScore && lvl.maxScore ? `${lvl.minScore} - ${lvl.maxScore} điểm TOEIC` : 'Trình độ TOEIC'}
                        </span>
                      </div>
 
                      <Button 
-                       className="brutal-pill border-2 border-black font-black uppercase text-white bg-[#F05A4A] hover:!bg-[#d94f41] h-10 px-5 shadow-[2px_2px_0px_0px_#000]" 
+                       className="brutal-pill border-2 border-[var(--border)] font-bold text-white bg-[#F05A4A] hover:!bg-[#d94f41] h-10 px-5 shadow-[var(--shadow-sm)]" 
                        onClick={() => handleLevelClick(lvl)}
                        loading={manualSelectMutation.isPending}
                      >
@@ -145,7 +145,7 @@ export const OnboardingPage = () => {
             <div className="text-center w-full">
               <span className="text-sm text-gray-500 font-bold mb-2 block">Hoặc</span>
               <Button 
-                className="w-full brutal-pill font-black uppercase bg-[#2A8B9D] text-white hover:!bg-[#1F6D7A] h-12 border-2 border-black text-base shadow-[3px_3px_0px_0px_#000]" 
+                className="w-full brutal-pill font-black bg-[#2A8B9D] text-white hover:!bg-[#1F6D7A] h-12 border-2 border-[var(--border)] text-base shadow-[var(--shadow-sm)]" 
                 onClick={() => navigate('/placement-tests')}
               >
                 TẤT CẢ BÀI KIỂM TRA ĐẦU VÀO ➔

@@ -44,7 +44,7 @@ export const LevelUpRoadmapSidebarCard: React.FC<LevelUpRoadmapSidebarCardProps>
         <span className="text-xs font-semibold text-[var(--text-3)]">
           Lộ trình tăng Level
         </span>
-        <span className="text-xs font-bold text-[var(--brand)] bg-[var(--brand-50)] px-2.5 py-0.5 rounded-full">
+        <span className="text-xs font-bold text-[var(--brand-700)] bg-[var(--brand-50)] px-2.5 py-0.5 rounded-full">
           {levelName}
         </span>
       </div>
@@ -74,7 +74,7 @@ export const LevelUpRoadmapSidebarCard: React.FC<LevelUpRoadmapSidebarCardProps>
               dotStyle = 'bg-[var(--success-50)] text-[var(--success)] border-[var(--success)]/30 font-bold';
               icon = <CheckCircleFilled className="text-xs" />;
             } else if (step.isAvailable) {
-              dotStyle = 'bg-[var(--brand)] text-white border-[var(--brand)] font-bold shadow-sm animate-pulse';
+              dotStyle = 'bg-[var(--brand)] text-[#2A1300] border-[var(--brand)] font-bold shadow-sm animate-pulse';
               icon = <span className="text-[11px] font-bold">{step.index}</span>;
             } else if (step.isWaiting) {
               dotStyle = 'bg-[var(--warning-50)] text-[var(--warning)] border-[var(--warning)]/30';

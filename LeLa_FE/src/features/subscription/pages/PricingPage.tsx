@@ -138,7 +138,7 @@ export function PricingPage() {
       </Button>
 
       <div className="max-w-7xl mx-auto text-center mb-16 mt-8">
-        <h1 className="text-5xl font-black uppercase tracking-tighter text-[#1D2A3A] mb-4">
+        <h1 className="text-5xl font-black  tracking-tighter text-[#2B1B0E] mb-4">
           Nâng cấp trải nghiệm học tập
         </h1>
         <p className="text-xl text-gray-700">Chọn gói phù hợp nhất với nhu cầu của bạn</p>
@@ -148,7 +148,7 @@ export function PricingPage() {
         {isLoading ? (
           <div className="flex flex-col md:flex-row gap-8 justify-center">
             {[1, 2, 3].map(i => (
-              <div key={i} className="brutal-card bg-white p-8 w-full md:w-1/3 min-h-[500px]">
+              <div key={i} className="rounded-[var(--radius-card)] bg-white p-8 w-full md:w-1/3 min-h-[500px]">
                 <Skeleton active />
               </div>
             ))}
@@ -158,10 +158,10 @@ export function PricingPage() {
             {data?.data?.map((plan) => (
               <div 
                 key={plan.id}
-                className="brutal-card bg-white p-8 w-full md:w-[350px] flex flex-col hover:-translate-y-2 transition-transform duration-300"
+                className="rounded-[var(--radius-card)] bg-white p-8 w-full md:w-[350px] flex flex-col hover:-translate-y-2 transition-transform duration-300"
               >
                 <div className="mb-4">
-                  <h2 className="text-2xl font-black uppercase mb-2">{plan.name}</h2>
+                  <h2 className="text-2xl font-black  mb-2">{plan.name}</h2>
                   <p className="text-gray-600 line-clamp-2 min-h-[40px]">{plan.description}</p>
                 </div>
 
@@ -208,7 +208,7 @@ export function PricingPage() {
                     return (
                       <Button 
                         disabled
-                        className="w-full brutal-border brutal-shadow h-12 font-black uppercase text-lg !bg-gray-300 !text-gray-600"
+                        className="w-full border border-[var(--border)] shadow-[var(--shadow-md)] h-12 font-black text-lg !bg-gray-300 !text-gray-600"
                       >
                         Đang sử dụng
                       </Button>
@@ -219,7 +219,7 @@ export function PricingPage() {
                     return (
                       <Button 
                         disabled
-                        className="w-full brutal-border brutal-shadow h-12 font-black uppercase text-lg !bg-gray-200 !text-gray-400 cursor-not-allowed"
+                        className="w-full border border-[var(--border)] shadow-[var(--shadow-md)] h-12 font-black text-lg !bg-gray-200 !text-gray-400 cursor-not-allowed"
                       >
                         Đăng ký ngay
                       </Button>
@@ -228,7 +228,7 @@ export function PricingPage() {
 
                   return (
                     <Button 
-                      className="w-full brutal-border brutal-shadow h-12 font-black uppercase text-lg !bg-[#1D2A3A] !text-white"
+                      className="w-full border border-[var(--border)] shadow-[var(--shadow-md)] h-12 font-black text-lg !bg-[#2B1B0E] !text-white"
                       loading={checkoutMutation.isPending && selectedPlan?.id === plan.id}
                       onClick={() => handleSubscribe(plan)}
                     >
@@ -243,7 +243,7 @@ export function PricingPage() {
       </div>
 
       <AntdModal
-        title={<span className="text-2xl font-black uppercase tracking-tight">Thanh toán {selectedPlan?.name}</span>}
+        title={<span className="text-2xl font-black  tracking-tight">Thanh toán {selectedPlan?.name}</span>}
         open={isCheckoutModalOpen}
         onCancel={handleModalClose}
         footer={null}
@@ -251,15 +251,15 @@ export function PricingPage() {
         className="brutal-modal"
       >
         {checkoutData && (
-          <div className="mt-4 border-2 border-[#1D2A3A] p-4 bg-[#F4F3EE]">
+          <div className="mt-4 border-2 border-[#2B1B0E] p-4 bg-[#F4F3EE]">
             <p className="text-lg font-bold mb-2">Thông tin thanh toán:</p>
-            <div className="flex justify-between items-center border-b-2 border-[#1D2A3A] pb-4 mb-4">
+            <div className="flex justify-between items-center border-b-2 border-[#2B1B0E] pb-4 mb-4">
               <span className="text-lg font-bold">Số tiền:</span>
               <span className="text-3xl font-black text-[#F05A4A]">
                 {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: checkoutData.currency || 'VND' }).format(checkoutData.amount)}
               </span>
             </div>
-            <div className="flex justify-between items-center border-b-2 border-[#1D2A3A] pb-4 mb-4">
+            <div className="flex justify-between items-center border-b-2 border-[#2B1B0E] pb-4 mb-4">
               <span className="text-lg font-bold">Nội dung chuyển khoản:</span>
               <span className="text-xl font-black text-[#2A8B9D]">{checkoutData.paymentCode}</span>
             </div>
@@ -272,11 +272,11 @@ export function PricingPage() {
               <img 
                 src={paymentQrImg}
                 alt="Mã QR Thanh Toán"
-                className="w-full max-w-[320px] sm:max-w-[360px] h-auto object-contain border-4 border-[#1D2A3A] p-2 bg-white rounded-lg shadow-sm block mx-auto"
+                className="w-full max-w-[320px] sm:max-w-[360px] h-auto object-contain border-4 border-[#2B1B0E] p-2 bg-white rounded-lg shadow-sm block mx-auto"
               />
             </div>
 
-            <div className="w-full flex items-center justify-center gap-2 h-12 border-2 border-[#1D2A3A] bg-white font-black uppercase text-lg text-[#1D2A3A]">
+            <div className="w-full flex items-center justify-center gap-2 h-12 border-2 border-[#2B1B0E] bg-white font-black text-lg text-[#2B1B0E]">
               <Loader2 className="w-5 h-5 animate-spin" />
               <span>Đang chờ thanh toán...</span>
             </div>

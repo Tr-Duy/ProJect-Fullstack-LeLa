@@ -72,10 +72,10 @@ export function QuizzesPage() {
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto min-h-screen bg-[#F4F3EE]">
       {/* Header section */}
-      <div className="mb-8 brutal-card bg-white p-6 border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+      <div className="mb-8 rounded-[var(--radius-card)] bg-white p-6 border-4 border-[var(--border)] shadow-[var(--shadow-md)]">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tight text-[#1D2A3A] mb-2 flex items-center gap-3">
+            <h1 className="text-3xl md:text-5xl font-black  tracking-tight text-[#2B1B0E] mb-2 flex items-center gap-3">
               {isLevelUpCategory && <RocketOutlined className="text-[#F05A4A]" />}
               {category === 'PLACEMENT'
                 ? 'Bài kiểm tra đầu vào TOEIC'
@@ -94,7 +94,7 @@ export function QuizzesPage() {
 
           {user && (
             <div className="bg-[#E6F4F1] border-2 border-[#2A8B9D] p-3 rounded-lg flex flex-col min-w-[200px]">
-              <span className="text-xs font-black uppercase text-gray-500">Trình độ hiện tại</span>
+              <span className="text-xs font-bold text-gray-500">Trình độ hiện tại</span>
               <span className="text-lg font-black text-[#2A8B9D]">{currentLevelName}</span>
             </div>
           )}
@@ -103,9 +103,9 @@ export function QuizzesPage() {
 
       {/* Warning banner if all 10 tests failed */}
       {allAttemptedAndFailed && (
-        <div className="mb-8 brutal-card bg-[#FFF1F0] border-4 border-[#F05A4A] p-6 shadow-[6px_6px_0px_0px_rgba(240,90,74,1)] flex flex-col md:flex-row justify-between items-center gap-4">
+        <div className="mb-8 rounded-[var(--radius-card)] bg-[#FFF1F0] border-4 border-[#F05A4A] p-6 shadow-[6px_6px_0px_0px_rgba(240,90,74,1)] flex flex-col md:flex-row justify-between items-center gap-4">
           <div>
-            <h3 className="text-xl font-black text-[#F05A4A] uppercase mb-1">
+            <h3 className="text-xl font-black text-[#F05A4A]  mb-1">
               ⚠️ BẠN CẦN ÔN TẬP LẠI KIẾN THỨC
             </h3>
             <p className="text-gray-700 font-medium">
@@ -115,7 +115,7 @@ export function QuizzesPage() {
           <Button
             size="large"
             icon={<BookOutlined />}
-            className="brutal-pill font-black uppercase bg-[#2A8B9D] text-white hover:!bg-[#1F6B79] border-2 border-black h-12 px-6"
+            className="brutal-pill font-bold bg-[#2A8B9D] text-white hover:!bg-[#1F6B79] border-2 border-[var(--border)] h-12 px-6"
             onClick={() => navigate('/decks')}
           >
             Ôn Tập Từ Vựng Ngay ➔
@@ -127,7 +127,7 @@ export function QuizzesPage() {
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3, 4, 5, 6].map(i => (
-            <Card key={i} className="brutal-card w-full h-[200px]">
+            <Card key={i} className="rounded-[var(--radius-card)] w-full h-[200px]">
               <Skeleton active />
             </Card>
           ))}
@@ -146,11 +146,11 @@ export function QuizzesPage() {
               return (
                 <div 
                   key={quiz.id} 
-                  className={`brutal-card bg-white p-6 border-4 border-black flex flex-col justify-between transition-all ${
+                  className={`rounded-[var(--radius-card)] bg-white p-6 border-4 border-[var(--border)] flex flex-col justify-between transition-all ${
                     isPassed 
                       ? 'bg-[#F0FDF4] border-[#22C55E] shadow-[6px_6px_0px_0px_rgba(34,197,94,1)]' 
                       : isAvailable 
-                        ? 'shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[-2px] border-black bg-white' 
+                        ? 'shadow-[var(--shadow-md)] hover:translate-y-[-2px] border-[var(--border)] bg-white' 
                         : isWaiting24h 
                           ? 'bg-[#FFFBEB] border-[#F59E0B] shadow-[4px_4px_0px_0px_rgba(245,158,11,1)]' 
                           : isFailed 
@@ -160,27 +160,27 @@ export function QuizzesPage() {
                 >
                   <div>
                     <div className="flex justify-between items-start mb-2 gap-2">
-                      <h3 className="text-xl font-black uppercase text-[#1D2A3A] leading-tight">
+                      <h3 className="text-xl font-bold text-[#2B1B0E] leading-tight">
                         {quiz.title || `Upgrade Test #${idx + 1}`}
                       </h3>
                       {isPassed ? (
-                        <Tag color="success" className="font-bold text-xs border-black px-2 py-0.5">
+                        <Tag color="success" className="font-bold text-xs border-[var(--border)] px-2 py-0.5">
                           <CheckCircleOutlined /> ĐÃ ĐẠT
                         </Tag>
                       ) : isFailed ? (
-                        <Tag color="error" className="font-bold text-xs border-black px-2 py-0.5">
+                        <Tag color="error" className="font-bold text-xs border-[var(--border)] px-2 py-0.5">
                           ❌ KHÔNG ĐẠT
                         </Tag>
                       ) : isWaiting24h ? (
-                        <Tag color="warning" className="font-bold text-xs border-black px-2 py-0.5">
+                        <Tag color="warning" className="font-bold text-xs border-[var(--border)] px-2 py-0.5">
                           <LockOutlined /> CHỜ 24H
                         </Tag>
                       ) : isAvailable ? (
-                        <Tag color="processing" className="font-bold text-xs border-black px-2 py-0.5">
+                        <Tag color="processing" className="font-bold text-xs border-[var(--border)] px-2 py-0.5">
                           🟢 SẴN SÀNG
                         </Tag>
                       ) : (
-                        <Tag color="default" className="font-bold text-xs border-black px-2 py-0.5">
+                        <Tag color="default" className="font-bold text-xs border-[var(--border)] px-2 py-0.5">
                           <LockOutlined /> KHÓA
                         </Tag>
                       )}
@@ -206,7 +206,7 @@ export function QuizzesPage() {
 
                   <Button
                     disabled={isLevelUpCategory ? !isAvailable : (isLocked && !isPassed)}
-                    className={`w-full brutal-pill font-black uppercase h-11 border-2 border-black text-sm transition-all ${
+                    className={`w-full brutal-pill font-black h-11 border-2 border-[var(--border)] text-sm transition-all ${
                       isPassed
                         ? '!bg-[#22C55E] !text-white cursor-not-allowed opacity-90'
                         : isAvailable
@@ -229,10 +229,10 @@ export function QuizzesPage() {
               );
             })
           ) : (
-            <div className="col-span-full py-20 text-center brutal-card bg-white border-4 border-black p-8 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
-              <h2 className="text-2xl font-black text-gray-700 uppercase mb-2">Chưa có bài kiểm tra nào phù hợp</h2>
+            <div className="col-span-full py-20 text-center rounded-[var(--radius-card)] bg-white border-4 border-[var(--border)] p-8 shadow-[var(--shadow-md)]">
+              <h2 className="text-2xl font-black text-gray-700  mb-2">Chưa có bài kiểm tra nào phù hợp</h2>
               <p className="text-gray-500 font-medium">Vui lòng kiểm tra lại thiết lập trình độ của bạn hoặc chọn các danh mục kiểm tra khác.</p>
-              <Button onClick={() => navigate('/decks')} className="mt-4 brutal-pill font-bold bg-[#1D2A3A] text-white">
+              <Button onClick={() => navigate('/decks')} className="mt-4 brutal-pill font-bold bg-[#2B1B0E] text-white">
                 Về Trang Danh Sách Bộ Thẻ
               </Button>
             </div>

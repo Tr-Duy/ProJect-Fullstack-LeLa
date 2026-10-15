@@ -99,4 +99,36 @@ public class SrsAlgorithmStrategy {
             }
         }
     }
+
+    public void applyCram(CardProgress progress, int rating, LocalDateTime now) {
+        // Cram Mode (Ôn tập tự do):
+        // Giữ nguyên tiến trình dài hạn của SM-2, không phạt tụt interval hay lapse state
+        if (progress.getState() == CardProgressState.REVIEW) {
+            if (rating >= 3) {
+                progress.setRepetitions((progress.getRepetitions() != null ? progress.getRepetitions() : 0) + 1);
+            }
+            // Không giảm intervalDays, không đổi state về LEARNING
+        } else {
+            // Thẻ NEW hoặc LEARNING: cho phép học và chuyển tiếp bình thường
+            applySm2(progress, rating, now);
+            return;
+        }
+
+        progress.setLastReviewedAt(now);
+        progress.setLastRating(rating);
+        progress.setTotalReviews((progress.getTotalReviews() != null ? progress.getTotalReviews() : 0) + 1);
+
+        switch (rating) {
+            case 1 -> progress.setAgainCount((progress.getAgainCount() != null ? progress.getAgainCount() : 0) + 1);
+            case 2 -> progress.setHardCount((progress.getHardCount() != null ? progress.getHardCount() : 0) + 1);
+            case 3 -> {
+                progress.setGoodCount((progress.getGoodCount() != null ? progress.getGoodCount() : 0) + 1);
+                progress.setCorrectCount((progress.getCorrectCount() != null ? progress.getCorrectCount() : 0) + 1);
+            }
+            case 4 -> {
+                progress.setEasyCount((progress.getEasyCount() != null ? progress.getEasyCount() : 0) + 1);
+                progress.setCorrectCount((progress.getCorrectCount() != null ? progress.getCorrectCount() : 0) + 1);
+            }
+        }
+    }
 }

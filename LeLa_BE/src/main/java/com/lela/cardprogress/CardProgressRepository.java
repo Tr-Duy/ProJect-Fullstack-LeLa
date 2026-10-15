@@ -34,6 +34,12 @@ public interface CardProgressRepository extends JpaRepository<CardProgress, Long
     @Query("SELECT COUNT(cp) FROM CardProgress cp WHERE cp.user.id = :userId AND cp.state = :state")
     long countByUserIdAndState(@Param("userId") Long userId, @Param("state") CardProgressState state);
 
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"card"})
     @Query("SELECT cp FROM CardProgress cp WHERE cp.user.id = :userId")
     List<CardProgress> findAllByUserId(@Param("userId") Long userId);
+
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"card"})
+    @Query("SELECT cp FROM CardProgress cp WHERE cp.user.id = :userId AND cp.card.deck.id = :deckId")
+    List<CardProgress> findAllByUserIdAndDeckId(@Param("userId") Long userId, @Param("deckId") Long deckId);
 }
+

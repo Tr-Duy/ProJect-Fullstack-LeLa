@@ -157,7 +157,11 @@ public class SrsReviewServiceImpl implements SrsReviewService {
 
         int rating = request.getRating() != null ? request.getRating() : 1; // 1: AGAIN, 2: HARD, 3: GOOD, 4: EASY
         
-        srsAlgorithmStrategy.applySm2(progress, rating, now);
+        if (Boolean.TRUE.equals(request.getCramMode())) {
+            srsAlgorithmStrategy.applyCram(progress, rating, now);
+        } else {
+            srsAlgorithmStrategy.applySm2(progress, rating, now);
+        }
 
         return cardProgressRepository.save(progress);
     }

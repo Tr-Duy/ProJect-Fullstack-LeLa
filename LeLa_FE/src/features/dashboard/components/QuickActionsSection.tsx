@@ -18,7 +18,7 @@ export const QuickActionsSection: React.FC = () => {
       icon: <BookOutlined />,
       path: '/my-decks',
       bg: 'bg-[#F4F3EE]',
-      textColor: 'text-[#1D2A3A]',
+      textColor: 'text-[#2B1B0E]',
     },
     {
       label: 'Khám phá',
@@ -32,7 +32,7 @@ export const QuickActionsSection: React.FC = () => {
       icon: <HistoryOutlined />,
       path: '/my-quiz-attempts',
       bg: 'bg-[#F4F3EE]',
-      textColor: 'text-[#1D2A3A]',
+      textColor: 'text-[#2B1B0E]',
     },
     {
       label: 'Bảng xếp hạng',
@@ -45,14 +45,14 @@ export const QuickActionsSection: React.FC = () => {
       label: 'AI Tutor',
       icon: <RobotOutlined />,
       path: '/ai-chat',
-      bg: 'bg-[#1D2A3A]',
+      bg: 'bg-[#2B1B0E]',
       textColor: 'text-[#FFD700]',
     },
   ];
 
   return (
-    <div className="brutal-card brutal-shadow bg-white p-6 md:p-8 mb-8 border-[3px] border-black">
-      <h2 className="text-2xl font-black mb-6 uppercase border-b-[3px] border-black pb-3 text-[#1D2A3A]">
+    <div className="rounded-[var(--radius-card)] shadow-[var(--shadow-md)] bg-white p-6 md:p-8 mb-8 border border-[var(--border)]">
+      <h2 className="text-2xl font-black mb-6  border-b-[3px] border-[var(--border)] pb-3 text-[#2B1B0E]">
         LỐI TẮT NHANH
       </h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
@@ -60,7 +60,7 @@ export const QuickActionsSection: React.FC = () => {
           <Button
             key={act.path}
             onClick={() => navigate(act.path)}
-            className={`brutal-card h-14 font-black text-base flex items-center justify-center gap-2 px-4 ${act.bg} ${act.textColor} hover:-translate-y-1 transition-transform border-[2px] border-black shadow-[2px_2px_0px_0px_#000]`}
+            className={`rounded-[var(--radius-card)] h-14 font-black text-base flex items-center justify-center gap-2 px-4 ${act.bg} ${act.textColor} hover:-translate-y-1 transition-transform border border-[var(--border)] shadow-[var(--shadow-sm)]`}
           >
             {act.icon}
             <span>{act.label}</span>

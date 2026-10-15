@@ -3,16 +3,16 @@ import { Flame, Trophy, CheckCircle, Sparkles } from 'lucide-react';
 
 export const DailyLearningSection: React.FC = () => {
   return (
-    <section className="w-full py-20 bg-[#F4F3EE] border-b-[3px] border-black">
+    <section className="w-full py-20 bg-[#FDFBF7] border-b-2 border-black">
       <div className="mx-auto max-w-[1400px] px-6 lg:px-12">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           {/* Left Text */}
           <div className="flex flex-col items-start gap-6">
-            <span className="inline-flex items-center gap-2 bg-[#F05A4A] text-white font-black uppercase text-xs px-4 py-1.5 rounded-full border-[2px] border-black shadow-[2px_2px_0px_0px_#000]">
+            <span className="inline-flex items-center gap-2 bg-[#FF5733] text-white font-black uppercase text-xs px-4 py-1.5 rounded-full border-2 border-black shadow-[3px_3px_0px_#000]">
               <Flame className="w-4 h-4" /> THÓI QUEN MỖI NGÀY
             </span>
 
-            <h2 className="text-3xl md:text-5xl font-black uppercase text-[#1D2A3A] tracking-tight leading-tight">
+            <h2 className="text-3xl md:text-5xl font-black uppercase text-[#18181B] tracking-tight leading-tight">
               Học Một Chút Mỗi Ngày. Tiến Bộ Lâu Dài.
             </h2>
 
@@ -21,18 +21,18 @@ export const DailyLearningSection: React.FC = () => {
             </p>
 
             <div className="space-y-3 w-full">
-              <div className="flex items-center gap-3 p-4 bg-white rounded-xl border-[2px] border-black shadow-[2px_2px_0px_0px_#000]">
-                <Flame className="w-6 h-6 text-[#F05A4A] shrink-0" />
+              <div className="flex items-center gap-3 p-4 bg-white rounded-xl border-2 border-black shadow-[3px_3px_0px_0px_#000]">
+                <Flame className="w-6 h-6 text-[#FF5733] shrink-0" />
                 <div>
-                  <h4 className="font-black text-sm uppercase text-[#1D2A3A] m-0">Streak – Chuỗi ngày liên tục</h4>
+                  <h4 className="font-black text-sm uppercase text-[#18181B] m-0">Streak – Chuỗi ngày liên tục</h4>
                   <p className="text-xs text-gray-600 font-medium m-0">Tạo động lực duy trì việc học không gián đoạn.</p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 p-4 bg-white rounded-xl border-[2px] border-black shadow-[2px_2px_0px_0px_#000]">
-                <Trophy className="w-6 h-6 text-[#FFD700] shrink-0" />
+              <div className="flex items-center gap-3 p-4 bg-white rounded-xl border-2 border-black shadow-[3px_3px_0px_0px_#000]">
+                <Trophy className="w-6 h-6 text-[#EAB308] shrink-0" />
                 <div>
-                  <h4 className="font-black text-sm uppercase text-[#1D2A3A] m-0">XP & Bảng Xếp Hạng</h4>
+                  <h4 className="font-black text-sm uppercase text-[#18181B] m-0">XP & Bảng Xếp Hạng</h4>
                   <p className="text-xs text-gray-600 font-medium m-0">Tích lũy kinh nghiệm và thi đua cùng cộng đồng người học LeLa.</p>
                 </div>
               </div>
@@ -40,33 +40,33 @@ export const DailyLearningSection: React.FC = () => {
           </div>
 
           {/* Right Visual Dashboard Mock */}
-          <div className="bg-white border-[3px] border-black rounded-[28px] p-6 md:p-8 shadow-[8px_8px_0px_0px_#000] flex flex-col gap-6">
-            <div className="flex items-center justify-between border-b-[2px] border-black pb-4">
+          <div className="bg-white border-2 border-black rounded-2xl p-6 md:p-8 shadow-[5px_5px_0px_0px_#000] flex flex-col gap-6">
+            <div className="flex items-center justify-between border-b-2 border-black pb-4">
               <div>
-                <h3 className="font-black uppercase text-lg text-[#1D2A3A] m-0">Tiến độ hôm nay</h3>
+                <h3 className="font-black uppercase text-lg text-[#18181B] m-0">Tiến độ hôm nay</h3>
                 <span className="text-xs text-gray-500 font-bold">Thứ Hai, Ngày 10 Tháng 8</span>
               </div>
-              <div className="flex items-center gap-2 bg-[#FFD700] px-3 py-1.5 rounded-full border-[2px] border-black font-black text-xs">
+              <div className="flex items-center gap-2 bg-[#FDE047] px-3 py-1.5 rounded-full border-2 border-black font-black text-xs text-black">
                 <span>🔥 7 Ngày Streak</span>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div className="bg-[#F4F3EE] p-4 rounded-xl border-[2px] border-black text-center">
-                <span className="text-2xl font-black text-[#F05A4A] block">+420</span>
+              <div className="bg-[#F5F0E8] p-4 rounded-xl border-2 border-black text-center">
+                <span className="text-2xl font-black text-[#FF5733] block">+420</span>
                 <span className="text-xs font-bold text-gray-600 uppercase">XP Đã Nhận</span>
               </div>
 
-              <div className="bg-[#F4F3EE] p-4 rounded-xl border-[2px] border-black text-center">
-                <span className="text-2xl font-black text-[#2A8B9D] block">32</span>
+              <div className="bg-[#F5F0E8] p-4 rounded-xl border-2 border-black text-center">
+                <span className="text-2xl font-black text-[#0D9488] block">32</span>
                 <span className="text-xs font-bold text-gray-600 uppercase">Từ Vựng Đã Ôn</span>
               </div>
             </div>
 
-            <div className="bg-green-50 p-4 rounded-xl border-[2px] border-black flex items-center justify-between">
+            <div className="bg-green-50 p-4 rounded-xl border-2 border-black flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <CheckCircle className="w-6 h-6 text-green-600" />
-                <span className="font-bold text-sm text-[#1D2A3A]">Đã hoàn thành mục tiêu ngày!</span>
+                <span className="font-bold text-sm text-[#18181B]">Đã hoàn thành mục tiêu ngày!</span>
               </div>
               <Sparkles className="w-5 h-5 text-amber-500" />
             </div>
@@ -76,3 +76,4 @@ export const DailyLearningSection: React.FC = () => {
     </section>
   );
 };
+export default DailyLearningSection;

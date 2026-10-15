@@ -7,13 +7,24 @@ import { chatApi } from '../api/chat.api';
 import { useAuth } from '../../../shared/providers/AuthProvider';
 import type { ChatConversation } from '../types/chat.types';
 
-export const ChatWidget: React.FC = () => {
+export interface ChatWidgetProps {
+  hidden?: boolean;
+}
+
+export const ChatWidget: React.FC<ChatWidgetProps> = ({ hidden = false }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isInitializing, setIsInitializing] = useState(false);
   const { user } = useAuth();
   
   const [conversation, setConversation] = useState<ChatConversation | null>(null);
   const guestToken = localStorage.getItem('guestChatToken') || undefined;
+
+  // Listen for programmatic open trigger from AI Tutor "Hỗ trợ LeLa"
+  useEffect(() => {
+    const handleOpen = () => setIsOpen(true);
+    window.addEventListener('open-lela-support', handleOpen);
+    return () => window.removeEventListener('open-lela-support', handleOpen);
+  }, []);
 
   useEffect(() => {
     if (isOpen && !conversation) {
@@ -65,6 +76,10 @@ export const ChatWidget: React.FC = () => {
     user ? undefined : guestToken
   );
 
+  if (hidden && !isOpen) {
+    return null;
+  }
+
   return (
     <div className="fixed bottom-[calc(76px+env(safe-area-inset-bottom))] lg:bottom-[calc(16px+env(safe-area-inset-bottom))] right-4 z-30 flex flex-col items-end pointer-events-none">
       {/* Help Panel Window */}
@@ -92,12 +107,12 @@ export const ChatWidget: React.FC = () => {
         onClick={() => setIsOpen(!isOpen)}
         aria-label={isOpen ? "Đóng hộp trò chuyện" : "Mở trò chuyện hỗ trợ"}
         title="Trò chuyện hỗ trợ"
-        className="pointer-events-auto w-[52px] h-[52px] rounded-full bg-[var(--brand)] hover:bg-[var(--brand-700)] text-white shadow-[var(--shadow-md)] flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer"
+        className="pointer-events-auto w-[52px] h-[52px] rounded-full bg-[var(--brand)] hover:bg-[var(--brand-600)] text-[#2A1300] shadow-[var(--shadow-md)] flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer btn-shine"
       >
         {isOpen ? (
-          <X className="w-6 h-6 text-white shrink-0" />
+          <X className="w-6 h-6 text-[#2A1300] shrink-0" />
         ) : (
-          <MessageSquare className="w-6 h-6 text-white shrink-0" />
+          <MessageSquare className="w-6 h-6 text-[#2A1300] shrink-0" />
         )}
       </button>
     </div>

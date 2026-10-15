@@ -15,16 +15,22 @@ import { userSubscriptionsApi } from '../../subscription/api/user-subscriptions.
 
 import { SpeechBubble } from '../../../shared/components/ui/SpeechBubble';
 import { SkeletonBox } from '../../../shared/components/ui/SkeletonBox';
+import { Lela } from '../../../shared/components/ui/Lela';
 import { NextActionCard } from '../components/NextActionCard';
+import { WordOfTheDayCard } from '../components/WordOfTheDayCard';
+import { TodayMilestonesSection, type MilestoneItem } from '../components/TodayMilestonesSection';
 import { ContinueLearningCarousel } from '../components/ContinueLearningCarousel';
 import { SkillsPracticeSection } from '../components/SkillsPracticeSection';
 import { DailyGoalSidebarCard } from '../components/DailyGoalSidebarCard';
 import { LevelUpRoadmapSidebarCard } from '../components/LevelUpRoadmapSidebarCard';
 import { TopLearnersSidebarCard } from '../components/TopLearnersSidebarCard';
 import { getGreeting, formatLocalISODate } from '../../../shared/utils/dateUtils';
+import { Stagger, StaggerItem } from '../../../ui/motion/Stagger';
+import { useStreakData } from '../../gamification/hooks/useStreakData';
 
 export function LearnerDashboardPage() {
   const navigate = useNavigate();
+  const { currentStreak, weekDays } = useStreakData();
 
   const endDate = formatLocalISODate(new Date());
   const startDateObj = new Date();
@@ -53,15 +59,25 @@ export function LearnerDashboardPage() {
     return getGreeting(new Date(), rawName, (user as any)?.timezone);
   }, [rawName, user]);
 
-  // Sub-line: lower-case Vietnamese date e.g. "thứ năm, 15 tháng 10"
+  // Sub-line: lower-case Vietnamese date e.g. "thứ năm, 15 tháng 10" in user timezone
   const formattedDate = useMemo(() => {
-    const now = new Date();
-    const days = ['chủ nhật', 'thứ hai', 'thứ ba', 'thứ tư', 'thứ năm', 'thứ sáu', 'thứ bảy'];
-    const dayOfWeek = days[now.getDay()];
-    const day = now.getDate();
-    const month = now.getMonth() + 1;
-    return `${dayOfWeek}, ngày ${day} tháng ${month}`;
-  }, []);
+    const tz = (user as any)?.timezone || 'Asia/Ho_Chi_Minh';
+    try {
+      const formatter = new Intl.DateTimeFormat('vi-VN', {
+        timeZone: tz,
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+      });
+      return formatter.format(new Date()).toLowerCase();
+    } catch {
+      return new Date().toLocaleDateString('vi-VN', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+      }).toLowerCase();
+    }
+  }, [user]);
 
   // 2. Subscription status
   const { data: userSubsResp } = useQuery({
@@ -128,14 +144,14 @@ export function LearnerDashboardPage() {
     return first ? { deck: first.deck, masteredCards: first.enrollment?.masteredCards || 0 } : null;
   }, [enrolledDecksData]);
 
-  // 7. Real Flashcard for the Hero Card
+  // 7. Featured Vocabulary Cards from Current Deck
   const { data: deckCardsResp } = useQuery({
     queryKey: ['deck-cards-featured', continueDeck?.deck?.id],
-    queryFn: () => flashcardsApi.getByDeckId(continueDeck!.deck!.id, { size: 5 }),
+    queryFn: () => flashcardsApi.getByDeckId(continueDeck!.deck!.id, { size: 10 }),
     enabled: !!continueDeck?.deck?.id,
-    staleTime: 60000,
   });
   const featuredCard = deckCardsResp?.content?.[0] || null;
+  const wordOfTheDay = deckCardsResp?.content?.[1] || (deckCardsResp?.content?.length === 1 ? deckCardsResp?.content?.[0] : null);
 
   // 8. Voice Status
   const { data: voiceStatusResp } = useQuery({
@@ -163,11 +179,12 @@ export function LearnerDashboardPage() {
   const topLearners = (leaderboardResp?.data?.content as any[]) || [];
 
   // Calculated numbers
-  const streak = activityData?.data?.currentStreak || user?.streakCurrent || 0;
+  const streak = currentStreak;
   const xpToday = activityData?.data?.xpEarned || 0;
   const cardsReviewedToday = activityData?.data?.reviewCount || 0;
   const dailyGoalTarget = user?.dailyGoalCards || 20;
   const dueTodayCount = srsStats?.data?.dueTodayCount || srsStats?.data?.dueCount || 0;
+  const isGoalMet = dailyGoalTarget > 0 && cardsReviewedToday >= dailyGoalTarget;
 
   // Handlers for priority actions
   const handleStartReview = () => {
@@ -189,6 +206,45 @@ export function LearnerDashboardPage() {
   const handleStartQuiz = () => {
     navigate('/quizzes?category=LEVEL_UP');
   };
+
+  // Milestones for "Chặng hôm nay"
+  const milestones: MilestoneItem[] = useMemo(() => [
+    {
+      id: 'due-review',
+      title: 'Ôn tập thẻ đến hạn',
+      subtitle: dueTodayCount > 0 ? `Còn ${dueTodayCount} thẻ cần củng cố hôm nay` : 'Tuyệt vời, bạn đã hoàn thành thẻ đến hạn!',
+      isCompleted: dueTodayCount === 0,
+      actionText: 'Ôn ngay',
+      onAction: handleStartReview,
+    },
+    {
+      id: 'daily-goal',
+      title: 'Chạm chỉ tiêu từ vựng ngày',
+      subtitle: `${cardsReviewedToday}/${dailyGoalTarget} từ vựng đã ôn luyện`,
+      isCompleted: isGoalMet,
+      actionText: 'Học tiếp',
+      onAction: handleLearnNew,
+    },
+    {
+      id: 'voice-practice',
+      title: 'Luyện phản xạ hội thoại AI',
+      subtitle: voiceStatus?.unlocked
+        ? (isFreeUser ? `Dùng thử ${voiceStatus.remainingQuota}/${voiceStatus.maxSessionsPerDay} buổi` : `Còn ${voiceStatus.remainingQuota} lượt hôm nay`)
+        : 'Cần thêm từ vựng để mở khóa',
+      isCompleted: voiceStatus ? (voiceStatus.maxSessionsPerDay - voiceStatus.remainingQuota > 0) : false,
+      badge: 'AI',
+      actionText: 'Nói ngay',
+      onAction: handleStartVoiceAI,
+    },
+    {
+      id: 'level-up',
+      title: 'Thử thách nâng Level TOEIC',
+      subtitle: `Lộ trình mục tiêu: ${levelName}`,
+      isCompleted: false,
+      actionText: 'Kiểm tra',
+      onAction: handleStartQuiz,
+    },
+  ], [dueTodayCount, cardsReviewedToday, dailyGoalTarget, isGoalMet, voiceStatus, isFreeUser, levelName]);
 
   if (isProfileLoading) {
     return (
@@ -212,10 +268,10 @@ export function LearnerDashboardPage() {
   }
 
   return (
-    <div className="max-w-[1240px] mx-auto p-4 sm:p-6 lg:p-8 space-y-8 animate-friendly-enter">
+    <div className="max-w-[1240px] mx-auto p-4 sm:p-6 lg:p-8 space-y-8">
       {/* Error Notice */}
       {isProfileError && (
-        <div className="p-4 bg-[var(--danger-50)] border border-[var(--danger)]/30 rounded-[16px] text-[var(--danger)] text-sm font-semibold flex justify-between items-center">
+        <div className="p-4 bg-[var(--danger-50)] border border-[var(--danger)]/30 rounded-[16px] text-[var(--danger)] text-sm font-semibold flex justify-between items-center shadow-xs">
           <span>Không thể đồng bộ dữ liệu mới nhất. Vui lòng thử lại.</span>
           <Button
             icon={<ReloadOutlined />}
@@ -227,18 +283,25 @@ export function LearnerDashboardPage() {
         </div>
       )}
 
-      {/* Row 0: Friendly Greeting with Speech Bubble */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+      {/* Row 0: Friendly Greeting with Lela Mascot & Speech Bubble */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <SpeechBubble variant="brand" tail="bottom-left">
-            <span>{greeting.text}</span>
-          </SpeechBubble>
-          <span className="text-xs text-[var(--text-3)] font-normal hidden sm:inline">
-            {formattedDate}
-          </span>
+          <Lela
+            mood={greeting.mood === 'sleepy' ? 'sleepy' : isGoalMet ? 'happy' : 'idle'}
+            size={56}
+            className="shrink-0"
+          />
+          <div>
+            <SpeechBubble variant="brand" tail="bottom-left">
+              <span>{greeting.text}</span>
+            </SpeechBubble>
+            <div className="text-xs text-[var(--text-3)] font-normal mt-1 pl-1 hidden sm:block">
+              {formattedDate}
+            </div>
+          </div>
         </div>
 
-        <span className="text-xs text-[var(--text-3)] sm:hidden">
+        <span className="text-xs text-[var(--text-3)] sm:hidden pl-1">
           {formattedDate}
         </span>
       </div>
@@ -249,59 +312,97 @@ export function LearnerDashboardPage() {
             MAIN COLUMN (8 COLS)
             ========================================================================= */}
         <div className="lg:col-span-8 space-y-8 min-w-0">
-          {/* 1. Next Priority Action Card ("Việc tiếp theo" with Real Vocab Card) */}
-          <NextActionCard
-            dueTodayCount={dueTodayCount}
-            dailyGoalTarget={dailyGoalTarget}
-            cardsReviewedToday={cardsReviewedToday}
-            featuredCard={featuredCard}
-            onStartReview={handleStartReview}
-            onLearnNew={handleLearnNew}
-            onStartVoiceAI={handleStartVoiceAI}
-            onStartQuiz={handleStartQuiz}
-            hasVoiceQuota={voiceStatus?.unlocked && (voiceStatus?.remainingQuota ?? 0) > 0}
-          />
+          <Stagger staggerMs={70} className="space-y-8">
+            {/* 1. Next Priority Action Card ("Việc tiếp theo" with Real Vocab Card) */}
+            <StaggerItem>
+              <NextActionCard
+                dueTodayCount={dueTodayCount}
+                dailyGoalTarget={dailyGoalTarget}
+                cardsReviewedToday={cardsReviewedToday}
+                featuredCard={featuredCard}
+                onStartReview={handleStartReview}
+                onLearnNew={handleLearnNew}
+                onStartVoiceAI={handleStartVoiceAI}
+                onStartQuiz={handleStartQuiz}
+                hasVoiceQuota={voiceStatus?.unlocked && (voiceStatus?.remainingQuota ?? 0) > 0}
+              />
+            </StaggerItem>
 
-          {/* 2. "Học tiếp": Horizontal Carousel of Enrolled Decks */}
-          <ContinueLearningCarousel
-            enrolledDecks={enrolledDecksData}
-            isLoading={isLoadingEnrollments}
-          />
+            {/* 2. "Chặng hôm nay": Micro-Milestones Checklist */}
+            <StaggerItem>
+              <TodayMilestonesSection milestones={milestones} />
+            </StaggerItem>
 
-          {/* 3. "Luyện kỹ năng": 3 Distinct Practice Cards */}
-          <SkillsPracticeSection
-            voiceStatus={voiceStatus}
-            isFreeUser={isFreeUser}
-          />
+            {/* 3. "Từ của hôm nay" (Word of the Day - if card exists) */}
+            {wordOfTheDay && (
+              <StaggerItem>
+                <WordOfTheDayCard
+                  card={wordOfTheDay}
+                  onExplore={() => {
+                    if (continueDeck?.deck?.id) {
+                      navigate(`/decks/${continueDeck.deck.id}`);
+                    }
+                  }}
+                />
+              </StaggerItem>
+            )}
+
+            {/* 4. "Học tiếp": Horizontal Carousel of Enrolled Decks */}
+            <StaggerItem>
+              <ContinueLearningCarousel
+                enrolledDecks={enrolledDecksData}
+                isLoading={isLoadingEnrollments}
+              />
+            </StaggerItem>
+
+            {/* 5. "Phòng luyện kỹ năng": 3 Distinct Practice Cards with custom SVGs */}
+            <StaggerItem>
+              <SkillsPracticeSection
+                voiceStatus={voiceStatus}
+                isFreeUser={isFreeUser}
+              />
+            </StaggerItem>
+          </Stagger>
         </div>
 
         {/* =========================================================================
             SIDEBAR COLUMN (4 COLS)
             ========================================================================= */}
         <div className="lg:col-span-4 space-y-6 min-w-0">
-          {/* 4. Mục tiêu hôm nay: 140px Ring, 7 Weekday Dots, XP & Streak single-line */}
-          <DailyGoalSidebarCard
-            cardsReviewedToday={cardsReviewedToday}
-            dailyGoalTarget={dailyGoalTarget}
-            xpToday={xpToday}
-            currentStreak={streak}
-            historyData={historyData?.data}
-          />
+          <Stagger staggerMs={80} className="space-y-6">
+            {/* 6. Mục tiêu hôm nay: 140px Ring, 7 Weekday Dots, XP & Streak with CountUp */}
+            <StaggerItem>
+              <DailyGoalSidebarCard
+                cardsReviewedToday={cardsReviewedToday}
+                dailyGoalTarget={dailyGoalTarget}
+                xpToday={xpToday}
+                currentStreak={streak}
+                historyData={historyData?.data}
+                weekDays={weekDays}
+              />
+            </StaggerItem>
 
-          {/* 5. Lộ trình lên Level: TOEIC band, 10 connected dots, cooldown */}
-          <LevelUpRoadmapSidebarCard
-            levelName={levelName}
-            quizzes={levelUpQuizzes}
-          />
+            {/* 7. Lộ trình lên Level: TOEIC band, 10 connected dots, cooldown */}
+            <StaggerItem>
+              <LevelUpRoadmapSidebarCard
+                levelName={levelName}
+                quizzes={levelUpQuizzes}
+              />
+            </StaggerItem>
 
-          {/* 6. Bảng xếp hạng thu gọn: Top 3 + Pinned current user row */}
-          <TopLearnersSidebarCard
-            learners={topLearners}
-            currentUserId={user?.id}
-            currentUserXp={user?.xpTotal || 0}
-          />
+            {/* 8. Bảng xếp hạng thu gọn: Top 3 + Pinned current user row */}
+            <StaggerItem>
+              <TopLearnersSidebarCard
+                learners={topLearners}
+                currentUserId={user?.id}
+                currentUserXp={user?.xpTotal || 0}
+              />
+            </StaggerItem>
+          </Stagger>
         </div>
       </div>
     </div>
   );
 }
+
+export default LearnerDashboardPage;

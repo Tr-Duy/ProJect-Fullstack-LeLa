@@ -46,10 +46,10 @@ Quy tắc đối thoại:
   };
 
   return (
-    <div className="bg-white brutal-card brutal-shadow p-6 border-[3px] border-black rounded-2xl">
-      <div className="flex items-center gap-2 border-b-[3px] border-black pb-3 mb-6">
+    <div className="bg-white rounded-[var(--radius-card)] shadow-[var(--shadow-md)] p-6 border border-[var(--border)] rounded-2xl">
+      <div className="flex items-center gap-2 border-b-[3px] border-[var(--border)] pb-3 mb-6">
         <MessageOutlined className="text-2xl text-[#F05A4A]" />
-        <h2 className="text-xl font-black uppercase text-[#1D2A3A] m-0">
+        <h2 className="text-xl font-bold text-[#2B1B0E] m-0">
           LUYỆN HỘI THOẠI TƯƠNG TÁC (ROLEPLAY TUTOR)
         </h2>
       </div>
@@ -57,7 +57,7 @@ Quy tắc đối thoại:
       <div className="space-y-6">
         {/* Topic Selection */}
         <div>
-          <label className="text-xs font-bold uppercase text-gray-500 block mb-3">
+          <label className="text-xs font-bold text-gray-500 block mb-3">
             1. CHỌN CHỦ ĐỀ HỘI THOẠI:
           </label>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
@@ -65,13 +65,13 @@ Quy tắc đối thoại:
               <div
                 key={t.id}
                 onClick={() => setSelectedTopic(t.id)}
-                className={`p-4 rounded-xl border-[2px] border-black cursor-pointer transition-all ${
+                className={`p-4 rounded-xl border border-[var(--border)] cursor-pointer transition-all ${
                   selectedTopic === t.id
-                    ? 'bg-[#FFD700] shadow-[3px_3px_0px_0px_#000] scale-102'
+                    ? 'bg-[#FFD700] shadow-[var(--shadow-sm)] scale-102'
                     : 'bg-[#F4F3EE] hover:bg-gray-100'
                 }`}
               >
-                <div className="font-black text-[#1D2A3A] text-base mb-1">{t.label}</div>
+                <div className="font-black text-[#2B1B0E] text-base mb-1">{t.label}</div>
                 <div className="text-xs font-medium text-gray-600">{t.desc}</div>
               </div>
             ))}
@@ -80,7 +80,7 @@ Quy tắc đối thoại:
 
         {/* Level Selection */}
         <div>
-          <label className="text-xs font-bold uppercase text-gray-500 block mb-3">
+          <label className="text-xs font-bold text-gray-500 block mb-3">
             2. CHỌN TRÌNH ĐỘ ĐỐI THOẠI:
           </label>
           <div className="flex flex-wrap gap-3">
@@ -89,10 +89,10 @@ Quy tắc đối thoại:
                 key={l.id}
                 type="button"
                 onClick={() => setSelectedLevel(l.id)}
-                className={`px-5 py-2.5 rounded-full border-[2px] border-black font-bold text-sm transition-all ${
+                className={`px-5 py-2.5 rounded-full border border-[var(--border)] font-bold text-sm transition-all ${
                   selectedLevel === l.id
-                    ? 'bg-[#2A8B9D] text-white shadow-[2px_2px_0px_0px_#000]'
-                    : 'bg-[#F4F3EE] text-[#1D2A3A] hover:bg-gray-200'
+                    ? 'bg-[#2A8B9D] text-white shadow-[var(--shadow-sm)]'
+                    : 'bg-[#F4F3EE] text-[#2B1B0E] hover:bg-gray-200'
                 }`}
               >
                 {l.label}
@@ -106,7 +106,7 @@ Quy tắc đối thoại:
           <Button
             onClick={handleStart}
             icon={<PlayCircleOutlined />}
-            className="w-full brutal-pill border-[2px] border-black font-black uppercase text-white bg-[#F05A4A] hover:!bg-[#d94f41] h-14 text-lg shadow-[4px_4px_0px_0px_#000] flex items-center justify-center gap-2"
+            className="w-full brutal-pill border border-[var(--border)] font-black text-white bg-[#F05A4A] hover:!bg-[#d94f41] h-14 text-lg shadow-[var(--shadow-sm)] flex items-center justify-center gap-2"
           >
             ▶ BẮT ĐẦU HỘI THOẠI VỚI AI TUTOR
           </Button>

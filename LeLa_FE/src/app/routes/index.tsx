@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { ProtectedRoute } from './ProtectedRoute';
 import { LearnerLayout } from '../../shared/components/layout/LearnerLayout';
 import { AdminLayout } from '../../shared/components/layout/AdminLayout';
@@ -52,7 +52,7 @@ const Unauthorized = () => <div className="min-h-screen flex items-center justif
 
 const PageLoader = () => (
   <div className="min-h-[50vh] flex items-center justify-center">
-    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-geist-blue-500"></div>
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--brand-100)]"></div>
   </div>
 );
 
@@ -81,16 +81,20 @@ export function AppRoutes() {
           <Route path="/final-level-tests" element={<FinalLevelAssessmentPage />} />
           <Route path="/quizzes" element={<QuizzesPage />} />
           <Route path="/my-decks" element={<MyDecksPage />} />
-          <Route path="/study/:deckId" element={<StudyPage />} />
+          <Route path="/study/:deckId" element={<StudyPage />} handle={{ fitViewport: true }} />
           <Route path="/typing-game" element={<TypingGamePage />} />
-          <Route path="/voice-conversation" element={<VoiceConversationPage />} />
+          <Route path="/voice-conversation" element={<VoiceConversationPage />} handle={{ fitViewport: true }} />
           <Route path="/quiz/:quizId/start" element={<QuizAttemptPage />} />
           <Route path="/quiz-attempts/:publicId" element={<QuizAttemptPage />} />
           <Route path="/quiz-attempts/:publicId/result" element={<QuizAttemptResultPage />} />
           <Route path="/my-quiz-attempts" element={<MyQuizAttemptsPage />} />
           <Route path="/leaderboard" element={<LeaderboardPage />} />
           <Route path="/achievements" element={<LearnerAchievementsPage />} />
-          <Route path="/ai-chat" element={<AiChatPage />} />
+          <Route path="/ai-chat" element={<AiChatPage />} handle={{ fitViewport: true }} />
+          <Route path="/ai-tutor" element={<Navigate to="/ai-chat" replace />} />
+          <Route path="/placement-test" element={<Navigate to="/placement-tests" replace />} />
+          <Route path="/level-exam" element={<Navigate to="/final-level-tests" replace />} />
+          <Route path="/explore" element={<Navigate to="/decks" replace />} />
           <Route path="/profile" element={<ProfilePage />} />
         </Route>
       </Route>

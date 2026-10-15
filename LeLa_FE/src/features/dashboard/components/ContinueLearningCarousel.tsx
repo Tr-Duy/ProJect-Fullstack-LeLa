@@ -5,11 +5,60 @@ import { TopicChip } from '../../../shared/components/ui/TopicChip';
 import { SegmentedProgress } from '../../../shared/components/ui/SegmentedProgress';
 import { EmptyState } from '../../../shared/components/ui/EmptyState';
 import { SkeletonBox } from '../../../shared/components/ui/SkeletonBox';
+import { Pressable } from '../../../ui/motion/Pressable';
 import type { DeckResponse } from '../../../shared/types/lela';
 
 interface ContinueLearningCarouselProps {
   enrolledDecks: { deck: DeckResponse; enrollment: any }[];
   isLoading: boolean;
+}
+
+function getTopicSvg(topicName?: string) {
+  const t = topicName?.toLowerCase() || '';
+  if (t.includes('travel') || t.includes('du lịch')) {
+    // Suitcase SVG
+    return (
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0D9488" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect width="20" height="14" x="2" y="7" rx="3" />
+        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+      </svg>
+    );
+  }
+  if (t.includes('office') || t.includes('văn phòng')) {
+    // Desk / Briefcase
+    return (
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#B45309" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="2" y="7" width="20" height="14" rx="2" />
+        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+      </svg>
+    );
+  }
+  if (t.includes('daily') || t.includes('đời sống')) {
+    // House
+    return (
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#BE185D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+        <polyline points="9 22 9 12 15 12 15 22" />
+      </svg>
+    );
+  }
+  if (t.includes('food') || t.includes('ẩm thực') || t.includes('nhà hàng')) {
+    // Utensils / plate
+    return (
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#C2410C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M18 2v20M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm-15 7V2M3 2v6a3 3 0 0 0 6 0V2" />
+      </svg>
+    );
+  }
+  // Default Business: Coffee cup / laptop
+  return (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#8B2500" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17 8h1a4 4 0 1 1 0 8h-1M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z" />
+      <line x1="6" x2="6" y1="2" y2="4" />
+      <line x1="10" x2="10" y1="2" y2="4" />
+      <line x1="14" x2="14" y1="2" y2="4" />
+    </svg>
+  );
 }
 
 export const ContinueLearningCarousel: React.FC<ContinueLearningCarouselProps> = ({
@@ -43,7 +92,7 @@ export const ContinueLearningCarousel: React.FC<ContinueLearningCarouselProps> =
           <h3 className="font-display font-bold text-xl text-[var(--text)] tracking-tight">
             Bộ thẻ đang học
           </h3>
-          <p className="text-xs text-[var(--text-3)]">
+          <p className="text-xs text-[var(--text-3)] mt-0.5">
             Duy trì tiến độ học tập hàng ngày
           </p>
         </div>
@@ -52,9 +101,10 @@ export const ContinueLearningCarousel: React.FC<ContinueLearningCarouselProps> =
           <button
             type="button"
             onClick={() => navigate('/my-decks')}
-            className="text-xs font-semibold text-[var(--brand)] hover:text-[var(--brand-700)] flex items-center gap-1 transition-colors cursor-pointer"
+            className="text-xs font-semibold text-[var(--brand-700)] hover:text-[var(--brand)] flex items-center gap-1 transition-colors cursor-pointer"
           >
-            Xem tất cả ({enrolledDecks.length}) <RightOutlined className="text-[10px]" />
+            <span>Xem tất cả ({enrolledDecks.length})</span>
+            <RightOutlined className="text-[10px]" />
           </button>
         )}
       </div>
@@ -77,10 +127,10 @@ export const ContinueLearningCarousel: React.FC<ContinueLearningCarouselProps> =
             const dueCount = enrollment?.dueCount || 0;
 
             return (
-              <div
+              <Pressable
                 key={deck.id}
                 onClick={() => navigate(`/study/${deck.id}`)}
-                className="bg-[var(--surface)] rounded-[20px] p-4 border border-[var(--border)] shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-md)] hover:-translate-y-1 transition-all duration-200 flex flex-col justify-between cursor-pointer group"
+                className="bg-[var(--surface)] rounded-[20px] p-4 border border-[var(--border)] shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-md)] flex flex-col justify-between cursor-pointer group"
               >
                 <div>
                   {/* Deck Cover Image (16:10 ratio, radius 16px) */}
@@ -93,10 +143,13 @@ export const ContinueLearningCarousel: React.FC<ContinueLearningCarouselProps> =
                       />
                     ) : (
                       <div className="w-full h-full flex flex-col items-center justify-center p-3 text-center bg-gradient-to-br from-[var(--brand-50)] to-[var(--surface-2)]">
-                        <span className="font-display font-bold text-lg text-[var(--brand-700)] line-clamp-1">
+                        <div className="w-12 h-12 rounded-full bg-white/80 shadow-xs flex items-center justify-center mb-1.5">
+                          {getTopicSvg(deck.topic?.name)}
+                        </div>
+                        <span className="font-display font-bold text-sm text-[var(--text)] line-clamp-1">
                           {deck.title}
                         </span>
-                        <span className="text-[11px] text-[var(--text-3)] mt-1">
+                        <span className="text-[11px] text-[var(--text-3)]">
                           {totalCards} từ vựng
                         </span>
                       </div>
@@ -125,9 +178,9 @@ export const ContinueLearningCarousel: React.FC<ContinueLearningCarouselProps> =
                 <div className="pt-3 border-t border-[var(--border)] space-y-2">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-[var(--text-3)]">
-                      Đã thuộc {masteredCards}/{totalCards} từ
+                      Đã thuộc <strong className="text-[var(--brand-700)]">{masteredCards}</strong>/{totalCards} từ
                     </span>
-                    <span className="font-semibold text-[var(--brand)] group-hover:translate-x-0.5 transition-transform inline-flex items-center gap-1 text-xs">
+                    <span className="font-semibold text-[var(--brand-700)] group-hover:translate-x-0.5 transition-transform inline-flex items-center gap-1 text-xs">
                       Học tiếp <ArrowRightOutlined className="text-[10px]" />
                     </span>
                   </div>
@@ -142,7 +195,7 @@ export const ContinueLearningCarousel: React.FC<ContinueLearningCarouselProps> =
                     height={6}
                   />
                 </div>
-              </div>
+              </Pressable>
             );
           })}
         </div>
@@ -150,3 +203,5 @@ export const ContinueLearningCarousel: React.FC<ContinueLearningCarouselProps> =
     </div>
   );
 };
+
+export default ContinueLearningCarousel;

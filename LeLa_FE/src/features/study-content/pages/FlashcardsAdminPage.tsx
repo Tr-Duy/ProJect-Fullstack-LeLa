@@ -61,13 +61,13 @@ function SortableRow({ card, openModal, deleteMutation, onManualReorder }: any) 
           <GripVertical className="w-4 h-4" />
         </button>
       </td>
-      <td className="px-4 py-3 font-mono text-geist-gray-900">{card.id}</td>
+      <td className="px-4 py-3 font-sans text-geist-gray-900">{card.id}</td>
       <td className="px-4 py-3">
         <input 
           type="number" 
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
-          className="w-16 h-7 px-2 text-xs border border-geist-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-geist-blue-500 bg-transparent"
+          className="w-16 h-7 px-2 text-xs border border-geist-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-[var(--brand)] bg-transparent"
           onBlur={() => {
             const val = parseInt(inputValue, 10);
             if (!isNaN(val) && val !== card.cardOrder) {
@@ -593,12 +593,12 @@ export function FlashcardsAdminPage() {
               <label className="text-sm font-medium text-geist-gray-1000">Từ vựng (Mặt trước)</label>
               <textarea
                 {...register('frontText', { required: true })}
-                className="flex w-full resize-none rounded-md border border-geist-gray-400 bg-transparent px-3 py-2 text-sm text-geist-gray-1000 focus:outline-none focus:ring-2 focus:ring-geist-blue-700 hover:border-geist-gray-600 transition-colors"
+                className="flex w-full resize-none rounded-md border border-geist-gray-400 bg-transparent px-3 py-2 text-sm text-geist-gray-1000 focus:outline-none focus:ring-2 focus:ring-[var(--brand)] hover:border-geist-gray-600 transition-colors"
                 rows={2}
               />
               {errors.frontText && <span className="text-xs text-geist-red-800">Bắt buộc</span>}
               <div className="flex gap-2 pt-1">
-                <button type="button" onClick={handleLookup} disabled={isDictionaryLoading} className="text-geist-gray-600 hover:text-geist-blue-700 flex items-center text-xs gap-1 border border-geist-gray-300 hover:border-geist-blue-400 bg-geist-bg-100 rounded px-3 py-1.5 transition-colors">
+                <button type="button" onClick={handleLookup} disabled={isDictionaryLoading} className="text-geist-gray-600 hover:text-[var(--brand-700)] flex items-center text-xs gap-1 border border-geist-gray-300 hover:border-[var(--brand-100)] bg-geist-bg-100 rounded px-3 py-1.5 transition-colors">
                   <Wand2 className="w-3 h-3" />
                   {isDictionaryLoading ? 'Đang tra...' : 'Tự động tra & Dịch'}
                 </button>
@@ -609,14 +609,14 @@ export function FlashcardsAdminPage() {
               <label className="text-sm font-medium text-geist-gray-1000">Ý nghĩa (Mặt sau)</label>
               <textarea
                 {...register('backText', { required: true })}
-                className="flex w-full resize-none rounded-md border border-geist-gray-400 bg-transparent px-3 py-2 text-sm text-geist-gray-1000 focus:outline-none focus:ring-2 focus:ring-geist-blue-700 hover:border-geist-gray-600 transition-colors"
+                className="flex w-full resize-none rounded-md border border-geist-gray-400 bg-transparent px-3 py-2 text-sm text-geist-gray-1000 focus:outline-none focus:ring-2 focus:ring-[var(--brand)] hover:border-geist-gray-600 transition-colors"
                 rows={2}
               />
               {errors.backText && <span className="text-xs text-geist-red-800">Bắt buộc</span>}
             </div>
 
             <div className="pt-6 border-t border-geist-gray-300">
-              <h4 className="text-xs font-semibold text-geist-gray-600 uppercase tracking-widest mb-4">Thông tin mở rộng</h4>
+              <h4 className="text-xs font-semibold text-geist-gray-600  mb-4">Thông tin mở rộng</h4>
 
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div className="space-y-2">
@@ -627,7 +627,7 @@ export function FlashcardsAdminPage() {
                   <label className="text-sm font-medium text-geist-gray-1000">Câu ví dụ</label>
                   <textarea
                     {...register('exampleText')}
-                    className="flex w-full resize-none rounded-md border border-geist-gray-400 bg-transparent px-3 py-2 text-sm text-geist-gray-1000 focus:outline-none focus:ring-2 focus:ring-geist-blue-700 hover:border-geist-gray-600 transition-colors"
+                    className="flex w-full resize-none rounded-md border border-geist-gray-400 bg-transparent px-3 py-2 text-sm text-geist-gray-1000 focus:outline-none focus:ring-2 focus:ring-[var(--brand)] hover:border-geist-gray-600 transition-colors"
                     rows={2}
                   />
                 </div>
@@ -660,7 +660,7 @@ export function FlashcardsAdminPage() {
                     {CARD_COLORS.map(c => (
                       <label key={c.value} htmlFor={`color-${c.label}`} className="cursor-pointer">
                         <input id={`color-${c.label}`} type="radio" value={c.value} {...register('cardColor')} className="sr-only" />
-                        <div className={`w-10 h-10 rounded-full ${c.value} ${watch('cardColor') === c.value ? 'ring-2 ring-offset-2 ring-geist-blue-500 scale-105 opacity-100 z-10 relative shadow-sm' : 'border border-geist-gray-200 opacity-60 hover:opacity-100 hover:scale-105'} transition-all duration-200`} title={c.label}></div>
+                        <div className={`w-10 h-10 rounded-full ${c.value} ${watch('cardColor') === c.value ? 'ring-2 ring-offset-2 ring-[var(--brand)] scale-105 opacity-100 z-10 relative shadow-sm' : 'border border-geist-gray-200 opacity-60 hover:opacity-100 hover:scale-105'} transition-all duration-200`} title={c.label}></div>
                       </label>
                     ))}
                   </div>
@@ -674,7 +674,7 @@ export function FlashcardsAdminPage() {
                     {tagsData?.data?.content?.map(tag => {
                       const isSelected = watch('tagIds')?.includes(tag.id as any) || watch('tagIds')?.includes(String(tag.id) as any);
                       return (
-                        <label key={tag.id} className={`flex items-center gap-2 cursor-pointer px-3 py-1.5 rounded-full border text-xs font-medium transition-colors ${isSelected ? 'bg-geist-blue-100 border-geist-blue-300 text-geist-blue-800' : 'bg-geist-gray-100 border-geist-gray-300 text-geist-gray-700 hover:bg-geist-gray-200 hover:border-geist-gray-400'}`}>
+                        <label key={tag.id} className={`flex items-center gap-2 cursor-pointer px-3 py-1.5 rounded-full border text-xs font-medium transition-colors ${isSelected ? 'bg-[var(--brand-50)] border-[var(--brand-100)] text-[var(--brand-700)]' : 'bg-geist-gray-100 border-geist-gray-300 text-geist-gray-700 hover:bg-geist-gray-200 hover:border-geist-gray-400'}`}>
                           <input type="checkbox" value={tag.id} {...register('tagIds')} className="sr-only" />
                           <span>{tag.name}</span>
                         </label>
@@ -699,7 +699,7 @@ export function FlashcardsAdminPage() {
                             }
                           }}
                         />
-                        <button type="button" onClick={handleCreateTag} disabled={createTagMutation.isPending || !newTagName.trim()} className="p-1 text-geist-blue-600 hover:bg-geist-blue-100 rounded-full disabled:opacity-50">
+                        <button type="button" onClick={handleCreateTag} disabled={createTagMutation.isPending || !newTagName.trim()} className="p-1 text-[var(--brand-700)] hover:bg-[var(--brand-50)] rounded-full disabled:opacity-50">
                           <Plus className="w-3 h-3" />
                         </button>
                       </div>
@@ -720,7 +720,7 @@ export function FlashcardsAdminPage() {
               <label className="flex items-center gap-2 cursor-pointer p-3 border border-geist-gray-300 rounded-md bg-geist-bg-100 hover:bg-geist-gray-100/50 transition-colors">
                 <input 
                   type="checkbox" 
-                  className="w-4 h-4 rounded border-geist-gray-400 text-geist-blue-700 focus:ring-geist-blue-700 bg-transparent"
+                  className="w-4 h-4 rounded border-geist-gray-400 text-[var(--brand-700)] focus:ring-[var(--brand)] bg-transparent"
                   {...register('isActive')}
                 />
                 <div className="flex flex-col">
@@ -734,7 +734,7 @@ export function FlashcardsAdminPage() {
 
           {/* Live Preview Column */}
           <div className="hidden lg:flex flex-col items-center justify-center p-8 bg-geist-gray-100 rounded-xl relative overflow-hidden lg:col-span-5 xl:col-span-4 sticky top-8 self-start">
-            <h3 className="text-sm font-bold text-geist-gray-600 uppercase tracking-widest mb-6">Mô phỏng (Live Preview)</h3>
+            <h3 className="text-sm font-bold text-geist-gray-600  tracking-normal mb-6">Mô phỏng (Live Preview)</h3>
             <div
               className="relative w-full max-w-[340px] aspect-[3/4] cursor-pointer group"
               style={{ perspective: '1000px' }}
@@ -750,28 +750,28 @@ export function FlashcardsAdminPage() {
                       <Volume2 className="w-4 h-4" />
                     </button>
                   </div>
-                  <div className="text-[11px] font-semibold text-[#8f8f8f] mb-auto tracking-[0.2em] uppercase mt-2">Vocabulary</div>
+                  <div className="text-[11px] font-semibold text-[#8f8f8f] mb-auto   mt-2">Vocabulary</div>
                   <div className="text-4xl font-semibold tracking-tight text-[#171717] mb-2 break-words w-full">{watch('frontText') || 'Từ vựng'}</div>
                   {watch('phonetic') && <div className="text-base font-normal text-[#4d4d4d] mb-4">{watch('phonetic')}</div>}
                   <div className="text-xs font-medium text-[#8f8f8f] mt-auto flex items-center gap-1 opacity-60">
                     <Wand2 className="w-3 h-3" /> Chạm để lật
                   </div>
                 </div>
-                <div className={`absolute inset-0 rounded-2xl overflow-hidden ${watch('cardColor') || 'bg-geist-gray-100'} border border-black/5 shadow-sm flex flex-col items-center justify-center text-center`} style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}>
+                <div className={`absolute inset-0 rounded-2xl overflow-hidden ${watch('cardColor') || 'bg-geist-gray-100'} border border-[var(--border)]/5 shadow-sm flex flex-col items-center justify-center text-center`} style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}>
                   {watch('frontImageUrl') ? (
                     <>
-                      <div className="w-full h-[55%] relative border-b border-black/10">
+                      <div className="w-full h-[55%] relative border-b border-[var(--border)]/10">
                         <img src={watch('frontImageUrl')} alt="Flashcard" className="w-full h-full object-cover" loading="lazy" />
                       </div>
                       <div className="w-full h-[45%] flex flex-col items-center justify-center p-4 relative">
-                        <div className="text-[11px] font-semibold text-white/80 mb-2 tracking-[0.2em] uppercase mt-2">Meaning</div>
+                        <div className="text-[11px] font-semibold text-white/80 mb-2   mt-2">Meaning</div>
                         <div className="text-2xl font-semibold tracking-tight text-white mb-2 break-words w-full">{watch('backText') || 'Ý nghĩa'}</div>
                         {watch('hint') && <div className="text-[11px] font-medium text-white/90 bg-black/10 border border-white/20 px-3 py-1.5 rounded-full mt-auto mb-2 backdrop-blur-sm">Gợi ý: {watch('hint')}</div>}
                       </div>
                     </>
                   ) : (
                     <div className="w-full h-full p-8 flex flex-col items-center justify-center relative">
-                      <div className="text-[11px] font-semibold text-white/80 mb-auto tracking-[0.2em] uppercase mt-2">Meaning</div>
+                      <div className="text-[11px] font-semibold text-white/80 mb-auto   mt-2">Meaning</div>
                       <div className="text-3xl font-semibold tracking-tight text-white mb-2 break-words w-full">{watch('backText') || 'Ý nghĩa'}</div>
                       <div className="mt-auto flex flex-col items-center justify-end min-h-[40px] w-full">
                         {watch('hint') && <div className="text-[11px] font-medium text-white/90 bg-black/10 border border-white/20 px-4 py-1.5 rounded-full backdrop-blur-sm w-fit max-w-full truncate">Gợi ý: {watch('hint')}</div>}
@@ -835,7 +835,7 @@ export function FlashcardsAdminPage() {
                 {pixabayResults.map((img: any) => (
                   <div
                     key={img.id}
-                    className="relative aspect-video cursor-pointer overflow-hidden rounded-md border border-geist-gray-300 hover:border-geist-blue-700 hover:ring-2 hover:ring-geist-blue-300 transition-all group"
+                    className="relative aspect-video cursor-pointer overflow-hidden rounded-md border border-geist-gray-300 hover:border-[var(--brand-100)] hover:ring-2 hover:ring-[var(--brand-100)] transition-all group"
                     onClick={() => selectPixabayImage(img.webformatURL)}
                   >
                     <img src={img.previewURL} alt={img.tags} className="w-full h-full object-cover" loading="lazy" />

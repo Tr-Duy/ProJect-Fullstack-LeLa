@@ -186,14 +186,14 @@ export function QuizAttemptPage() {
     <div className="min-h-screen bg-[#F4F3EE] p-4 md:p-8">
       <div className="max-w-3xl mx-auto">
         <div className="flex justify-between items-center mb-8 flex-wrap gap-4">
-          <Button onClick={() => navigate(-1)} className="brutal-border font-bold h-12 px-6 shadow-[2px_2px_0px_0px_#000] hover:-translate-y-1 transition-transform">
+          <Button onClick={() => navigate(-1)} className="border border-[var(--border)] font-bold h-12 px-6 shadow-[var(--shadow-sm)] hover:-translate-y-1 transition-transform">
             &larr; THOÁT
           </Button>
-          <div className="text-xl font-bold brutal-border bg-white px-6 py-2 shadow-[2px_2px_0px_0px_#000] border-[3px]">
+          <div className="text-xl font-bold border border-[var(--border)] bg-white px-6 py-2 shadow-[var(--shadow-sm)] border-[3px]">
             Câu {currentQuestionIndex + 1} / {totalQuestions}
           </div>
           {timeLeft !== null && (
-            <div className={`text-xl font-black brutal-border bg-white px-6 py-2 shadow-[2px_2px_0px_0px_#000] border-[3px] ${timeLeft < 60 ? 'text-[#F05A4A] animate-pulse' : 'text-[#1D2A3A]'}`}>
+            <div className={`text-xl font-black border border-[var(--border)] bg-white px-6 py-2 shadow-[var(--shadow-sm)] border-[3px] ${timeLeft < 60 ? 'text-[#F05A4A] animate-pulse' : 'text-[#2B1B0E]'}`}>
               {formatTime(timeLeft)}
             </div>
           )}
@@ -210,27 +210,27 @@ export function QuizAttemptPage() {
 
         <div className="flex flex-col-reverse sm:flex-row justify-between gap-4 mt-8">
           <Button
-            className="brutal-card h-14 px-8 font-black text-lg bg-white hover:-translate-y-1 transition-transform border-[3px] border-black shadow-[4px_4px_0px_0px_#000]"
+            className="rounded-[var(--radius-card)] h-14 px-8 font-black text-lg bg-white hover:-translate-y-1 transition-transform border border-[var(--border)] shadow-[var(--shadow-sm)]"
             disabled={currentQuestionIndex === 0}
             onClick={() => setCurrentQuestionIndex(prev => prev - 1)}
           >
-            QUAY LẠI
+            Quay lại
           </Button>
 
           {currentQuestionIndex === totalQuestions - 1 ? (
             <Button
-              className="brutal-pill h-14 px-12 font-black text-xl uppercase !bg-[#F05A4A] !text-white hover:!translate-y-[-2px] transition-transform shadow-[4px_4px_0px_0px_#000] border-[3px] border-black"
+              className="rounded-full h-12 px-8 font-semibold text-base !bg-[var(--brand)] !text-[#2A1300] hover:!bg-[var(--brand-600)] transition-all shadow-[var(--shadow-sm)] border border-[var(--border)] btn-shine"
               onClick={handleSubmit}
               loading={submitMutation.isPending}
             >
-              NỘP BÀI
+              Nộp bài
             </Button>
           ) : (
             <Button
-              className="brutal-pill h-14 px-12 font-black text-xl uppercase !bg-[#1D2A3A] !text-white hover:!translate-y-[-2px] transition-transform shadow-[4px_4px_0px_0px_#000] border-[3px] border-black"
+              className="rounded-full h-12 px-8 font-semibold text-base !bg-[var(--brand)] !text-[#2A1300] hover:!bg-[var(--brand-600)] transition-all shadow-[var(--shadow-sm)] border border-[var(--border)] btn-shine"
               onClick={() => setCurrentQuestionIndex(prev => prev + 1)}
             >
-              TIẾP TỤC
+              Tiếp tục
             </Button>
           )}
         </div>

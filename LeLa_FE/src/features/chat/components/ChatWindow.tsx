@@ -220,7 +220,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                 /* User Question Block */
                 <div className="flex justify-end my-2">
                   <div className="bg-slate-200 text-slate-800 rounded-2xl rounded-tr-xs px-4 py-2 text-xs md:text-sm font-semibold max-w-[85%] shadow-2xs">
-                    <span className="text-[10px] uppercase font-black text-slate-500 block mb-0.5">Câu hỏi của bạn:</span>
+                    <span className="text-[10px]  font-black text-slate-500 block mb-0.5">Câu hỏi của bạn:</span>
                     {msg.content}
                   </div>
                 </div>

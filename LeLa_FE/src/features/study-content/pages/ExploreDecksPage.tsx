@@ -11,7 +11,7 @@ import { useAuth } from '../../../shared/providers/AuthProvider';
 const difficultyColors = {
   BEGINNER: '#2A8B9D', // Teal
   INTERMEDIATE: '#F05A4A', // Coral
-  ADVANCED: '#1D2A3A', // Navy
+  ADVANCED: '#2B1B0E', // Navy
 };
 
 const difficultyLabels = {
@@ -110,7 +110,7 @@ export function ExploreDecksPage() {
       {/* Search & Header Section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-6">
         <div>
-          <h1 className="text-4xl md:text-5xl font-black uppercase tracking-tighter text-[#1D2A3A] mb-2">Khám phá bộ thẻ</h1>
+          <h1 className="text-4xl md:text-5xl font-black  tracking-tighter text-[#2B1B0E] mb-2">Khám phá bộ thẻ</h1>
           <p className="text-gray-600 font-bold text-lg">Tìm kiếm hàng ngàn bộ flashcard chất lượng cao.</p>
         </div>
 
@@ -119,7 +119,7 @@ export function ExploreDecksPage() {
           <select
             value={selectedTag}
             onChange={(e) => setSelectedTag(e.target.value)}
-            className="w-full sm:w-56 h-14 bg-white border-2 border-[#1D2A3A] rounded-2xl px-4 text-sm font-bold text-[#1D2A3A] shadow-[4px_4px_0px_0px_#1D2A3A] focus:outline-none cursor-pointer"
+            className="w-full sm:w-56 h-14 bg-white border-2 border-[#2B1B0E] rounded-2xl px-4 text-sm font-bold text-[#2B1B0E] shadow-[4px_4px_0px_0px_#2B1B0E] focus:outline-none cursor-pointer"
           >
             <option value="ALL">🏷️ Tất cả chủ đề (Tags)</option>
             {availableTags.map((t) => (
@@ -143,7 +143,7 @@ export function ExploreDecksPage() {
           />
           <button 
             type="submit"
-            className="h-full px-8 font-black uppercase flex items-center justify-center gap-2 bg-[#F05A4A] text-white border-l-[3px] border-black hover:bg-[#d94f41] transition-colors shrink-0 outline-none"
+            className="h-full px-8 font-bold flex items-center justify-center gap-2 bg-[#F05A4A] text-white border-l-[3px] border-[var(--border)] hover:bg-[#d94f41] transition-colors shrink-0 outline-none"
           >
             <SearchOutlined className="text-xl" />
             TÌM
@@ -156,12 +156,12 @@ export function ExploreDecksPage() {
 
       {/* Case 1: GUEST */}
       {!user && (
-        <div className="mb-10 brutal-card p-6 md:p-8 bg-gradient-to-r from-amber-50 to-orange-50 brutal-border border-2 border-black flex flex-col md:flex-row justify-between items-center gap-6 shadow-[4px_4px_0px_0px_#000]">
+        <div className="mb-10 rounded-[var(--radius-card)] p-6 md:p-8 bg-gradient-to-r from-amber-50 to-orange-50 border border-[var(--border)] border-2 border-[var(--border)] flex flex-col md:flex-row justify-between items-center gap-6 shadow-[var(--shadow-sm)]">
           <div>
-            <div className="inline-block bg-black text-amber-300 font-black text-xs px-3 py-1 mb-2 uppercase tracking-wider brutal-border border border-black">
+            <div className="inline-block bg-black text-amber-300 font-black text-xs px-3 py-1 mb-2  border border-[var(--border)] border border-[var(--border)]">
               🔒 KHU VỰC TOEIC THEO TRÌNH ĐỘ
             </div>
-            <h2 className="text-2xl md:text-3xl font-black uppercase text-[#1D2A3A] mb-1">
+            <h2 className="text-2xl md:text-3xl font-black  text-[#2B1B0E] mb-1">
               Đăng nhập để học TOEIC theo đúng trình độ của bạn
             </h2>
             <p className="text-gray-700 font-semibold text-base">
@@ -170,13 +170,13 @@ export function ExploreDecksPage() {
           </div>
           <div className="flex gap-3 shrink-0">
             <Button 
-              className="brutal-pill font-black bg-[#F05A4A] text-white h-12 px-6 hover:bg-[#d94f41] border-2 border-black"
+              className="brutal-pill font-black bg-[#F05A4A] text-white h-12 px-6 hover:bg-[#d94f41] border-2 border-[var(--border)]"
               onClick={() => navigate('/login')}
             >
               ĐĂNG NHẬP
             </Button>
             <Button 
-              className="brutal-pill font-black bg-white text-black h-12 px-6 hover:bg-gray-100 border-2 border-black"
+              className="brutal-pill font-black bg-white text-black h-12 px-6 hover:bg-gray-100 border-2 border-[var(--border)]"
               onClick={() => navigate('/register')}
             >
               ĐĂNG KÝ
@@ -187,12 +187,12 @@ export function ExploreDecksPage() {
 
       {/* Case 2: LEARNER WITHOUT LEVEL */}
       {user && !isAdmin && !user.currentLevel && (
-        <div className="mb-10 brutal-card p-6 md:p-8 bg-gradient-to-r from-yellow-50 to-amber-100 brutal-border border-2 border-black flex flex-col md:flex-row justify-between items-center gap-6 shadow-[4px_4px_0px_0px_#000]">
+        <div className="mb-10 rounded-[var(--radius-card)] p-6 md:p-8 bg-gradient-to-r from-yellow-50 to-amber-100 border border-[var(--border)] border-2 border-[var(--border)] flex flex-col md:flex-row justify-between items-center gap-6 shadow-[var(--shadow-sm)]">
           <div>
-            <div className="inline-block bg-amber-400 text-black font-black text-xs px-3 py-1 mb-2 uppercase tracking-wider brutal-border border border-black">
+            <div className="inline-block bg-amber-400 text-black font-black text-xs px-3 py-1 mb-2  border border-[var(--border)] border border-[var(--border)]">
               🎯 CÁ NHÂN HÓA LỘ TRÌNH TOEIC
             </div>
-            <h2 className="text-2xl md:text-3xl font-black uppercase text-[#1D2A3A] mb-1">
+            <h2 className="text-2xl md:text-3xl font-black  text-[#2B1B0E] mb-1">
               Bạn chưa chọn trình độ TOEIC
             </h2>
             <p className="text-gray-700 font-semibold text-base">
@@ -200,7 +200,7 @@ export function ExploreDecksPage() {
             </p>
           </div>
           <Button 
-            className="brutal-pill font-black bg-[#1D2A3A] text-white h-12 px-8 hover:bg-black border-2 border-black shrink-0"
+            className="brutal-pill font-black bg-[#2B1B0E] text-white h-12 px-8 hover:bg-black border-2 border-[var(--border)] shrink-0"
             onClick={() => navigate('/onboarding')}
           >
             CHỌN TRÌNH ĐỘ NGAY ➔
@@ -210,18 +210,18 @@ export function ExploreDecksPage() {
 
       {/* Case 3: LEARNER WITH LEVEL */}
       {user && !isAdmin && user.currentLevel && (
-        <div className="mb-8 p-4 bg-white brutal-card brutal-border border-2 border-black flex items-center justify-between shadow-[4px_4px_0px_0px_#000]">
+        <div className="mb-8 p-4 bg-white rounded-[var(--radius-card)] border border-[var(--border)] border-2 border-[var(--border)] flex items-center justify-between shadow-[var(--shadow-sm)]">
           <div className="flex items-center gap-3">
-            <span className="font-black text-xs uppercase px-3 py-1 bg-yellow-300 brutal-border border border-black">
+            <span className="font-black text-xs  px-3 py-1 bg-yellow-300 border border-[var(--border)] border border-[var(--border)]">
               🎯 LỘ TRÌNH TOEIC
             </span>
-            <span className="font-black text-base md:text-lg text-[#1D2A3A]">
+            <span className="font-black text-base md:text-lg text-[#2B1B0E]">
               TRÌNH ĐỘ CỦA BẠN: <span className="text-[#F05A4A]">{user.currentLevel.name}</span>
             </span>
           </div>
           <Button 
             size="small"
-            className="font-bold text-xs brutal-border border border-black"
+            className="font-bold text-xs border border-[var(--border)] border border-[var(--border)]"
             onClick={() => navigate('/placement-tests')}
           >
             Đổi trình độ ⚙️
@@ -231,12 +231,12 @@ export function ExploreDecksPage() {
 
       {/* Case 4: ADMIN */}
       {isAdmin && (
-        <div className="mb-8 p-4 bg-[#1D2A3A] text-white brutal-card brutal-border border-2 border-black flex flex-col sm:flex-row items-center justify-between gap-4 shadow-[4px_4px_0px_0px_#000]">
+        <div className="mb-8 p-4 bg-[#2B1B0E] text-white rounded-[var(--radius-card)] border border-[var(--border)] border-2 border-[var(--border)] flex flex-col sm:flex-row items-center justify-between gap-4 shadow-[var(--shadow-sm)]">
           <div className="font-bold text-sm md:text-base">
             👑 Bạn đang xem với quyền <span className="text-yellow-400 font-black">ADMINISTRATOR</span> (Hiển thị tất cả bộ thẻ).
           </div>
           <Button 
-            className="brutal-pill font-black bg-yellow-400 text-black border-2 border-black shrink-0"
+            className="brutal-pill font-black bg-yellow-400 text-black border-2 border-[var(--border)] shrink-0"
             onClick={() => navigate('/admin/decks')}
           >
             QUẢN LÝ DECKS ADMIN ➔
@@ -247,7 +247,7 @@ export function ExploreDecksPage() {
       {isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {[1, 2, 3, 4].map(i => (
-            <Card key={i} className="brutal-card w-full h-[300px]">
+            <Card key={i} className="rounded-[var(--radius-card)] w-full h-[300px]">
               <Skeleton active />
             </Card>
           ))}
@@ -258,30 +258,30 @@ export function ExploreDecksPage() {
           {featuredDeck && (
             <div className="mb-12">
               <div className="inline-flex relative z-10 -mb-4 ml-6 lg:ml-10">
-                <div className="bg-[#FFD700] text-black px-6 py-2 brutal-border border-black shadow-[4px_4px_0px_0px_#000] -rotate-2">
-                  <h2 className="text-2xl font-black uppercase tracking-tight m-0">Nổi Bật Hôm Nay</h2>
+                <div className="bg-[#FFD700] text-black px-6 py-2 border border-[var(--border)] border-[var(--border)] shadow-[var(--shadow-sm)] -rotate-2">
+                  <h2 className="text-2xl font-black  tracking-tight m-0">Nổi Bật Hôm Nay</h2>
                 </div>
               </div>
               
-              <div className="brutal-card brutal-shadow bg-white flex flex-col lg:flex-row overflow-hidden hover:-translate-y-1 transition-transform duration-300">
+              <div className="rounded-[var(--radius-card)] shadow-[var(--shadow-md)] bg-white flex flex-col lg:flex-row overflow-hidden hover:-translate-y-1 transition-transform duration-300">
                 <div 
-                  className="h-64 lg:h-auto lg:w-1/2 bg-gray-200 border-b-[3px] lg:border-b-0 lg:border-r-[3px] border-black bg-cover bg-center"
+                  className="h-64 lg:h-auto lg:w-1/2 bg-gray-200 border-b-[3px] lg:border-b-0 lg:border-r-[3px] border-[var(--border)] bg-cover bg-center"
                   style={{ backgroundImage: `url(${featuredDeck.coverImageUrl || 'https://placehold.co/800x600/F4F3EE/1D2A3A?text=Featured'})` }}
                 />
                 <div className="p-8 lg:p-12 flex flex-col justify-center flex-1">
                   <div className="flex flex-wrap items-center gap-3 mb-6">
-                    <Tag className="brutal-border font-bold text-sm px-3 py-1 m-0" color="#2A8B9D">
+                    <Tag className="border border-[var(--border)] font-bold text-sm px-3 py-1 m-0" color="#2A8B9D">
                       {featuredDeck.topic?.name || 'Chung'}
                     </Tag>
-                    <span className="text-sm font-bold bg-[#F4F3EE] px-3 py-1 brutal-border border-black">
+                    <span className="text-sm font-bold bg-[#F4F3EE] px-3 py-1 border border-[var(--border)] border-[var(--border)]">
                       {featuredDeck.totalCards} thẻ
                     </span>
-                    <span className="text-sm font-bold bg-[#F4F3EE] px-3 py-1 brutal-border border-black flex items-center gap-1" style={{ color: difficultyColors[featuredDeck.difficulty] }}>
+                    <span className="text-sm font-bold bg-[#F4F3EE] px-3 py-1 border border-[var(--border)] border-[var(--border)] flex items-center gap-1" style={{ color: difficultyColors[featuredDeck.difficulty] }}>
                       <SignalFilled /> {difficultyLabels[featuredDeck.difficulty]}
                     </span>
                   </div>
                   
-                  <h3 className="text-4xl lg:text-5xl font-black uppercase text-[#1D2A3A] leading-tight mb-4 line-clamp-2">
+                  <h3 className="text-4xl lg:text-5xl font-black  text-[#2B1B0E] leading-tight mb-4 line-clamp-2">
                     {featuredDeck.title}
                   </h3>
                   <p className="text-gray-600 text-lg mb-8 line-clamp-3">
@@ -290,7 +290,7 @@ export function ExploreDecksPage() {
                   
                   <div className="flex items-center gap-6 mt-auto">
                     <Button 
-                      className="brutal-pill font-black uppercase h-14 px-10 bg-[#1D2A3A] text-white hover:bg-black transition-colors text-lg border-[2px] border-black"
+                      className="brutal-pill font-black h-14 px-10 bg-[#2B1B0E] text-white hover:bg-black transition-colors text-lg border border-[var(--border)]"
                       onClick={() => navigate(`/decks/${featuredDeck.id}`)}
                     >
                       XEM CHI TIẾT
@@ -312,18 +312,18 @@ export function ExploreDecksPage() {
                 <div key={topicName}>
                   {/* Brutalist Topic Header */}
                   <div className="mb-6 inline-flex">
-                    <div className="bg-[#2A8B9D] text-white px-6 py-2 brutal-border shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] -rotate-1 hover:rotate-0 transition-transform">
-                      <h2 className="text-2xl font-black uppercase tracking-tight m-0">{topicName}</h2>
+                    <div className="bg-[#2A8B9D] text-white px-6 py-2 border border-[var(--border)] shadow-[var(--shadow-md)] -rotate-1 hover:rotate-0 transition-transform">
+                      <h2 className="text-2xl font-black  tracking-tight m-0">{topicName}</h2>
                     </div>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                     {topicDecks.map((deck: any) => (
                       <div 
                         key={deck.id} 
-                        className="brutal-card brutal-shadow bg-white flex flex-col h-full overflow-hidden transition-transform duration-300 hover:-translate-y-2"
+                        className="rounded-[var(--radius-card)] shadow-[var(--shadow-md)] bg-white flex flex-col h-full overflow-hidden transition-transform duration-300 hover:-translate-y-2"
                       >
                         <div 
-                          className="h-32 bg-gray-200 border-b-[3px] border-black bg-cover bg-center relative"
+                          className="h-32 bg-gray-200 border-b-[3px] border-[var(--border)] bg-cover bg-center relative"
                           style={{ backgroundImage: `url(${deck.coverImageUrl || 'https://placehold.co/400x200/F4F3EE/1D2A3A?text=No+Image'})` }}
                         />
                         <div className="p-4 flex flex-col flex-1">
@@ -336,7 +336,7 @@ export function ExploreDecksPage() {
                             </h3>
                             <Button 
                               icon={<InfoCircleOutlined />} 
-                              className="brutal-pill border-[2px] border-black bg-white text-black shrink-0 hover:bg-[#F4F3EE] hover:-translate-y-1 transition-transform" 
+                              className="brutal-pill border border-[var(--border)] bg-white text-black shrink-0 hover:bg-[#F4F3EE] hover:-translate-y-1 transition-transform" 
                               onClick={() => navigate(`/decks/${deck.id}`)}
                               title="Chi tiết bộ thẻ"
                             />
@@ -347,7 +347,7 @@ export function ExploreDecksPage() {
                           </p>
 
                           <div className="mb-4 mt-auto">
-                            <div className="flex justify-between items-center text-xs font-bold text-gray-700 uppercase pt-3 border-t-[2px] border-black border-dashed">
+                            <div className="flex justify-between items-center text-xs font-bold text-gray-700  pt-3 border-t-[2px] border-[var(--border)] border-dashed">
                               <span className="flex items-center gap-1" style={{ color: difficultyColors[deck.difficulty as keyof typeof difficultyColors] }}>
                                 <SignalFilled /> {difficultyLabels[deck.difficulty as keyof typeof difficultyLabels]}
                               </span>
@@ -360,7 +360,7 @@ export function ExploreDecksPage() {
 
                           <div className="mt-auto flex gap-2">
                             <Button 
-                              className="flex-1 brutal-pill font-black uppercase h-10 !bg-[#F05A4A] !text-white border-[2px] border-black hover:!bg-[#d94f41] hover:!translate-y-[-2px]"
+                              className="flex-1 brutal-pill font-bold h-10 !bg-[#F05A4A] !text-white border border-[var(--border)] hover:!bg-[#d94f41] hover:!translate-y-[-2px]"
                               onClick={() => navigate(`/decks/${deck.id}`)}
                             >
                               XEM CHI TIẾT
@@ -376,8 +376,8 @@ export function ExploreDecksPage() {
           )}
           
           {!isLoading && standardDecks.length === 0 && !featuredDeck && (
-            <div className="text-center py-20 brutal-card bg-white shadow-[4px_4px_0px_0px_#000]">
-              <h2 className="text-2xl font-black uppercase text-[#1D2A3A]">Không tìm thấy bộ thẻ nào phù hợp với trình độ của bạn.</h2>
+            <div className="text-center py-20 rounded-[var(--radius-card)] bg-white shadow-[var(--shadow-sm)]">
+              <h2 className="text-2xl font-black  text-[#2B1B0E]">Không tìm thấy bộ thẻ nào phù hợp với trình độ của bạn.</h2>
             </div>
           )}
         </>

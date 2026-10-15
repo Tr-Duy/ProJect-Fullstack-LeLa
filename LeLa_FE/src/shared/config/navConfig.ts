@@ -1,113 +1,133 @@
-import React from 'react';
+import type { ComponentType } from 'react';
 import {
-  BookOutlined,
-  CompassOutlined,
-  FolderOpenOutlined,
-  EditOutlined,
-  AudioOutlined,
-  RobotOutlined,
-  TrophyOutlined,
-  BarChartOutlined,
-  SafetyCertificateOutlined,
-} from '@ant-design/icons';
+  LayoutDashboard,
+  Compass,
+  BookOpen,
+  Keyboard,
+  Mic,
+  Sparkles,
+  Trophy,
+  Award,
+  BarChart3,
+  Home,
+} from 'lucide-react';
 
 export interface NavItemConfig {
   key: string;
   label: string;
-  path: string;
-  icon: React.ReactNode;
-  badge?: string;
-  badgeType?: 'ai' | 'due' | 'new';
+  to: string;
+  path?: string; // alias of to
+  icon: ComponentType<{ size?: number; strokeWidth?: number; className?: string }>;
+  badge?: 'AI';
   exact?: boolean;
 }
 
 export interface NavGroupConfig {
-  groupKey: string;
-  groupLabel: string; // Học, Luyện, Thi, Cộng đồng
+  key: string;
+  label: string;
+  groupKey?: string; // alias of key
+  groupLabel?: string; // alias of label
   items: NavItemConfig[];
 }
 
+// Mục độc lập đầu tiên (Header Navigation)
+export const DASHBOARD_NAV_ITEM: NavItemConfig = {
+  key: 'dashboard',
+  label: 'Tổng quan',
+  to: '/dashboard',
+  path: '/dashboard',
+  icon: LayoutDashboard,
+  exact: true,
+};
+
 export const LEARNER_NAV_GROUPS: NavGroupConfig[] = [
   {
-    groupKey: 'learn',
-    groupLabel: 'Học',
+    key: 'vocabulary',
+    label: 'TỪ VỰNG & BỘ THẺ',
+    groupKey: 'vocabulary',
+    groupLabel: 'TỪ VỰNG & BỘ THẺ',
     items: [
-      {
-        key: 'dashboard',
-        label: 'Hôm nay',
-        path: '/dashboard',
-        icon: React.createElement(BookOutlined, { style: { fontSize: 20 } }),
-        exact: true,
-      },
       {
         key: 'explore-decks',
         label: 'Khám phá bộ thẻ',
+        to: '/decks',
         path: '/decks',
-        icon: React.createElement(CompassOutlined, { style: { fontSize: 20 } }),
+        icon: Compass,
       },
       {
         key: 'my-decks',
         label: 'Bộ thẻ của tôi',
+        to: '/my-decks',
         path: '/my-decks',
-        icon: React.createElement(FolderOpenOutlined, { style: { fontSize: 20 } }),
+        icon: BookOpen,
       },
     ],
   },
   {
+    key: 'practice',
+    label: 'LUYỆN TẬP',
     groupKey: 'practice',
-    groupLabel: 'Luyện',
+    groupLabel: 'LUYỆN TẬP',
     items: [
       {
         key: 'typing-game',
         label: 'Luyện gõ từ',
+        to: '/typing-game',
         path: '/typing-game',
-        icon: React.createElement(EditOutlined, { style: { fontSize: 20 } }),
+        icon: Keyboard,
       },
       {
         key: 'voice-conversation',
         label: 'Hội thoại AI',
+        to: '/voice-conversation',
         path: '/voice-conversation',
-        icon: React.createElement(AudioOutlined, { style: { fontSize: 20 } }),
+        icon: Mic,
         badge: 'AI',
-        badgeType: 'ai',
       },
       {
         key: 'ai-chat',
         label: 'AI Tutor',
+        to: '/ai-chat',
         path: '/ai-chat',
-        icon: React.createElement(RobotOutlined, { style: { fontSize: 20 } }),
+        icon: Sparkles,
         badge: 'AI',
-        badgeType: 'ai',
       },
     ],
   },
   {
-    groupKey: 'test',
-    groupLabel: 'Thi',
+    key: 'assessment',
+    label: 'ĐÁNH GIÁ & THI',
+    groupKey: 'assessment',
+    groupLabel: 'ĐÁNH GIÁ & THI',
     items: [
       {
         key: 'quizzes',
-        label: 'Lộ trình & Thi',
+        label: 'Lộ trình & Thi kết thúc cấp',
+        to: '/quizzes?category=LEVEL_UP',
         path: '/quizzes?category=LEVEL_UP',
-        icon: React.createElement(TrophyOutlined, { style: { fontSize: 20 } }),
+        icon: Trophy,
       },
     ],
   },
   {
+    key: 'community',
+    label: 'CỘNG ĐỒNG',
     groupKey: 'community',
-    groupLabel: 'Cộng đồng',
+    groupLabel: 'CỘNG ĐỒNG',
     items: [
       {
         key: 'achievements',
-        label: 'Thành tích',
+        label: 'Thành tích cá nhân',
+        to: '/achievements',
         path: '/achievements',
-        icon: React.createElement(SafetyCertificateOutlined, { style: { fontSize: 20 } }),
+        icon: Award,
       },
       {
         key: 'leaderboard',
         label: 'Bảng xếp hạng',
+        to: '/leaderboard',
         path: '/leaderboard',
-        icon: React.createElement(BarChartOutlined, { style: { fontSize: 20 } }),
+        icon: BarChart3,
       },
     ],
   },
@@ -116,39 +136,45 @@ export const LEARNER_NAV_GROUPS: NavGroupConfig[] = [
 export interface MobileBottomTabConfig {
   key: string;
   label: string;
-  path: string;
-  icon: React.ReactNode;
+  to: string;
+  path?: string;
+  icon: ComponentType<{ size?: number; strokeWidth?: number; className?: string }> | null;
 }
 
 export const MOBILE_BOTTOM_TABS: MobileBottomTabConfig[] = [
   {
     key: 'today',
     label: 'Hôm nay',
+    to: '/dashboard',
     path: '/dashboard',
-    icon: React.createElement(BookOutlined),
+    icon: Home,
   },
   {
     key: 'learn',
     label: 'Học',
+    to: '/decks',
     path: '/decks',
-    icon: React.createElement(CompassOutlined),
+    icon: Compass,
   },
   {
     key: 'study-action',
     label: 'Ôn ngay',
+    to: '/decks',
     path: '/decks',
     icon: null,
   },
   {
     key: 'practice',
     label: 'Luyện',
+    to: '/voice-conversation',
     path: '/voice-conversation',
-    icon: React.createElement(AudioOutlined),
+    icon: Mic,
   },
   {
     key: 'profile',
     label: 'Tôi',
+    to: '/profile',
     path: '/profile',
-    icon: React.createElement(SafetyCertificateOutlined),
+    icon: Award,
   },
 ];

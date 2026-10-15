@@ -4,63 +4,83 @@ import { flashcardsApi } from '../../study-content/api/flashcards.api';
 import { cardProgressApi } from '../api/card-progress.api';
 import { deckEnrollmentsApi } from '../../study-content/api/deck-enrollments.api';
 import { srsReviewsApi } from '../api/srs-reviews.api';
+import { studyApi } from '../api/study.api';
 
-export function useStudySession(deckId: string | undefined) {
+export function useStudySession(deckId: string | undefined, mode?: string | null) {
   const [studyQueue, setStudyQueue] = useState<any[]>([]);
   const [isQueueInitialized, setIsQueueInitialized] = useState(false);
   const [sessionStats, setSessionStats] = useState({ reviewed: 0, newGainedXp: 0 });
 
-  const MAX_NEW = 20;
-  const MAX_REVIEW = 100;
+  const isCramMode = mode === 'cram';
+  const effectiveMode = isCramMode ? 'cram' : 'srs';
 
-  const { data: onlineData, isLoading: isLoadingCards } = useQuery({
-    queryKey: ['study-cards', deckId],
-    queryFn: () => flashcardsApi.getByDeckId(Number(deckId), { size: 10000 }),
+  const { data: cards, isLoading, refetch } = useQuery({
+    queryKey: ['study-cards', deckId, effectiveMode],
+    queryFn: async () => {
+      try {
+        const res = await studyApi.getStudyCards(Number(deckId), effectiveMode);
+        return res?.data || [];
+      } catch (err) {
+        console.warn('Failed to load study cards from /study endpoint, attempting fallback:', err);
+        const fallbackRes = await flashcardsApi.getByDeckId(Number(deckId), { size: 10000 });
+        const allCards = fallbackRes?.content || [];
+
+        if (isCramMode) {
+          // Shuffle all cards for cram mode
+          return [...allCards].sort(() => Math.random() - 0.5);
+        }
+
+        // SRS fallback using progress
+        try {
+          const progressRes = await cardProgressApi.getAllProgress(Number(deckId), { size: 10000 });
+          const allProgress = progressRes?.content || [];
+          const now = new Date();
+          let dueReviewIds: number[] = [];
+          let newIds: number[] = [];
+
+          allCards.forEach((card: any) => {
+            const prog = allProgress.find((p: any) => p.cardId === card.id);
+            if (!prog || prog.state === 'NEW') {
+              newIds.push(card.id);
+            } else if (prog.state !== 'SUSPENDED') {
+              if (!prog.dueAt || new Date(prog.dueAt) <= now) {
+                dueReviewIds.push(card.id);
+              }
+            }
+          });
+
+          newIds = newIds.slice(0, 20);
+          dueReviewIds = dueReviewIds.slice(0, 100);
+          const targetIds = new Set([...dueReviewIds, ...newIds]);
+          return allCards.filter((c: any) => targetIds.has(c.id));
+        } catch {
+          return allCards;
+        }
+      }
+    },
     enabled: !!deckId,
     retry: 1,
   });
 
-  const { data: progressData, isLoading: isLoadingProgress } = useQuery({
-    queryKey: ['study-progress', deckId],
-    queryFn: () => cardProgressApi.getAllProgress(Number(deckId), { size: 10000 }),
-    enabled: !!deckId,
-  });
-
+  // Reset when deckId or mode changes
   useEffect(() => {
-    if (onlineData && progressData && !isQueueInitialized) {
-      const allCards = onlineData.content || [];
-      const allProgress = progressData.content || [];
-      
-      const now = new Date();
-      let dueReviewIds: number[] = [];
-      let newIds: number[] = [];
+    setIsQueueInitialized(false);
+    setStudyQueue([]);
+    setSessionStats({ reviewed: 0, newGainedXp: 0 });
+  }, [deckId, effectiveMode]);
 
-      allCards.forEach(card => {
-        const prog = allProgress.find((p: any) => p.cardId === card.id);
-        if (!prog || prog.state === 'NEW') {
-          newIds.push(card.id);
-        } else if (prog.state !== 'SUSPENDED') {
-          if (!prog.dueAt || new Date(prog.dueAt) <= now) {
-            dueReviewIds.push(card.id);
-          }
-        }
-      });
-
-      // Enforce Limits
-      newIds = newIds.slice(0, MAX_NEW);
-      dueReviewIds = dueReviewIds.slice(0, MAX_REVIEW);
-      const targetIds = new Set([...dueReviewIds, ...newIds]);
-
-      let queue = allCards.filter(c => targetIds.has(c.id));
-      setStudyQueue(queue);
+  // Initialize queue once cards query completes
+  useEffect(() => {
+    if (cards !== undefined && !isQueueInitialized) {
+      setStudyQueue(cards);
       setIsQueueInitialized(true);
-      
+
       // Auto enroll in the deck if not already enrolled
       if (deckId) {
         deckEnrollmentsApi.enroll(Number(deckId)).catch(console.error);
       }
     }
-  }, [onlineData, progressData, isQueueInitialized, deckId]);
+  }, [cards, isQueueInitialized, deckId]);
 
   const currentCard = studyQueue[0];
   const isFinished = isQueueInitialized && studyQueue.length === 0;
@@ -71,7 +91,8 @@ export function useStudySession(deckId: string | undefined) {
     try {
       await srsReviewsApi.reviewCard({
         cardId: currentCard.id,
-        rating: rating
+        rating: rating,
+        cramMode: isCramMode,
       });
 
       // Handle XP calculation identically as Backend
@@ -80,9 +101,9 @@ export function useStudySession(deckId: string | undefined) {
       else if (rating === 3) xpEarned = 10;
       else if (rating === 4) xpEarned = 15;
 
-      setSessionStats(prev => ({ 
+      setSessionStats(prev => ({
         reviewed: prev.reviewed + 1,
-        newGainedXp: prev.newGainedXp + xpEarned
+        newGainedXp: prev.newGainedXp + xpEarned,
       }));
 
       // Pop card from queue
@@ -97,20 +118,28 @@ export function useStudySession(deckId: string | undefined) {
       } else {
         setStudyQueue(prev => prev.slice(1));
       }
-
     } catch (err) {
-      console.error("Failed to submit review", err);
+      console.error('Failed to submit review', err);
       // Even if failed, pop card so user isn't stuck
       setStudyQueue(prev => prev.slice(1));
     }
   };
 
+  const restartSession = () => {
+    setIsQueueInitialized(false);
+    setStudyQueue([]);
+    setSessionStats({ reviewed: 0, newGainedXp: 0 });
+    refetch();
+  };
+
   return {
     currentCard,
     isFinished,
-    isLoading: isLoadingCards || isLoadingProgress,
+    isLoading: isLoading || !isQueueInitialized,
     sessionStats,
     studyQueue,
-    handleReview
+    isCramMode,
+    handleReview,
+    restartSession,
   };
 }

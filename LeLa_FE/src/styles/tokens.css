@@ -1,33 +1,41 @@
-/* Design Tokens: "Lớp Học Ngôn Ngữ Thân Thiện" (Friendly Language Classroom) */
+/* Design Tokens: "Lớp Học Ngôn Ngữ Thân Thiện" (Warm Orange & Yellow Palette) */
 
 :root {
-  /* Bảng màu chính (Colors) */
-  --bg: #F6F8FC;
-  --surface: #FFFFFF;
-  --surface-2: #EEF2F9;
-  --border: #E4E9F2;
-  --text: #101828;
-  --text-2: #475467;
-  --text-3: #8792A6;
+  /* Bảng màu chính (Warm Colors) */
+  --bg: #FFF8EE;          /* Nền kem ấm */
+  --chrome: #FFFBF5;      /* Nền sidebar, topbar, bảng bên phải */
+  --surface: #FFFFFF;     /* Nền trắng thẻ */
+  --surface-2: #FFF0DC;   /* Nền phụ vàng nhạt ấm */
+  --border: #F1E2CC;      /* Viền ấm 1px */
 
-  --brand: #1F5BFF;
-  --brand-700: #1544C9;
-  --brand-100: #DCE7FF;
-  --brand-50: #EEF3FF;
+  --text: #2B1B0E;        /* Chữ chính nâu đậm */
+  --text-2: #6B5642;      /* Chữ phụ */
+  --text-3: #9A8268;      /* Chữ nhạt / nhãn nhóm */
 
-  --success: #12B76A;
-  --success-50: #E8F8F0;
-  --warning: #F79009;
-  --warning-50: #FFF4E0;
-  --danger: #F04438;
-  --danger-50: #FEECEA;
+  --brand: #F97316;       /* Cam tươi (nút chính) */
+  --brand-600: #EA580C;   /* Cam hover */
+  --brand-700: #C2410C;   /* Cam đậm (chữ link, chữ nhấn, active text) */
+  --brand-100: #FFE3C7;   /* Cam nhạt viền/ring track */
+  --brand-50: #FFF1E0;    /* Cam pastel nền pill/card */
+  --brand-text: #2A1300;  /* Chữ trên nút cam (tương phản >= 6:1) */
 
-  --flame: #FF7A1A;
-  --xp: #FFB703;
+  --sun: #FFC53D;         /* Vàng rực: XP, huy hiệu, điểm nhấn */
+  --sun-100: #FFF0B8;     /* Vàng nhạt */
 
-  /* Topic Colors (Nền 50 + Chữ 700) */
-  --topic-business-bg: #EEF2FF;
-  --topic-business-text: #3730A3;
+  --teal: #12A594;        /* Xanh ngọc teal (CHỈ DÙNG CHO TÍNH NĂNG AI) */
+  --teal-50: #E3F7F4;     /* Nền chip AI */
+  --hover: #FFF3E3;       /* Nền hover mục sidebar */
+
+  --success: #2DA44E;     /* Xanh lá chuẩn */
+  --success-50: #EAF7EE;
+  --danger: #E5484D;      /* Đỏ ấm */
+  --danger-50: #FDF0F0;
+  --flame: #F04A23;       /* Lửa streak cam đỏ */
+  --xp: #FFC53D;          /* Màu XP = vàng sun */
+
+  /* Topic Colors (Tông ấm hài hòa: Nền + Chữ) */
+  --topic-business-bg: #FDF2EE;
+  --topic-business-text: #8B2500;
   --topic-travel-bg: #E6FFFA;
   --topic-travel-text: #0D9488;
   --topic-office-bg: #FFFBEB;
@@ -48,13 +56,14 @@
   --radius-card: 20px;
   --radius-chip: 999px;
 
-  /* Shadows & Elevation */
-  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06);
-  --shadow-md: 0 8px 24px -8px rgba(16, 24, 40, 0.14);
-  --shadow-card: 0 1px 3px rgba(16, 24, 40, 0.05), 0 1px 2px rgba(16, 24, 40, 0.03);
+  /* Bóng đổ tông ấm */
+  --shadow-sm: 0 1px 3px rgba(120, 53, 15, 0.08);
+  --shadow-md: 0 8px 24px -8px rgba(120, 53, 15, 0.18);
+  --shadow-card: 0 2px 8px -2px rgba(120, 53, 15, 0.08);
+  --shadow-hover: 0 12px 28px -6px rgba(120, 53, 15, 0.22);
 
   /* Animation timing */
-  --ease-friendly: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-friendly: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* Thẻ từ vựng có góc trên phải gập nhẹ (Folded corner motif) */
@@ -86,7 +95,8 @@
   position: relative;
   background: var(--brand-50);
   color: var(--brand-700);
-  border-radius: 14px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
   padding: 8px 14px;
   display: inline-flex;
   align-items: center;
@@ -98,32 +108,30 @@
   content: '';
   position: absolute;
   bottom: -6px;
-  left: 16px;
-  width: 0;
-  height: 0;
-  border-left: 6px solid transparent;
-  border-right: 6px solid transparent;
-  border-top: 6px solid var(--brand-50);
+  left: 18px;
+  width: 10px;
+  height: 10px;
+  background: var(--brand-50);
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  transform: rotate(45deg);
 }
 
-.speech-bubble-surface {
-  background: var(--surface-2);
-  color: var(--text);
-}
-
-.speech-bubble-surface::after {
+.speech-bubble-tail-left::after {
   content: '';
   position: absolute;
-  bottom: -6px;
-  left: 16px;
-  width: 0;
-  height: 0;
-  border-left: 6px solid transparent;
-  border-right: 6px solid transparent;
-  border-top: 6px solid var(--surface-2);
+  left: -5px;
+  top: 50%;
+  margin-top: -5px;
+  width: 10px;
+  height: 10px;
+  background: var(--surface-2);
+  border-left: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  transform: rotate(45deg);
 }
 
-/* 3D Card Flip */
+/* 3D Flip Card Effect */
 .flip-card-container {
   perspective: 1000px;
 }
@@ -132,8 +140,8 @@
   position: relative;
   width: 100%;
   height: 100%;
-  transition: transform 450ms var(--ease-friendly);
   transform-style: preserve-3d;
+  transition: transform 450ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .flip-card-inner.flipped {
@@ -143,9 +151,7 @@
 .flip-card-front,
 .flip-card-back {
   position: absolute;
-  width: 100%;
-  height: 100%;
-  -webkit-backface-visibility: hidden;
+  inset: 0;
   backface-visibility: hidden;
   border-radius: var(--radius-card);
 }
@@ -154,43 +160,193 @@
   transform: rotateY(180deg);
 }
 
-/* Audio Wave Animation for AI Speaking */
-@keyframes voiceWave {
-  0%, 100% { height: 6px; }
-  50% { height: 22px; }
+/* Primary Button Shine Effect */
+.btn-shine {
+  position: relative;
+  overflow: hidden;
 }
 
-.voice-wave-bar {
-  width: 3px;
-  background-color: var(--brand);
-  border-radius: 999px;
-  animation: voiceWave 1s ease-in-out infinite;
+.btn-shine::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.35) 50%,
+    transparent 100%
+  );
+  transform: skewX(-20deg);
+  transition: none;
+  pointer-events: none;
 }
 
-.voice-wave-bar:nth-child(2) { animation-delay: 0.15s; }
-.voice-wave-bar:nth-child(3) { animation-delay: 0.3s; }
-.voice-wave-bar:nth-child(4) { animation-delay: 0.45s; }
+.btn-shine:hover::after {
+  left: 150%;
+  transition: left 600ms ease-in-out;
+}
 
-/* Subtle Staggered Enter */
-@keyframes friendlyFadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
+/* Continuous Flame Flicker */
+@keyframes flame-flicker {
+  0%, 100% {
+    transform: scale(1) rotate(0deg);
+    filter: drop-shadow(0 0 2px rgba(240, 74, 35, 0.4));
   }
-  to {
-    opacity: 1;
+  25% {
+    transform: scale(1.08) rotate(-2deg);
+    filter: drop-shadow(0 0 5px rgba(240, 74, 35, 0.7));
+  }
+  50% {
+    transform: scale(0.96) rotate(1deg);
+    filter: drop-shadow(0 0 3px rgba(240, 74, 35, 0.5));
+  }
+  75% {
+    transform: scale(1.05) rotate(2deg);
+    filter: drop-shadow(0 0 6px rgba(240, 74, 35, 0.8));
+  }
+}
+
+.flame-animated {
+  display: inline-block;
+  animation: flame-flicker 1.6s ease-in-out infinite;
+  transform-origin: center bottom;
+}
+
+/* Link Underline Sweep */
+.link-sweep {
+  position: relative;
+  text-decoration: none;
+}
+
+.link-sweep::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background-color: var(--brand-700);
+  border-radius: 999px;
+  transition: width 200ms ease-out;
+}
+
+.link-sweep:hover::after {
+  width: 100%;
+}
+
+/* Form Card Shake on Error */
+@keyframes shake-sm {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+
+.shake-card {
+  animation: shake-sm 320ms ease-in-out;
+}
+
+/* Mascot Keyframe Animations */
+@keyframes lela-blink {
+  0%, 94%, 98%, 100% {
+    transform: scaleY(1);
+  }
+  96% {
+    transform: scaleY(0.1);
+  }
+}
+
+@keyframes lela-idle-bounce {
+  0%, 100% {
     transform: translateY(0);
   }
+  50% {
+    transform: translateY(-3px);
+  }
 }
 
-.animate-friendly-enter {
-  animation: friendlyFadeInUp 220ms var(--ease-friendly) forwards;
+@keyframes lela-happy-jump {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+  }
+  40% {
+    transform: translateY(-8px) scale(1.04);
+  }
+  60% {
+    transform: translateY(-4px) scale(0.98);
+  }
 }
 
+@keyframes lela-cheer-wave {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-6deg);
+  }
+  75% {
+    transform: rotate(6deg);
+  }
+}
+
+@keyframes lela-zzz-float {
+  0% {
+    opacity: 0;
+    transform: translateY(4px) translateX(0) scale(0.6);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-8px) translateX(4px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-18px) translateX(10px) scale(1.2);
+  }
+}
+
+.lela-eye-blink {
+  animation: lela-blink 4s infinite;
+  transform-origin: center;
+}
+
+.lela-bounce {
+  animation: lela-idle-bounce 2.8s ease-in-out infinite;
+}
+
+.lela-happy {
+  animation: lela-happy-jump 1.8s ease-in-out infinite;
+}
+
+.lela-cheer {
+  animation: lela-cheer-wave 1.2s ease-in-out infinite;
+}
+
+.lela-zzz-1 {
+  animation: lela-zzz-float 2.4s ease-out infinite;
+}
+
+.lela-zzz-2 {
+  animation: lela-zzz-float 2.4s ease-out infinite 0.8s;
+}
+
+.lela-zzz-3 {
+  animation: lela-zzz-float 2.4s ease-out infinite 1.6s;
+}
+
+/* Reduced Motion Override */
 @media (prefers-reduced-motion: reduce) {
   *, ::before, ::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .btn-shine::after {
+    display: none;
+  }
+  .flame-animated {
+    animation: none !important;
   }
 }

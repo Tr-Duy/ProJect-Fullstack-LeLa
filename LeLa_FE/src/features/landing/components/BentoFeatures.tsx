@@ -14,7 +14,7 @@ export function BentoFeatures() {
     <section className="w-full py-24 border-y-[3px] border-brand-black relative bg-[#F4F3EE]">
       <div className="mx-auto max-w-[1400px] px-6 lg:px-12">
         <div className="mb-16 max-w-2xl">
-          <h2 className="text-4xl md:text-5xl lg:text-6xl font-black uppercase tracking-tighter leading-[1.25] text-brand-navy mb-4">
+          <h2 className="text-4xl md:text-5xl lg:text-6xl font-black  tracking-tighter leading-[1.25] text-brand-navy mb-4">
             Được thiết kế để <br />
             <span className="text-brand-coral">nhớ lâu nhất.</span>
           </h2>
@@ -30,13 +30,13 @@ export function BentoFeatures() {
           <motion.div 
             {...animationProps}
             transition={{ duration: 0.5 }}
-            className="md:col-span-2 lg:col-span-2 brutal-card overflow-hidden flex flex-col md:flex-row bg-white hover:-translate-y-2 group"
+            className="md:col-span-2 lg:col-span-2 rounded-[var(--radius-card)] overflow-hidden flex flex-col md:flex-row bg-white hover:-translate-y-2 group"
           >
             <div className="p-8 flex-1 flex flex-col justify-center">
-              <div className="w-16 h-16 bg-brand-teal brutal-border border-[3px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+              <div className="w-16 h-16 bg-brand-teal border border-[var(--border)] border-[3px] shadow-[var(--shadow-md)] rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 <Brain className="w-8 h-8 text-white" strokeWidth={2.5} />
               </div>
-              <h3 className="text-3xl font-black uppercase tracking-tight text-brand-navy mb-3">
+              <h3 className="text-3xl font-black  tracking-tight text-brand-navy mb-3">
                 Thuật toán SRS
               </h3>
               <p className="text-brand-navy/80 font-bold text-lg leading-snug">
@@ -45,12 +45,12 @@ export function BentoFeatures() {
               </p>
             </div>
             <div className="flex-1 bg-brand-teal/10 p-6 flex items-center justify-center border-t-[3px] md:border-t-0 md:border-l-[3px] border-brand-black">
-              <div className="w-full aspect-square md:aspect-auto md:h-full max-h-[280px] bg-white brutal-border shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-2xl flex items-center justify-center p-4">
+              <div className="w-full aspect-square md:aspect-auto md:h-full max-h-[280px] bg-white border border-[var(--border)] shadow-[var(--shadow-md)] rounded-2xl flex items-center justify-center p-4">
                 {/* Abstract SRS Chart Graphic */}
                 <div className="flex items-end gap-2 w-full h-full p-4">
-                  <div className="w-1/4 bg-[#1D2A3A] h-[20%]"></div>
-                  <div className="w-1/4 bg-[#1D2A3A] h-[50%]"></div>
-                  <div className="w-1/4 bg-[#1D2A3A] h-[30%]"></div>
+                  <div className="w-1/4 bg-[#2B1B0E] h-[20%]"></div>
+                  <div className="w-1/4 bg-[#2B1B0E] h-[50%]"></div>
+                  <div className="w-1/4 bg-[#2B1B0E] h-[30%]"></div>
                   <div className="w-1/4 bg-[#F05A4A] h-[90%]"></div>
                 </div>
               </div>
@@ -61,13 +61,13 @@ export function BentoFeatures() {
           <motion.div 
             {...animationProps}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className="brutal-card p-8 bg-[#FFE885] flex flex-col justify-between hover:-translate-y-2 group"
+            className="rounded-[var(--radius-card)] p-8 bg-[#FFE885] flex flex-col justify-between hover:-translate-y-2 group"
           >
             <div>
-              <div className="w-16 h-16 bg-white brutal-border border-[3px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+              <div className="w-16 h-16 bg-white border border-[var(--border)] border-[3px] shadow-[var(--shadow-md)] rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 <Volume2 className="w-8 h-8 text-brand-navy" strokeWidth={2.5} />
               </div>
-              <h3 className="text-2xl font-black uppercase tracking-tight text-brand-navy mb-3">
+              <h3 className="text-2xl font-black  tracking-tight text-brand-navy mb-3">
                 Phát Âm Chuẩn
               </h3>
               <p className="text-brand-navy/80 font-bold leading-snug">
@@ -80,13 +80,13 @@ export function BentoFeatures() {
           <motion.div 
             {...animationProps}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="brutal-card p-8 bg-brand-coral flex flex-col justify-between hover:-translate-y-2 group"
+            className="rounded-[var(--radius-card)] p-8 bg-brand-coral flex flex-col justify-between hover:-translate-y-2 group"
           >
             <div>
-              <div className="w-16 h-16 bg-white brutal-border border-[3px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+              <div className="w-16 h-16 bg-white border border-[var(--border)] border-[3px] shadow-[var(--shadow-md)] rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 <CalendarDays className="w-8 h-8 text-brand-navy" strokeWidth={2.5} />
               </div>
-              <h3 className="text-2xl font-black uppercase tracking-tight text-white mb-3">
+              <h3 className="text-2xl font-black  tracking-tight text-white mb-3">
                 Chuỗi Ngày Học
               </h3>
               <p className="text-white/90 font-bold leading-snug">
@@ -102,13 +102,13 @@ export function BentoFeatures() {
           <motion.div 
             {...animationProps}
             transition={{ duration: 0.5, delay: 0.3 }}
-            className="brutal-card p-8 bg-brand-navy flex flex-col justify-between hover:-translate-y-2 group"
+            className="rounded-[var(--radius-card)] p-8 bg-brand-navy flex flex-col justify-between hover:-translate-y-2 group"
           >
             <div>
-              <div className="w-16 h-16 bg-white brutal-border border-[3px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+              <div className="w-16 h-16 bg-white border border-[var(--border)] border-[3px] shadow-[var(--shadow-md)] rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 <Clock className="w-8 h-8 text-brand-navy" strokeWidth={2.5} />
               </div>
-              <h3 className="text-2xl font-black uppercase tracking-tight text-white mb-3">
+              <h3 className="text-2xl font-black  tracking-tight text-white mb-3">
                 Bài Thi Tính Giờ
               </h3>
               <p className="text-[#F4F3EE]/80 font-bold leading-snug">
@@ -121,13 +121,13 @@ export function BentoFeatures() {
           <motion.div 
             {...animationProps}
             transition={{ duration: 0.5, delay: 0.4 }}
-            className="brutal-card p-8 bg-white flex flex-col justify-between hover:-translate-y-2 group"
+            className="rounded-[var(--radius-card)] p-8 bg-white flex flex-col justify-between hover:-translate-y-2 group"
           >
             <div>
-              <div className="w-16 h-16 bg-brand-teal brutal-border border-[3px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+              <div className="w-16 h-16 bg-brand-teal border border-[var(--border)] border-[3px] shadow-[var(--shadow-md)] rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 <Trophy className="w-8 h-8 text-white" strokeWidth={2.5} />
               </div>
-              <h3 className="text-2xl font-black uppercase tracking-tight text-brand-navy mb-3">
+              <h3 className="text-2xl font-black  tracking-tight text-brand-navy mb-3">
                 Bảng Xếp Hạng
               </h3>
               <p className="text-brand-navy/80 font-bold leading-snug">
@@ -140,15 +140,15 @@ export function BentoFeatures() {
           <motion.div 
             {...animationProps}
             transition={{ duration: 0.5, delay: 0.5 }}
-            className="md:col-span-2 lg:col-span-2 brutal-card overflow-hidden flex flex-col md:flex-row bg-[#2A8B9D] hover:-translate-y-2 group"
+            className="md:col-span-2 lg:col-span-2 rounded-[var(--radius-card)] overflow-hidden flex flex-col md:flex-row bg-[#2A8B9D] hover:-translate-y-2 group"
           >
-            <div className="flex-1 bg-[#1D2A3A] p-6 flex items-center justify-center border-b-[3px] md:border-b-0 md:border-r-[3px] border-brand-black overflow-hidden relative">
+            <div className="flex-1 bg-[#2B1B0E] p-6 flex items-center justify-center border-b-[3px] md:border-b-0 md:border-r-[3px] border-brand-black overflow-hidden relative">
                {/* Abstract Deck Graphic */}
                <div className="relative w-[200px] h-[260px]">
-                 <div className="absolute top-4 left-4 w-full h-full bg-white brutal-border shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-2xl rotate-6"></div>
-                 <div className="absolute top-2 left-2 w-full h-full bg-[#F4F3EE] brutal-border shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-2xl rotate-3"></div>
-                 <div className="absolute top-0 left-0 w-full h-full bg-[#FFE885] brutal-border shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-2xl p-6 flex flex-col justify-between hover:rotate-0 transition-transform duration-300">
-                    <div className="w-12 h-12 bg-white brutal-border rounded-full"></div>
+                 <div className="absolute top-4 left-4 w-full h-full bg-white border border-[var(--border)] shadow-[var(--shadow-md)] rounded-2xl rotate-6"></div>
+                 <div className="absolute top-2 left-2 w-full h-full bg-[#F4F3EE] border border-[var(--border)] shadow-[var(--shadow-md)] rounded-2xl rotate-3"></div>
+                 <div className="absolute top-0 left-0 w-full h-full bg-[#FFE885] border border-[var(--border)] shadow-[var(--shadow-md)] rounded-2xl p-6 flex flex-col justify-between hover:rotate-0 transition-transform duration-300">
+                    <div className="w-12 h-12 bg-white border border-[var(--border)] rounded-full"></div>
                     <div className="space-y-2">
                       <div className="h-4 bg-brand-navy w-3/4"></div>
                       <div className="h-4 bg-brand-navy w-1/2"></div>
@@ -157,10 +157,10 @@ export function BentoFeatures() {
                </div>
             </div>
             <div className="p-8 flex-1 flex flex-col justify-center">
-              <div className="w-16 h-16 bg-white brutal-border border-[3px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+              <div className="w-16 h-16 bg-white border border-[var(--border)] border-[3px] shadow-[var(--shadow-md)] rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 <Search className="w-8 h-8 text-brand-navy" strokeWidth={2.5} />
               </div>
-              <h3 className="text-3xl font-black uppercase tracking-tight text-white mb-3">
+              <h3 className="text-3xl font-black  tracking-tight text-white mb-3">
                 Thư Viện Khổng Lồ
               </h3>
               <p className="text-[#F4F3EE]/90 font-bold text-lg leading-snug">

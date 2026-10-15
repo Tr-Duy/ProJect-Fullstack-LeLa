@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ProgressRing } from '../../../shared/components/ui/ProgressRing';
 import { FireFilled, ThunderboltFilled } from '@ant-design/icons';
 import type { DailyActivityDto } from '../../gamification/api/daily-activities.api';
-
+import type { WeekDayItem } from '../../gamification/hooks/useStreakData';
 import { formatLocalISODate } from '../../../shared/utils/dateUtils';
+import { CountUp } from '../../../ui/motion/CountUp';
+import { celebrate } from '../../../ui/motion/celebrate';
 
 interface DailyGoalSidebarCardProps {
   cardsReviewedToday: number;
@@ -11,6 +13,7 @@ interface DailyGoalSidebarCardProps {
   xpToday: number;
   currentStreak: number;
   historyData?: DailyActivityDto[];
+  weekDays?: WeekDayItem[];
 }
 
 export const DailyGoalSidebarCard: React.FC<DailyGoalSidebarCardProps> = ({
@@ -19,14 +22,25 @@ export const DailyGoalSidebarCard: React.FC<DailyGoalSidebarCardProps> = ({
   xpToday,
   currentStreak,
   historyData = [],
+  weekDays: propWeekDays,
 }) => {
   const percent = Math.min(
     100,
     Math.round((cardsReviewedToday / Math.max(1, dailyGoalTarget)) * 100)
   );
 
-  // 7 days of current week (T2 to CN)
+  // Trigger celebration once when goal is completed
+  useEffect(() => {
+    if (percent >= 100 && cardsReviewedToday > 0) {
+      celebrate({ eventKey: `daily-goal-100-${cardsReviewedToday}` });
+    }
+  }, [percent, cardsReviewedToday]);
+
+  // 7 days of current week (T2 to CN) - from unified useStreakData hook or calculated
   const currentWeekDays = React.useMemo(() => {
+    if (propWeekDays && propWeekDays.length === 7) {
+      return propWeekDays;
+    }
     const now = new Date();
     // Monday as day 0 in Vietnam
     const dayOfWeek = (now.getDay() + 6) % 7; // 0 is Monday, 6 is Sunday
@@ -63,7 +77,7 @@ export const DailyGoalSidebarCard: React.FC<DailyGoalSidebarCardProps> = ({
         hasLearned,
       };
     });
-  }, [historyData, cardsReviewedToday, xpToday]);
+  }, [historyData, cardsReviewedToday, xpToday, propWeekDays]);
 
   return (
     <div className="bg-[var(--surface)] rounded-[20px] p-6 border border-[var(--border)] shadow-[var(--shadow-sm)] flex flex-col justify-between space-y-5">
@@ -72,12 +86,12 @@ export const DailyGoalSidebarCard: React.FC<DailyGoalSidebarCardProps> = ({
           <span className="text-xs font-semibold text-[var(--text-3)]">
             Mục tiêu hôm nay
           </span>
-          <span className="text-xs font-semibold text-[var(--brand)]">
-            {cardsReviewedToday}/{dailyGoalTarget} thẻ
+          <span className="text-xs font-semibold text-[var(--brand-700)]">
+            <strong className="text-[var(--brand)]">{cardsReviewedToday}</strong>/{dailyGoalTarget} thẻ
           </span>
         </div>
 
-        {/* 140px Progress Ring */}
+        {/* 140px Animated Progress Ring */}
         <div className="flex items-center justify-center py-2">
           <ProgressRing
             percent={percent}
@@ -104,7 +118,7 @@ export const DailyGoalSidebarCard: React.FC<DailyGoalSidebarCardProps> = ({
               <div key={day.date} className="flex flex-col items-center gap-1.5">
                 <span
                   className={`text-[11px] font-medium ${
-                    day.isToday ? 'text-[var(--brand)] font-bold' : 'text-[var(--text-3)]'
+                    day.isToday ? 'text-[var(--brand-700)] font-bold' : 'text-[var(--text-3)]'
                   }`}
                 >
                   {day.label}
@@ -120,7 +134,9 @@ export const DailyGoalSidebarCard: React.FC<DailyGoalSidebarCardProps> = ({
                   }`}
                 >
                   {day.hasLearned ? (
-                    <FireFilled className="text-sm" />
+                    <span className="flame-animated">
+                      <FireFilled className="text-sm" />
+                    </span>
                   ) : (
                     <span className="w-1.5 h-1.5 rounded-full bg-[var(--border)]" />
                   )}
@@ -131,25 +147,27 @@ export const DailyGoalSidebarCard: React.FC<DailyGoalSidebarCardProps> = ({
         </div>
       </div>
 
-      {/* Two Numbers Side-by-Side on One Line (No wrap!) */}
+      {/* Two Numbers Side-by-Side on One Line (No wrap with CountUp!) */}
       <div className="grid grid-cols-2 gap-3 pt-4 border-t border-[var(--border)]">
         <div className="p-3 rounded-[14px] bg-[var(--surface-2)] flex flex-col justify-center whitespace-nowrap overflow-hidden">
           <span className="text-[11px] font-medium text-[var(--text-3)] flex items-center gap-1 truncate">
-            <ThunderboltFilled className="text-[var(--xp)] text-xs" />
+            <ThunderboltFilled className="text-[var(--sun)] text-xs" />
             XP hôm nay
           </span>
           <span className="font-display font-bold text-lg text-[var(--text)] mt-0.5 tabular-nums truncate">
-            +{xpToday} XP
+            <CountUp value={xpToday} formatter={(v) => `+${v} XP`} />
           </span>
         </div>
 
         <div className="p-3 rounded-[14px] bg-[var(--surface-2)] flex flex-col justify-center whitespace-nowrap overflow-hidden">
           <span className="text-[11px] font-medium text-[var(--text-3)] flex items-center gap-1 truncate">
-            <FireFilled className="text-[var(--flame)] text-xs" />
+            <span className="flame-animated">
+              <FireFilled className="text-[var(--flame)] text-xs" />
+            </span>
             Chuỗi ngày
           </span>
           <span className="font-display font-bold text-lg text-[var(--text)] mt-0.5 tabular-nums truncate">
-            {currentStreak} ngày
+            <CountUp value={currentStreak} formatter={(v) => `${v} ngày`} />
           </span>
         </div>
       </div>

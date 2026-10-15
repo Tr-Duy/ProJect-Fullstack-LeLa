@@ -44,10 +44,10 @@ Yêu cầu định dạng phản hồi:
   };
 
   return (
-    <div className="bg-white brutal-card brutal-shadow p-6 border-[3px] border-black rounded-2xl">
-      <div className="flex items-center gap-2 border-b-[3px] border-black pb-3 mb-6">
+    <div className="bg-white rounded-[var(--radius-card)] shadow-[var(--shadow-md)] p-6 border border-[var(--border)] rounded-2xl">
+      <div className="flex items-center gap-2 border-b-[3px] border-[var(--border)] pb-3 mb-6">
         <BookOutlined className="text-2xl text-[#F05A4A]" />
-        <h2 className="text-xl font-black uppercase text-[#1D2A3A] m-0">
+        <h2 className="text-xl font-bold text-[#2B1B0E] m-0">
           TỪ VỰNG CHI TIẾT (VOCABULARY ANALYZER)
         </h2>
       </div>
@@ -60,37 +60,37 @@ Yêu cầu định dạng phản hồi:
           onPressEnter={handleAnalyzeClick}
           placeholder="Nhập từ vựng tiếng Anh (Ví dụ: beautiful, persistent, accomplish)..."
           prefix={<SearchOutlined className="text-gray-400 mr-1" />}
-          className="brutal-input text-lg font-bold border-[2px] border-black shadow-[2px_2px_0px_0px_#000] rounded-xl flex-1"
+          className="brutal-input text-lg font-bold border border-[var(--border)] shadow-[var(--shadow-sm)] rounded-xl flex-1"
         />
         <Button
           onClick={handleAnalyzeClick}
           loading={isLoading}
-          className="brutal-pill border-[2px] border-black font-black uppercase text-white bg-[#2A8B9D] hover:!bg-[#1D2A3A] h-12 px-8 text-base shadow-[2px_2px_0px_0px_#000] shrink-0"
+          className="brutal-pill border border-[var(--border)] font-black text-white bg-[#2A8B9D] hover:!bg-[#2B1B0E] h-12 px-8 text-base shadow-[var(--shadow-sm)] shrink-0"
         >
           PHÂN TÍCH
         </Button>
       </div>
 
       {/* Result Display Pane */}
-      <div className="p-6 bg-[#F4F3EE] rounded-xl border-[2px] border-black shadow-[2px_2px_0px_0px_#000] min-h-[220px]">
+      <div className="p-6 bg-[#F4F3EE] rounded-xl border border-[var(--border)] shadow-[var(--shadow-sm)] min-h-[220px]">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center h-40 gap-3">
             <Spin size="large" />
-            <span className="font-bold text-xs uppercase text-gray-600">AI đang tra cứu IPA, ví dụ và collocations...</span>
+            <span className="font-bold text-xs  text-gray-600">AI đang tra cứu IPA, ví dụ và collocations...</span>
           </div>
         ) : resultText ? (
           <div>
-            <div className="flex justify-between items-center border-b-[2px] border-black pb-3 mb-4">
-              <span className="text-2xl font-black text-[#1D2A3A]">{word}</span>
+            <div className="flex justify-between items-center border-b-[2px] border-[var(--border)] pb-3 mb-4">
+              <span className="text-2xl font-black text-[#2B1B0E]">{word}</span>
               <Button
                 onClick={handleSpeak}
                 icon={<SoundOutlined />}
-                className="brutal-pill border-black bg-[#FFD700] font-bold text-xs text-black"
+                className="brutal-pill border-[var(--border)] bg-[#FFD700] font-bold text-xs text-black"
               >
                 Phát âm chuẩn
               </Button>
             </div>
-            <div className="prose text-[#1D2A3A] font-medium leading-relaxed whitespace-pre-wrap">
+            <div className="prose text-[#2B1B0E] font-medium leading-relaxed whitespace-pre-wrap">
               {resultText}
             </div>
           </div>

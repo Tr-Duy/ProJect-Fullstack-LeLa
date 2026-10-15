@@ -138,7 +138,7 @@ export function QuizzesAdminPage() {
               setSearchQuery(e.target.value);
               setPage(0);
             }}
-            className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand)]"
           />
         </div>
 
@@ -152,7 +152,7 @@ export function QuizzesAdminPage() {
               setSelectedLevelId(e.target.value);
               setPage(0);
             }}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+            className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--brand)] font-medium"
           >
             <option value="ALL">Tất cả Trình độ (Levels)</option>
             {levelsData?.map((lvl: any) => (
@@ -172,7 +172,7 @@ export function QuizzesAdminPage() {
               setSelectedDifficulty(e.target.value);
               setPage(0);
             }}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+            className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--brand)] font-medium"
           >
             <option value="ALL">Tất cả Mức độ</option>
             <option value="EASY">🟢 DỄ (5 câu)</option>
@@ -190,7 +190,7 @@ export function QuizzesAdminPage() {
               setPageSize(Number(e.target.value));
               setPage(0);
             }}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+            className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--brand)] font-medium"
           >
             <option value={20}>20 / trang</option>
             <option value={50}>50 / trang</option>
@@ -230,10 +230,10 @@ export function QuizzesAdminPage() {
 
                 return (
                   <tr key={quiz.id} className="hover:bg-gray-50/80 transition-colors">
-                    <td className="px-4 py-3 font-mono text-xs text-gray-900 font-semibold">{quiz.quizCode}</td>
+                    <td className="px-4 py-3 font-sans text-xs text-gray-900 font-semibold">{quiz.quizCode}</td>
                     <td className="px-4 py-3 text-gray-900 font-medium">{quiz.title}</td>
                     <td className="px-4 py-3">
-                      <span className="font-semibold text-xs px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 border border-blue-200">
+                      <span className="font-semibold text-xs px-2.5 py-1 rounded-md bg-[var(--brand-50)] text-[var(--brand-700)] border border-[var(--border)]">
                         {QUIZ_CATEGORY_MAP[quiz.quizCategory ?? ''] || quiz.quizCategory}
                       </span>
                     </td>

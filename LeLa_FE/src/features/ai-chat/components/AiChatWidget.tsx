@@ -37,11 +37,11 @@ export const AiChatWidget: React.FC = () => {
     <div className="fixed bottom-[92px] right-4 md:bottom-[100px] md:right-6 z-50 flex flex-col items-end pointer-events-none">
       {/* AI Chat Window Panel */}
       {isOpen && (
-        <div className="pointer-events-auto mb-4 w-[calc(100vw-32px)] sm:w-[420px] h-[580px] max-h-[82vh] bg-white shadow-2xl rounded-2xl overflow-hidden border-[3px] border-black flex flex-col transition-all transform origin-bottom-right brutal-box">
+        <div className="pointer-events-auto mb-4 w-[calc(100vw-32px)] sm:w-[420px] h-[580px] max-h-[82vh] bg-white shadow-2xl rounded-2xl overflow-hidden border border-[var(--border)] flex flex-col transition-all transform origin-bottom-right ">
           {/* Header */}
-          <div className="bg-[#1D2A3A] text-white p-3.5 flex items-center justify-between border-b-[3px] border-black">
+          <div className="bg-[#2B1B0E] text-white p-3.5 flex items-center justify-between border-b-[3px] border-[var(--border)]">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-[#FFD700] border-[2px] border-black flex items-center justify-center shrink-0">
+              <div className="w-10 h-10 rounded-full bg-[#FFD700] border border-[var(--border)] flex items-center justify-center shrink-0">
                 <AiTutorMascotIcon size={26} />
               </div>
               <div>
@@ -59,7 +59,7 @@ export const AiChatWidget: React.FC = () => {
                   setIsOpen(false);
                   navigate('/ai-chat');
                 }}
-                className="px-2.5 py-1 rounded-lg bg-[#2A8B9D] hover:bg-[#206f7e] text-white text-xs font-bold transition-colors border border-black flex items-center gap-1 shadow-[1px_1px_0px_0px_#000]"
+                className="px-2.5 py-1 rounded-lg bg-[#2A8B9D] hover:bg-[#206f7e] text-white text-xs font-bold transition-colors border border-[var(--border)] flex items-center gap-1 shadow-[var(--shadow-sm)]"
                 title="Mở toàn màn hình AI Chat"
               >
                 <span>Toàn màn hình</span>
@@ -85,7 +85,7 @@ export const AiChatWidget: React.FC = () => {
       {/* Speech Bubble for First Time User */}
       {!isOpen && !isBubbleDismissed && (
         <div className="pointer-events-auto mb-3 animate-bounce">
-          <div className="bg-[#FFD700] text-[#1D2A3A] border-[2.5px] border-black px-4 py-2.5 rounded-2xl shadow-[3px_3px_0px_0px_#000] text-xs font-black flex items-center gap-2 relative">
+          <div className="bg-[#FFD700] text-[#2B1B0E] border border-[var(--border)] px-4 py-2.5 rounded-2xl shadow-[var(--shadow-sm)] text-xs font-black flex items-center gap-2 relative">
             <span>👋 Cần hỗ trợ học tiếng Anh không?</span>
             <button
               onClick={handleDismissBubble}
@@ -105,7 +105,7 @@ export const AiChatWidget: React.FC = () => {
       <div className="pointer-events-auto relative flex items-center">
         {/* Desktop Tooltip */}
         {!isOpen && showTooltip && (
-          <div className="hidden md:block absolute right-full mr-3 whitespace-nowrap bg-[#1D2A3A] text-white font-black text-xs px-3 py-2 rounded-xl border-[2px] border-black shadow-[2px_2px_0px_0px_#000] pointer-events-none">
+          <div className="hidden md:block absolute right-full mr-3 whitespace-nowrap bg-[#2B1B0E] text-white font-black text-xs px-3 py-2 rounded-xl border border-[var(--border)] shadow-[var(--shadow-sm)] pointer-events-none">
             AI Tutor – Trợ lý học tập
           </div>
         )}
@@ -116,12 +116,12 @@ export const AiChatWidget: React.FC = () => {
           onMouseEnter={() => setShowTooltip(true)}
           onMouseLeave={() => setShowTooltip(false)}
           aria-label="Mở AI Tutor - Trợ lý học tiếng Anh"
-          className="w-14 h-14 md:w-16 md:h-16 bg-[#F05A4A] hover:bg-[#d94f41] rounded-full text-white flex items-center justify-center border-[3px] border-black shadow-[4px_4px_0px_0px_#000] hover:scale-105 hover:-translate-y-1 transition-all relative group"
+          className="w-14 h-14 md:w-16 md:h-16 bg-[#F05A4A] hover:bg-[#d94f41] rounded-full text-white flex items-center justify-center border border-[var(--border)] shadow-[var(--shadow-sm)] hover:scale-105 hover:-translate-y-1 transition-all relative group"
         >
           {/* Badge Glow */}
           <span className="absolute -top-1 -right-1 flex h-4 w-4">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#FFD700] opacity-75" />
-            <span className="relative inline-flex rounded-full h-4 w-4 bg-[#FFD700] border border-black" />
+            <span className="relative inline-flex rounded-full h-4 w-4 bg-[#FFD700] border border-[var(--border)]" />
           </span>
 
           {isOpen ? (

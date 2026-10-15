@@ -11,6 +11,9 @@ import java.util.List;
 public interface UserSubscriptionRepository extends JpaRepository<UserSubscription, Long> {
     org.springframework.data.domain.Page<UserSubscription> findByUserId(Long userId, org.springframework.data.domain.Pageable pageable);
 
+    @Query("SELECT us FROM UserSubscription us JOIN FETCH us.plan WHERE us.user.id = :userId AND us.status = 'ACTIVE' AND (us.expiresAt IS NULL OR us.expiresAt > :now)")
+    List<UserSubscription> findActiveSubscriptionsByUserId(@org.springframework.data.repository.query.Param("userId") Long userId, @org.springframework.data.repository.query.Param("now") java.time.LocalDateTime now);
+
     @Query("SELECT p.name, COUNT(us) FROM UserSubscription us JOIN us.plan p WHERE us.status = 'ACTIVE' GROUP BY p.name")
     List<Object[]> countActiveSubscriptionsGroupedByPlan();
 

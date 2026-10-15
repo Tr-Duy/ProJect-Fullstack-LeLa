@@ -3,7 +3,7 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, 
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../../../shared/lib/api';
 
-const COLORS = ['#9ca3af', '#3b82f6', '#8b5cf6', '#ec4899']; // Geist grays and branding colors
+const COLORS = ['#9ca3af', 'var(--brand)', '#8b5cf6', '#ec4899']; // Geist grays and branding colors
 
 export function AdminDashboardPage() {
   const { data: metrics, isLoading } = useQuery({
@@ -89,8 +89,8 @@ export function AdminDashboardPage() {
               <AreaChart data={userActivityData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorUsers" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="var(--brand)" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="var(--brand)" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
                 <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
@@ -99,7 +99,7 @@ export function AdminDashboardPage() {
                   contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e5e7eb', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                   itemStyle={{ color: '#111827', fontWeight: 500 }}
                 />
-                <Area type="monotone" dataKey="users" stroke="#3b82f6" fillOpacity={1} fill="url(#colorUsers)" />
+                <Area type="monotone" dataKey="users" stroke="var(--brand)" fillOpacity={1} fill="url(#colorUsers)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>

@@ -73,6 +73,7 @@ public class DailyLearningActivityServiceImpl implements DailyLearningActivitySe
         activity.setQuizCount(activity.getQuizCount() + (request.getQuizCount() != null ? request.getQuizCount() : 0));
         activity.setMinutesSpent(activity.getMinutesSpent() + (request.getMinutesSpent() != null ? request.getMinutesSpent() : 0));
         activity.setXpEarned(activity.getXpEarned() + (request.getXpEarned() != null ? request.getXpEarned() : 0));
+        activity.setVoiceSessionCount(activity.getVoiceSessionCount() + (request.getVoiceSessionCount() != null ? request.getVoiceSessionCount() : 0));
 
         if (request.getGoalMet() != null) {
             activity.setGoalMet(request.getGoalMet());

@@ -35,7 +35,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({ onSelectAction }) =>
         <button
           key={idx}
           onClick={() => onSelectAction(action.prompt)}
-          className="flex items-center gap-2 px-3 py-2 bg-white border-[2px] border-black rounded-lg text-xs font-bold text-[#1D2A3A] hover:bg-[#2A8B9D] hover:text-white transition-all shadow-[2px_2px_0px_0px_#000] text-left"
+          className="flex items-center gap-2 px-3 py-2 bg-white border border-[var(--border)] rounded-lg text-xs font-bold text-[#2B1B0E] hover:bg-[#2A8B9D] hover:text-white transition-all shadow-[var(--shadow-sm)] text-left"
         >
           <span>{action.label}</span>
         </button>

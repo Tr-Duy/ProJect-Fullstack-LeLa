@@ -59,8 +59,8 @@ export function OAuth2RedirectHandler() {
     <div className="min-h-screen flex items-center justify-center bg-[#F4F3EE] p-4 relative font-sans">
       <BackgroundPattern />
       <div className="z-10 w-full max-w-md">
-        <div className="brutal-card brutal-shadow bg-white p-8 border-[3px] border-black text-center">
-          <h2 className="text-2xl font-black uppercase text-brand-navy mb-4">Đang xác thực...</h2>
+        <div className="rounded-[var(--radius-card)] shadow-[var(--shadow-md)] bg-white p-8 border border-[var(--border)] text-center">
+          <h2 className="text-2xl font-black  text-brand-navy mb-4">Đang xác thực...</h2>
           <p className="font-bold text-gray-500">Vui lòng đợi trong giây lát.</p>
         </div>
       </div>

@@ -28,4 +28,5 @@ public class SrsReviewRequest {
     private LocalDateTime clientReviewedAt;
     private LocalDateTime serverReceivedAt;
     private LocalDateTime reviewedAt;
+    private Boolean cramMode;
 }

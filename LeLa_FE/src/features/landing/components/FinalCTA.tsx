@@ -1,7 +1,6 @@
 import React from 'react';
-import { Button } from 'antd';
-import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Compass } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../shared/providers/AuthProvider';
 
 export const FinalCTA: React.FC = () => {
@@ -9,38 +8,41 @@ export const FinalCTA: React.FC = () => {
   const { isAuthenticated } = useAuth();
 
   return (
-    <section className="w-full py-24 bg-[#1D2A3A] text-white border-b-[3px] border-black relative overflow-hidden">
+    <section className="w-full py-24 bg-[#181E24] text-white border-b-2 border-black relative overflow-hidden">
       <div className="mx-auto max-w-[1400px] px-6 lg:px-12 text-center relative z-10">
-        <span className="inline-block bg-[#F05A4A] text-white font-black uppercase text-xs px-4 py-1.5 rounded-full border-[2px] border-black shadow-[2px_2px_0px_0px_#000] mb-6">
+        <span className="inline-block bg-[#FF5733] text-white font-black uppercase text-xs px-4 py-1.5 rounded-full border-2 border-black shadow-[3px_3px_0px_#000] mb-6">
           BẮT ĐẦU NGAY HÔM NAY
         </span>
 
-        <h2 className="text-3xl md:text-6xl font-black uppercase tracking-tight text-white mb-6 leading-tight max-w-4xl mx-auto">
-          Sẵn Sàng Chinh Phục Tiếng Anh Cùng LeLa?
+        <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white !text-white tracking-tight uppercase text-center mb-4 leading-tight max-w-4xl mx-auto">
+          Sẵn Sàng Chinh Phục <span className="text-amber-400 !text-amber-400">Tiếng Anh Cùng LeLa?</span>
         </h2>
 
-        <p className="text-lg md:text-xl font-medium text-gray-300 max-w-2xl mx-auto mb-10 leading-relaxed">
-          Đăng ký miễn phí trong vài giây và trải nghiệm phương pháp học từ vựng hiệu quả hơn mỗi ngày.
+        <p className="text-base sm:text-lg text-slate-300 max-w-2xl mx-auto text-center mb-8 font-medium leading-relaxed">
+          Tạo tài khoản miễn phí chỉ trong 30 giây. Bắt đầu xây dựng lộ trình học từ vựng khoa học và hiệu quả ngay hôm nay.
         </p>
 
         <div className="flex flex-wrap items-center justify-center gap-4">
-          <Button
+          <button
+            type="button"
             onClick={() => navigate(isAuthenticated ? '/dashboard' : '/register')}
-            className="brutal-pill border-[2px] border-black font-black uppercase text-white bg-[#F05A4A] hover:!bg-[#d94f41] h-14 px-10 text-lg shadow-[4px_4px_0px_0px_#000] flex items-center gap-2"
+            className="bg-white text-black font-black px-8 py-3.5 rounded-xl border-2 border-black shadow-[3px_3px_0px_#000] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all flex items-center gap-2 cursor-pointer text-base md:text-lg"
           >
             <span>Bắt Đầu Học Miễn Phí</span>
             <ArrowRight className="w-5 h-5" />
-          </Button>
+          </button>
 
-          <Button
+          <button
+            type="button"
             onClick={() => navigate('/decks')}
-            className="brutal-pill border-[2px] border-black font-black uppercase text-black bg-[#FFD700] hover:!bg-[#ffe033] h-14 px-8 text-lg shadow-[4px_4px_0px_0px_#000] flex items-center gap-2"
+            className="bg-white text-black font-black px-8 py-3.5 rounded-xl border-2 border-black shadow-[3px_3px_0px_#000] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all flex items-center gap-2 cursor-pointer text-base md:text-lg"
           >
             <Compass className="w-5 h-5" />
             <span>Khám Phá Bộ Thẻ</span>
-          </Button>
+          </button>
         </div>
       </div>
     </section>
   );
 };
+export default FinalCTA;

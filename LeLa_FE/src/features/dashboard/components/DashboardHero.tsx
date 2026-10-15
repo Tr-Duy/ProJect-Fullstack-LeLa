@@ -55,7 +55,7 @@ export const DashboardHero: React.FC<DashboardHeroProps> = ({
   }
 
   return (
-    <div className="brutal-card brutal-shadow bg-gradient-to-r from-[#1D2A3A] to-[#2A8B9D] text-white p-6 md:p-10 mb-8 border-[3px] border-black relative overflow-hidden">
+    <div className="rounded-[var(--radius-card)] shadow-[var(--shadow-md)] bg-gradient-to-r from-[#2B1B0E] to-[#2A8B9D] text-white p-6 md:p-10 mb-8 border border-[var(--border)] relative overflow-hidden">
       {/* Decorative Blur Effect */}
       <div className="absolute top-0 right-0 w-64 h-64 bg-[#F05A4A] rounded-full translate-x-20 -translate-y-20 blur-3xl opacity-30 pointer-events-none" />
 
@@ -64,7 +64,7 @@ export const DashboardHero: React.FC<DashboardHeroProps> = ({
           <div className="flex flex-wrap items-center gap-3">
             <span className="text-2xl md:text-3xl font-black">👋 Chào {username}!</span>
             {levelName && (
-              <span className="bg-[#FFD700] text-black font-black text-xs md:text-sm px-3 py-1 brutal-border border-black shadow-[2px_2px_0px_0px_#000]">
+              <span className="bg-[#FFD700] text-black font-black text-xs md:text-sm px-3 py-1 border border-[var(--border)] border-[var(--border)] shadow-[var(--shadow-sm)]">
                 {levelName}
               </span>
             )}
@@ -82,7 +82,7 @@ export const DashboardHero: React.FC<DashboardHeroProps> = ({
         <div className="shrink-0 w-full md:w-auto">
           <Button
             onClick={ctaAction}
-            className="w-full md:w-auto h-14 px-8 brutal-pill !bg-[#F05A4A] hover:!bg-[#d94f41] !text-white font-black text-lg md:text-xl border-[2px] border-black shadow-[4px_4px_0px_0px_#000] hover:-translate-y-1 transition-transform flex items-center justify-center gap-2"
+            className="w-full md:w-auto h-14 px-8 brutal-pill !bg-[#F05A4A] hover:!bg-[#d94f41] !text-white font-black text-lg md:text-xl border border-[var(--border)] shadow-[var(--shadow-sm)] hover:-translate-y-1 transition-transform flex items-center justify-center gap-2"
           >
             {ctaButtonText}
           </Button>

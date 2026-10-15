@@ -66,7 +66,7 @@ export function NotificationsAdminPage() {
             <textarea 
               {...register('message', { required: 'Vui lòng nhập nội dung' })} 
               placeholder="Nhập nội dung chi tiết của thông báo..."
-              className="flex w-full min-h-[120px] resize-none rounded-md border border-geist-gray-400 bg-transparent px-3 py-2 text-sm text-geist-gray-1000 placeholder:text-geist-gray-600 focus:outline-none focus:ring-2 focus:ring-geist-blue-700 hover:border-geist-gray-600 transition-colors"
+              className="flex w-full min-h-[120px] resize-none rounded-md border border-geist-gray-400 bg-transparent px-3 py-2 text-sm text-geist-gray-1000 placeholder:text-geist-gray-600 focus:outline-none focus:ring-2 focus:ring-[var(--brand)] hover:border-geist-gray-600 transition-colors"
               rows={5}
             />
             {errors.message && <span className="text-xs text-geist-red-800">{errors.message.message}</span>}
@@ -76,7 +76,7 @@ export function NotificationsAdminPage() {
             <label className="text-sm font-medium text-geist-gray-1000">Loại thông báo</label>
             <select 
               {...register('type')}
-              className="flex h-10 w-full rounded-md border border-geist-gray-400 bg-geist-bg-100 px-3 py-2 text-sm text-geist-gray-1000 focus:outline-none focus:ring-2 focus:ring-geist-blue-700 hover:border-geist-gray-600 transition-colors"
+              className="flex h-10 w-full rounded-md border border-geist-gray-400 bg-geist-bg-100 px-3 py-2 text-sm text-geist-gray-1000 focus:outline-none focus:ring-2 focus:ring-[var(--brand)] hover:border-geist-gray-600 transition-colors"
             >
               <option value="SYSTEM">Cảnh báo hệ thống</option>
               <option value="NEW_CONTENT">Cập nhật tính năng / Nội dung mới</option>
@@ -117,7 +117,7 @@ export function NotificationsAdminPage() {
                   <tr><td colSpan={6} className="px-4 py-8 text-center text-geist-gray-600">Đang tải...</td></tr>
                 ) : notificationsData?.data?.content?.map((notif: any) => (
                   <tr key={notif.id} className="hover:bg-geist-gray-100/50 transition-colors">
-                    <td className="px-4 py-3 font-mono text-geist-gray-700 text-xs">
+                    <td className="px-4 py-3 font-sans text-geist-gray-700 text-xs">
                       {new Date(notif.createdAt).toLocaleString('vi-VN')}
                     </td>
                     <td className="px-4 py-3 text-geist-gray-1000 font-medium">User {notif.userId}</td>
@@ -139,7 +139,7 @@ export function NotificationsAdminPage() {
                       )}
                     </td>
                     <td className="px-4 py-3 max-w-[200px] truncate text-geist-red-800" title={notif.failureReason || ''}>
-                      {notif.failedAt && <div className="text-xs font-mono">{new Date(notif.failedAt).toLocaleString('vi-VN')}</div>}
+                      {notif.failedAt && <div className="text-xs font-sans">{new Date(notif.failedAt).toLocaleString('vi-VN')}</div>}
                       {notif.failureReason}
                     </td>
                   </tr>

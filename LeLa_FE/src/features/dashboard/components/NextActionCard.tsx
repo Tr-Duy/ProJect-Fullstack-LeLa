@@ -1,7 +1,6 @@
 import React from 'react';
-import { ArrowRightOutlined, BookOutlined, AudioOutlined, CheckCircleFilled } from '@ant-design/icons';
+import { ArrowRightOutlined, BookOutlined, AudioOutlined, CheckCircleFilled, TrophyFilled } from '@ant-design/icons';
 import { VocabCard } from '../../../shared/components/ui/VocabCard';
-import { LelaMascot } from '../../../shared/components/ui/LelaMascot';
 import type { FlashcardResponse } from '../../../shared/types/lela';
 
 interface NextActionCardProps {
@@ -46,13 +45,16 @@ export const NextActionCard: React.FC<NextActionCardProps> = ({
   const vocabAudio = featuredCard?.frontAudioUrl;
 
   return (
-    <div className="bg-[var(--surface)] rounded-[24px] p-6 sm:p-8 border border-[var(--border)] shadow-[var(--shadow-md)] relative transition-all duration-200">
-      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_320px] items-center gap-8">
+    <div className="bg-[var(--brand-50)] rounded-[24px] p-6 sm:p-8 border border-[var(--border)] shadow-[var(--shadow-md)] relative overflow-hidden transition-all duration-200">
+      {/* Subtle Dot Pattern in top-right corner */}
+      <div className="absolute -top-6 -right-6 w-48 h-48 rounded-full dot-pattern-brand opacity-60 pointer-events-none" />
+
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_320px] items-center gap-8 relative z-10">
         {/* Left Side: Priority Next Action */}
         <div className="min-w-0 space-y-4 text-left w-full">
           {dueTodayCount > 0 ? (
             <>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--brand-50)] text-[var(--brand-700)] text-xs font-semibold">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/80 border border-[var(--brand-100)] text-[var(--brand-700)] text-xs font-semibold shadow-xs">
                 <span className="w-2 h-2 rounded-full bg-[var(--brand)] animate-pulse" />
                 Ôn tập định kỳ SM-2
               </div>
@@ -70,7 +72,7 @@ export const NextActionCard: React.FC<NextActionCardProps> = ({
                 <button
                   type="button"
                   onClick={onStartReview}
-                  className="h-12 px-6 rounded-[12px] bg-[var(--brand)] hover:bg-[var(--brand-700)] text-white text-sm sm:text-base font-semibold shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2 cursor-pointer"
+                  className="h-12 px-6 rounded-[12px] bg-[var(--brand)] hover:bg-[var(--brand-600)] text-[#2A1300] text-sm sm:text-base font-semibold shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2 cursor-pointer btn-shine"
                 >
                   <span>Bắt đầu ôn</span>
                   <ArrowRightOutlined className="text-xs" />
@@ -79,7 +81,7 @@ export const NextActionCard: React.FC<NextActionCardProps> = ({
                 <button
                   type="button"
                   onClick={onLearnNew}
-                  className="h-12 px-5 rounded-[12px] bg-[var(--surface-2)] hover:bg-[var(--border)] text-[var(--text-2)] hover:text-[var(--text)] text-sm font-semibold transition-colors flex items-center gap-2 cursor-pointer"
+                  className="h-12 px-5 rounded-[12px] bg-white hover:bg-[var(--surface-2)] text-[var(--text-2)] hover:text-[var(--text)] text-sm font-semibold border border-[var(--border)] transition-colors flex items-center gap-2 cursor-pointer shadow-xs"
                 >
                   <BookOutlined />
                   <span>Học thẻ mới</span>
@@ -88,7 +90,7 @@ export const NextActionCard: React.FC<NextActionCardProps> = ({
             </>
           ) : !isGoalMet ? (
             <>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--success-50)] text-[var(--success)] text-xs font-semibold">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--success-50)] text-[var(--success)] text-xs font-semibold border border-[var(--success)]/20 shadow-xs">
                 <CheckCircleFilled />
                 Đã xong các thẻ đến hạn
               </div>
@@ -106,7 +108,7 @@ export const NextActionCard: React.FC<NextActionCardProps> = ({
                 <button
                   type="button"
                   onClick={onLearnNew}
-                  className="h-12 px-6 rounded-[12px] bg-[var(--brand)] hover:bg-[var(--brand-700)] text-white text-sm sm:text-base font-semibold shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2 cursor-pointer"
+                  className="h-12 px-6 rounded-[12px] bg-[var(--brand)] hover:bg-[var(--brand-600)] text-[#2A1300] text-sm sm:text-base font-semibold shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2 cursor-pointer btn-shine"
                 >
                   <BookOutlined />
                   <span>Học từ mới ngay</span>
@@ -116,8 +118,8 @@ export const NextActionCard: React.FC<NextActionCardProps> = ({
             </>
           ) : (
             <>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--success-50)] text-[var(--success)] text-xs font-semibold">
-                <span>🎉</span>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--success-50)] text-[var(--success)] text-xs font-semibold border border-[var(--success)]/20 shadow-xs">
+                <CheckCircleFilled />
                 Mục tiêu hôm nay đã xong!
               </div>
 
@@ -135,7 +137,7 @@ export const NextActionCard: React.FC<NextActionCardProps> = ({
                   <button
                     type="button"
                     onClick={onStartVoiceAI}
-                    className="h-12 px-6 rounded-[12px] bg-[var(--brand)] hover:bg-[var(--brand-700)] text-white text-sm sm:text-base font-semibold shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2 cursor-pointer"
+                    className="h-12 px-6 rounded-[12px] bg-[var(--brand)] hover:bg-[var(--brand-600)] text-[#2A1300] text-sm sm:text-base font-semibold shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2 cursor-pointer btn-shine"
                   >
                     <AudioOutlined />
                     <span>Luyện nói với AI</span>
@@ -145,7 +147,7 @@ export const NextActionCard: React.FC<NextActionCardProps> = ({
                   <button
                     type="button"
                     onClick={onStartQuiz}
-                    className="h-12 px-6 rounded-[12px] bg-[var(--brand)] hover:bg-[var(--brand-700)] text-white text-sm sm:text-base font-semibold shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2 cursor-pointer"
+                    className="h-12 px-6 rounded-[12px] bg-[var(--brand)] hover:bg-[var(--brand-600)] text-[#2A1300] text-sm sm:text-base font-semibold shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2 cursor-pointer btn-shine"
                   >
                     <span>Làm bài kiểm tra</span>
                     <ArrowRightOutlined className="text-xs" />
@@ -155,7 +157,7 @@ export const NextActionCard: React.FC<NextActionCardProps> = ({
                 <button
                   type="button"
                   onClick={onLearnNew}
-                  className="h-12 px-5 rounded-[12px] bg-[var(--surface-2)] hover:bg-[var(--border)] text-[var(--text-2)] hover:text-[var(--text)] text-sm font-semibold transition-colors flex items-center gap-2 cursor-pointer"
+                  className="h-12 px-5 rounded-[12px] bg-white hover:bg-[var(--surface-2)] text-[var(--text-2)] hover:text-[var(--text)] text-sm font-semibold border border-[var(--border)] transition-colors flex items-center gap-2 cursor-pointer shadow-xs"
                 >
                   <BookOutlined />
                   <span>Học thêm từ mới</span>
@@ -165,16 +167,18 @@ export const NextActionCard: React.FC<NextActionCardProps> = ({
           )}
         </div>
 
-        {/* Right Side: Real Interactive Vocabulary Card (or Lela celebrating if goal achieved) */}
+        {/* Right Side: Real Interactive Vocabulary Card */}
         <div className="w-full max-w-[320px] min-w-0 [overflow-wrap:anywhere] p-4 flex items-center justify-center mx-auto">
           {isGoalMet && dueTodayCount === 0 ? (
-            <div className="flex flex-col items-center justify-center p-6 bg-[var(--surface-2)] rounded-[20px] text-center w-full max-w-[300px]">
-              <LelaMascot size={88} mood="celebrating" />
-              <span className="font-display font-bold text-base text-[var(--text)] mt-3">
+            <div className="flex flex-col items-center justify-center p-6 bg-white rounded-[20px] text-center w-full max-w-[300px] border border-[var(--border)] shadow-[var(--shadow-sm)]">
+              <div className="w-16 h-16 rounded-full bg-[var(--sun-100)] text-[var(--brand-700)] flex items-center justify-center text-3xl mb-3 shadow-xs">
+                <TrophyFilled className="text-[var(--brand)]" />
+              </div>
+              <span className="font-display font-bold text-base text-[var(--text)]">
                 Tuyệt vời lắm!
               </span>
-              <span className="text-xs text-[var(--text-3)] mt-1">
-                Đã hoàn thành {cardsReviewedToday}/{dailyGoalTarget} thẻ hôm nay
+              <span className="text-xs text-[var(--text-2)] mt-1">
+                Đã hoàn thành <strong className="text-[var(--brand-700)]">{cardsReviewedToday}/{dailyGoalTarget}</strong> thẻ hôm nay
               </span>
             </div>
           ) : (

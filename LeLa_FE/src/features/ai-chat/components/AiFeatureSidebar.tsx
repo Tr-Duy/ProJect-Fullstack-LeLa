@@ -62,7 +62,7 @@ const featureCategories = [
 
 export const AiFeatureSidebar: React.FC<AiFeatureSidebarProps> = ({ onSelectFeature }) => {
   return (
-    <div className="w-80 h-full bg-white border-4 border-brand-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-2xl flex flex-col brutal-box overflow-hidden">
+    <div className="w-80 h-full bg-white border-4 border-brand-black shadow-[var(--shadow-md)] rounded-2xl flex flex-col  overflow-hidden">
       <div className="bg-brand-navy text-white p-4 border-b-4 border-brand-black">
         <h2 className="font-black text-xl flex items-center gap-2">
           <Brain className="w-6 h-6" />
@@ -72,7 +72,7 @@ export const AiFeatureSidebar: React.FC<AiFeatureSidebarProps> = ({ onSelectFeat
       <div className="flex-1 overflow-y-auto p-4 space-y-6">
         {featureCategories.map((cat, idx) => (
           <div key={idx}>
-            <h3 className="font-bold text-gray-500 uppercase text-xs mb-3 tracking-wider">{cat.title}</h3>
+            <h3 className="font-bold text-gray-500  text-xs mb-3 tracking-normal">{cat.title}</h3>
             <div className="space-y-2">
               {cat.features.map((feat, fIdx) => {
                 const Icon = feat.icon;
@@ -80,7 +80,7 @@ export const AiFeatureSidebar: React.FC<AiFeatureSidebarProps> = ({ onSelectFeat
                   <button
                     key={fIdx}
                     onClick={() => onSelectFeature(feat.prompt)}
-                    className="w-full flex items-center gap-3 p-3 bg-gray-50 border-2 border-transparent rounded-xl hover:border-brand-black hover:bg-brand-yellow/20 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all text-left group"
+                    className="w-full flex items-center gap-3 p-3 bg-gray-50 border-2 border-transparent rounded-xl hover:border-brand-black hover:bg-brand-yellow/20 hover:shadow-[var(--shadow-md)] transition-all text-left group"
                   >
                     <div className="p-1.5 bg-white rounded-lg border border-gray-200 group-hover:border-brand-black group-hover:bg-brand-purple group-hover:text-white transition-colors">
                       <Icon className="w-4 h-4 text-gray-600 group-hover:text-white" />

@@ -14,7 +14,7 @@ export const ServerWakeBanner: React.FC = () => {
   const isFailed = status === 'timeout' || status === 'error';
 
   return (
-    <div className="w-full bg-[#FFE8E5] border-b-[3px] border-black py-2.5 px-4 sticky top-0 z-50 transition-all duration-300">
+    <div className="w-full bg-[#FFE8E5] border-b-[3px] border-[var(--border)] py-2.5 px-4 sticky top-0 z-50 transition-all duration-300">
       <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3 text-sm">
         <div className="flex items-center gap-2.5">
           {isFailed ? (
@@ -42,7 +42,7 @@ export const ServerWakeBanner: React.FC = () => {
             type="primary"
             onClick={retryCheck}
             icon={<ReloadOutlined />}
-            className="brutal-pill !bg-brand-coral !text-white font-bold h-8 px-4 border-[2px] border-black shadow-[2px_2px_0px_0px_#000] hover:!bg-[#d94f41]"
+            className="brutal-pill !bg-brand-coral !text-white font-bold h-8 px-4 border border-[var(--border)] shadow-[var(--shadow-sm)] hover:!bg-[#d94f41]"
           >
             Thử lại
           </Button>

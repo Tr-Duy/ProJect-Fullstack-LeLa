@@ -24,17 +24,17 @@ export const LeLaSupportTool: React.FC = () => {
     },
     {
       title: 'Báo lỗi hệ thống & Góp ý',
-      icon: <BugOutlined className="text-xl text-[#1D2A3A]" />,
+      icon: <BugOutlined className="text-xl text-[#2B1B0E]" />,
       desc: 'Gặp lỗi giao diện, từ vựng sai hoặc đóng góp ý kiến.',
       contactText: 'Mọi góp ý của bạn giúp hệ thống học tập LeLa hoàn thiện hơn!',
     },
   ];
 
   return (
-    <div className="bg-white brutal-card brutal-shadow p-6 border-[3px] border-black rounded-2xl">
-      <div className="flex items-center gap-2 border-b-[3px] border-black pb-3 mb-6">
+    <div className="bg-white rounded-[var(--radius-card)] shadow-[var(--shadow-md)] p-6 border border-[var(--border)] rounded-2xl">
+      <div className="flex items-center gap-2 border-b-[3px] border-[var(--border)] pb-3 mb-6">
         <CustomerServiceOutlined className="text-2xl text-[#2A8B9D]" />
-        <h2 className="text-xl font-black uppercase text-[#1D2A3A] m-0">
+        <h2 className="text-xl font-bold text-[#2B1B0E] m-0">
           TRUNG TÂM HỖ TRỢ LELA (SYSTEM SUPPORT)
         </h2>
       </div>
@@ -47,11 +47,11 @@ export const LeLaSupportTool: React.FC = () => {
         {supportTopics.map((topic, idx) => (
           <div
             key={idx}
-            className="p-5 bg-[#F4F3EE] rounded-xl border-[2px] border-black shadow-[2px_2px_0px_0px_#000]"
+            className="p-5 bg-[#F4F3EE] rounded-xl border border-[var(--border)] shadow-[var(--shadow-sm)]"
           >
             <div className="flex items-center gap-3 mb-2">
               {topic.icon}
-              <h3 className="text-lg font-black text-[#1D2A3A] m-0">{topic.title}</h3>
+              <h3 className="text-lg font-black text-[#2B1B0E] m-0">{topic.title}</h3>
             </div>
             <p className="text-xs font-bold text-gray-500 mb-3">{topic.desc}</p>
             <div className="text-sm font-medium text-gray-700 bg-white p-3 rounded-lg border border-gray-300">
@@ -61,7 +61,7 @@ export const LeLaSupportTool: React.FC = () => {
         ))}
       </div>
 
-      <div className="bg-[#1D2A3A] text-white p-6 rounded-xl border-[2px] border-black flex flex-col md:flex-row justify-between items-center gap-4">
+      <div className="bg-[#2B1B0E] text-white p-6 rounded-xl border border-[var(--border)] flex flex-col md:flex-row justify-between items-center gap-4">
         <div>
           <h4 className="text-lg font-black text-[#FFD700] m-0">Cần trò chuyện trực tiếp với Ban Quản Trị?</h4>
           <p className="text-sm font-medium text-gray-300 m-0 mt-1">
@@ -75,7 +75,7 @@ export const LeLaSupportTool: React.FC = () => {
               chatWidgetButton.click();
             }
           }}
-          className="brutal-pill border-black font-black uppercase text-black bg-[#FFD700] hover:!bg-white h-11 px-6 text-sm shrink-0"
+          className="brutal-pill border-[var(--border)] font-black text-black bg-[#FFD700] hover:!bg-white h-11 px-6 text-sm shrink-0"
         >
           MỞ CHAT HỖ TRỢ
         </Button>

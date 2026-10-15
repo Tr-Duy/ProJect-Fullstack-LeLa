@@ -53,6 +53,7 @@ public class AchievementService {
                 userId, LocalDate.now().minusYears(10), LocalDate.now());
 
         long totalXp = allActivities.stream().mapToLong(a -> a.getXpEarned() != null ? a.getXpEarned() : 0).sum();
+        long totalVoiceSessions = allActivities.stream().mapToLong(a -> a.getVoiceSessionCount() != null ? a.getVoiceSessionCount() : 0).sum();
         long totalReviews = allActivities.stream().mapToLong(a -> a.getReviewCount() != null ? a.getReviewCount() : 0).sum();
         long totalDecks = deckEnrollmentRepository.countByUserId(userId);
         long totalQuizAttempts = quizAttemptRepository.countByUserId(userId);
@@ -105,6 +106,8 @@ public class AchievementService {
                 unlocked = (totalQuizPerfect >= cval);
             } else if ("TOEIC_LEVEL".equalsIgnoreCase(ctype)) {
                 unlocked = (toeicLevelOrder >= cval);
+            } else if ("VOICE_SESSIONS".equalsIgnoreCase(ctype)) {
+                unlocked = (totalVoiceSessions >= cval);
             } else if ("TOPIC_DECKS".equalsIgnoreCase(ctype)) {
                 unlocked = (totalDecks >= cval);
             } else if ("TOPICS_MASTERED".equalsIgnoreCase(ctype)) {
@@ -182,6 +185,7 @@ public class AchievementService {
                 userId, LocalDate.now().minusYears(10), LocalDate.now());
 
         long totalXp = allActivities.stream().mapToLong(a -> a.getXpEarned() != null ? a.getXpEarned() : 0).sum();
+        long totalVoiceSessions = allActivities.stream().mapToLong(a -> a.getVoiceSessionCount() != null ? a.getVoiceSessionCount() : 0).sum();
         long totalReviews = allActivities.stream().mapToLong(a -> a.getReviewCount() != null ? a.getReviewCount() : 0).sum();
         long totalDecks = deckEnrollmentRepository.countByUserId(userId);
         long totalQuizAttempts = quizAttemptRepository.countByUserId(userId);

@@ -1,37 +1,49 @@
-import { Button } from "antd";
+import { ArrowRight, Compass } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface Props {
   onAction?: (path: string) => void;
 }
 
 export function CtaSection({ onAction }: Props) {
+  const navigate = useNavigate();
+
   return (
-    <section className="w-full bg-brand-navy py-32 border-y-[3px] border-brand-black">
-      <div className="mx-auto max-w-[1000px] px-6 lg:px-12 text-center">
-        <h2 className="text-5xl md:text-6xl font-extrabold tracking-tight text-white mb-8">
-          Sẵn sàng mở rộng vốn từ?
+    <section className="w-full py-24 bg-[#181E24] text-white border-y-2 border-black relative overflow-hidden">
+      <div className="mx-auto max-w-[1400px] px-6 lg:px-12 text-center relative z-10">
+        <span className="inline-block bg-[#FF5733] text-white font-black uppercase text-xs px-4 py-1.5 rounded-full border-2 border-black shadow-[3px_3px_0px_#000] mb-6">
+          BẮT ĐẦU NGAY HÔM NAY
+        </span>
+
+        <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white !text-white tracking-tight uppercase text-center mb-4 leading-tight max-w-4xl mx-auto">
+          Sẵn Sàng Chinh Phục <span className="text-amber-400 !text-amber-400">Tiếng Anh Cùng LeLa?</span>
         </h2>
-        <p className="text-xl font-medium text-white/80 mb-12 max-w-2xl mx-auto">
-          Tạo tài khoản miễn phí và bắt đầu xây dựng bộ flashcard đầu tiên của bạn ngay hôm nay.
+
+        <p className="text-base sm:text-lg text-slate-300 max-w-2xl mx-auto text-center mb-8 font-medium leading-relaxed">
+          Tạo tài khoản miễn phí chỉ trong 30 giây. Bắt đầu xây dựng lộ trình học từ vựng khoa học và hiệu quả ngay hôm nay.
         </p>
-        <div className="flex flex-col sm:flex-row justify-center gap-4">
-          <Button 
-            onClick={() => onAction?.('/login')}
-            type="primary" 
-            size="large" 
-            className="h-16 px-10 text-xl font-bold brutal-shadow brutal-border brutal-pill bg-brand-coral text-white hover:bg-brand-teal transition-all hover:-translate-y-1 hover:shadow-[8px_8px_0px_0px_#000000]"
+
+        <div className="flex flex-wrap items-center justify-center gap-4">
+          <button
+            type="button"
+            onClick={() => (onAction ? onAction('/register') : navigate('/register'))}
+            className="bg-white text-black font-black px-8 py-3.5 rounded-xl border-2 border-black shadow-[3px_3px_0px_#000] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all flex items-center gap-2 cursor-pointer text-base md:text-lg"
           >
-            Đăng ký miễn phí
-          </Button>
-          <Button 
-            onClick={() => onAction?.('#features')}
-            size="large" 
-            className="h-16 px-10 text-xl font-bold brutal-shadow brutal-border brutal-pill bg-white text-brand-navy hover:bg-brand-offwhite transition-all hover:-translate-y-1 hover:shadow-[8px_8px_0px_0px_#000000]"
+            <span>Bắt Đầu Học Miễn Phí</span>
+            <ArrowRight className="w-5 h-5" />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => (onAction ? onAction('/decks') : navigate('/decks'))}
+            className="bg-white text-black font-black px-8 py-3.5 rounded-xl border-2 border-black shadow-[3px_3px_0px_#000] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all flex items-center gap-2 cursor-pointer text-base md:text-lg"
           >
-            Tìm hiểu thêm
-          </Button>
+            <Compass className="w-5 h-5" />
+            <span>Khám Phá Bộ Thẻ</span>
+          </button>
         </div>
       </div>
     </section>
   );
 }
+export default CtaSection;

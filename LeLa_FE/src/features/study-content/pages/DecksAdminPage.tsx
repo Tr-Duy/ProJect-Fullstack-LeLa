@@ -334,7 +334,7 @@ export function DecksAdminPage() {
             placeholder="Tìm kiếm tên bộ thẻ, mã bộ thẻ, slug..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+            className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand)] transition-all"
           />
           {searchTerm && (
             <button
@@ -354,7 +354,7 @@ export function DecksAdminPage() {
             <select
               value={selectedLevelId}
               onChange={(e) => { setSelectedLevelId(e.target.value); setCurrentPage(1); }}
-              className="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+              className="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-[var(--brand)] font-medium"
             >
               <option value="">Tất cả trình độ</option>
               {levelsData?.map((l: any) => (
@@ -369,7 +369,7 @@ export function DecksAdminPage() {
             <select
               value={selectedTopicId}
               onChange={(e) => { setSelectedTopicId(e.target.value); setCurrentPage(1); }}
-              className="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+              className="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-[var(--brand)] font-medium"
             >
               <option value="">Tất cả chủ đề</option>
               {topicsData?.map((t: any) => (
@@ -381,12 +381,12 @@ export function DecksAdminPage() {
           {/* TAG FILTER */}
           <div>
             <label className="block text-xs font-semibold text-gray-600 mb-1 flex items-center gap-1">
-              <TagIcon className="w-3 h-3 text-blue-600" /> Thẻ (Tag)
+              <TagIcon className="w-3 h-3 text-[var(--brand-700)]" /> Thẻ (Tag)
             </label>
             <select
               value={selectedTagId}
               onChange={(e) => { setSelectedTagId(e.target.value); setCurrentPage(1); }}
-              className="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+              className="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-[var(--brand)] font-medium"
             >
               <option value="">Tất cả thẻ</option>
               {tagsData?.data?.content?.map((tag) => (
@@ -401,7 +401,7 @@ export function DecksAdminPage() {
             <select
               value={selectedDifficulty}
               onChange={(e) => { setSelectedDifficulty(e.target.value); setCurrentPage(1); }}
-              className="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+              className="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-[var(--brand)] font-medium"
             >
               <option value="">Tất cả độ khó</option>
               <option value="BEGINNER">Sơ cấp (BEGINNER)</option>
@@ -416,7 +416,7 @@ export function DecksAdminPage() {
             <select
               value={selectedStatus}
               onChange={(e) => { setSelectedStatus(e.target.value); setCurrentPage(1); }}
-              className="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+              className="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-[var(--brand)] font-medium"
             >
               <option value="">Tất cả trạng thái</option>
               <option value="DRAFT">Bản nháp</option>
@@ -433,7 +433,7 @@ export function DecksAdminPage() {
             <select
               value={selectedVisibility}
               onChange={(e) => { setSelectedVisibility(e.target.value); setCurrentPage(1); }}
-              className="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+              className="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-[var(--brand)] font-medium"
             >
               <option value="">Tất cả hiển thị</option>
               <option value="PUBLIC">Công khai (PUBLIC)</option>
@@ -452,7 +452,7 @@ export function DecksAdminPage() {
               <select
                 value={selectedSort}
                 onChange={(e) => { setSelectedSort(e.target.value); setCurrentPage(1); }}
-                className="border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+                className="border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-[var(--brand)] font-medium"
               >
                 {SORT_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -466,7 +466,7 @@ export function DecksAdminPage() {
               <select
                 value={pageSize}
                 onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
-                className="border border-gray-300 rounded-lg px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+                className="border border-gray-300 rounded-lg px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-[var(--brand)] font-medium"
               >
                 <option value={10}>10 / trang</option>
                 <option value={20}>20 / trang</option>
@@ -515,7 +515,7 @@ export function DecksAdminPage() {
                 <tr>
                   <td colSpan={11} className="px-4 py-12 text-center text-gray-500 font-medium">
                     <div className="flex items-center justify-center gap-2">
-                      <RefreshCw className="w-5 h-5 animate-spin text-blue-600" />
+                      <RefreshCw className="w-5 h-5 animate-spin text-[var(--brand-700)]" />
                       <span>Đang tải danh sách bộ thẻ...</span>
                     </div>
                   </td>
@@ -550,25 +550,25 @@ export function DecksAdminPage() {
               ) : (
                 decksData?.content?.map((deck) => (
                   <tr key={deck.id} className="hover:bg-gray-50/80 transition-colors">
-                    <td className="px-4 py-3 font-mono text-xs text-gray-600 font-bold">{deck.id}</td>
+                    <td className="px-4 py-3 font-sans text-xs text-gray-600 font-bold">{deck.id}</td>
                     <td className="px-4 py-3">
                       <div>
                         <div className="font-bold text-gray-900">{deck.title}</div>
                         <div className="flex items-center gap-1.5 mt-0.5">
-                          <span className="font-mono text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded border border-gray-200">
+                          <span className="font-sans text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded border border-gray-200">
                             {deck.deckCode}
                           </span>
-                          <span className="font-mono text-[10px] text-gray-400">/{deck.slug}</span>
+                          <span className="font-sans text-[10px] text-gray-400">/{deck.slug}</span>
                         </div>
                       </div>
                     </td>
                     <td className="px-4 py-3 text-xs">
                       {deck.levelName ? (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded font-semibold bg-blue-50 text-blue-800 border border-blue-200">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded font-semibold bg-[var(--brand-50)] text-[var(--brand-700)] border border-[var(--border)]">
                           🎯 {deck.levelName}
                         </span>
                       ) : (
-                        <span className="text-gray-400 font-mono">--</span>
+                        <span className="text-gray-400 font-sans">--</span>
                       )}
                     </td>
                     <td className="px-4 py-3 text-xs font-medium text-gray-700">
@@ -612,7 +612,7 @@ export function DecksAdminPage() {
                     <td className="px-4 py-3 text-center text-xs font-medium text-gray-600">
                       {VISIBILITY_MAP[deck.visibility] || deck.visibility}
                     </td>
-                    <td className="px-4 py-3 text-center font-mono font-bold text-xs text-gray-800">
+                    <td className="px-4 py-3 text-center font-sans font-bold text-xs text-gray-800">
                       {deck.totalCards || 0}
                     </td>
                     <td className="px-4 py-3 text-center">
@@ -620,7 +620,7 @@ export function DecksAdminPage() {
                         value={deck.displayMode || 'RANDOM'}
                         onChange={(e) => quickUpdateMutation.mutate({ id: deck.id, data: { displayMode: e.target.value as any } })}
                         disabled={quickUpdateMutation.isPending}
-                        className="h-7 text-xs rounded border border-gray-300 bg-white px-2 py-0 focus:outline-none focus:ring-1 focus:ring-blue-500 font-medium"
+                        className="h-7 text-xs rounded border border-gray-300 bg-white px-2 py-0 focus:outline-none focus:ring-1 focus:ring-[var(--brand)] font-medium"
                       >
                         <option value="FRONT">Từ vựng</option>
                         <option value="BACK">Ý nghĩa</option>
@@ -671,7 +671,7 @@ export function DecksAdminPage() {
           <div className="text-xs font-semibold text-gray-600">
             Hiển thị <span className="font-bold text-gray-900">{startItem}-{endItem}</span> trong{' '}
             <span className="font-bold text-gray-900">{totalElements}</span> bộ thẻ
-            {hasActiveFilters && <span className="text-blue-600 font-bold ml-1">(đã lọc)</span>}
+            {hasActiveFilters && <span className="text-[var(--brand-700)] font-bold ml-1">(đã lọc)</span>}
           </div>
 
           <Pagination
@@ -716,7 +716,7 @@ export function DecksAdminPage() {
             <label className="text-sm font-medium text-gray-900">Mô tả</label>
             <textarea
               {...register('description')}
-              className="flex w-full resize-none rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+              className="flex w-full resize-none rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--brand)] transition-colors"
               rows={3}
               placeholder="Mô tả nội dung bộ thẻ..."
             />
@@ -727,7 +727,7 @@ export function DecksAdminPage() {
               <label className="text-sm font-medium text-gray-900">Ngôn ngữ</label>
               <select
                 {...register('languageId', { required: 'Chọn ngôn ngữ' })}
-                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[var(--brand)]"
               >
                 <option value="">Chọn ngôn ngữ...</option>
                 {languagesData?.data?.map(l => (
@@ -739,7 +739,7 @@ export function DecksAdminPage() {
               <label className="text-sm font-medium text-gray-900">Chủ đề</label>
               <select
                 {...register('topicId', { required: 'Chọn chủ đề' })}
-                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[var(--brand)]"
               >
                 <option value="">Chọn chủ đề...</option>
                 {topicsData?.map((t: any) => (
@@ -758,7 +758,7 @@ export function DecksAdminPage() {
                   setValue('examTypeId', e.target.value ? Number(e.target.value) : undefined);
                   setValue('levelId', undefined);
                 }}
-                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[var(--brand)]"
               >
                 <option value="">Không bắt buộc</option>
                 {examTypesData?.map((et: any) => (
@@ -771,7 +771,7 @@ export function DecksAdminPage() {
               <select
                 {...register('levelId')}
                 disabled={!watchExamTypeId}
-                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[var(--brand)]"
               >
                 <option value="">Không bắt buộc</option>
                 {formLevelsData?.map((l: any) => (
@@ -786,7 +786,7 @@ export function DecksAdminPage() {
               <label className="text-sm font-medium text-gray-900">Độ khó</label>
               <select
                 {...register('difficulty', { required: true })}
-                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[var(--brand)]"
               >
                 <option value="BEGINNER">Sơ cấp (BEGINNER)</option>
                 <option value="INTERMEDIATE">Trung cấp (INTERMEDIATE)</option>
@@ -797,7 +797,7 @@ export function DecksAdminPage() {
               <label className="text-sm font-medium text-gray-900">Hiển thị</label>
               <select
                 {...register('visibility', { required: true })}
-                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[var(--brand)]"
               >
                 <option value="PUBLIC">Công khai (PUBLIC)</option>
                 <option value="PRIVATE">Riêng tư (PRIVATE)</option>
@@ -820,15 +820,15 @@ export function DecksAdminPage() {
             <label className="text-sm font-medium text-gray-900">Chế độ hiển thị thẻ</label>
             <div className="flex gap-4 p-1">
               <label className="flex items-center gap-2 cursor-pointer">
-                <input type="radio" value="FRONT" {...register('displayMode')} className="w-4 h-4 text-blue-600 focus:ring-blue-500" />
+                <input type="radio" value="FRONT" {...register('displayMode')} className="w-4 h-4 text-[var(--brand-700)] focus:ring-[var(--brand)]" />
                 <span className="text-sm text-gray-900">Từ vựng trước</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
-                <input type="radio" value="BACK" {...register('displayMode')} className="w-4 h-4 text-blue-600 focus:ring-blue-500" />
+                <input type="radio" value="BACK" {...register('displayMode')} className="w-4 h-4 text-[var(--brand-700)] focus:ring-[var(--brand)]" />
                 <span className="text-sm text-gray-900">Ý nghĩa trước</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
-                <input type="radio" value="RANDOM" {...register('displayMode')} className="w-4 h-4 text-blue-600 focus:ring-blue-500" />
+                <input type="radio" value="RANDOM" {...register('displayMode')} className="w-4 h-4 text-[var(--brand-700)] focus:ring-[var(--brand)]" />
                 <span className="text-sm text-gray-900">Ngẫu nhiên</span>
               </label>
             </div>
@@ -842,7 +842,7 @@ export function DecksAdminPage() {
                 <label className="text-sm font-medium text-gray-900">Trạng thái kiểm duyệt</label>
                 <select
                   {...register('status')}
-                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[var(--brand)]"
                 >
                   <option value="DRAFT">Bản nháp</option>
                   <option value="PENDING_REVIEW">Chờ duyệt</option>

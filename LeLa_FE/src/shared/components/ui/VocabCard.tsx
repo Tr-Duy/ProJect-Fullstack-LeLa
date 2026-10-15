@@ -110,8 +110,8 @@ export const VocabCard: React.FC<VocabCardProps> = ({
               onClick={handlePlayAudio}
               className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors cursor-pointer ${
                 isPlaying
-                  ? 'bg-[var(--brand)] text-white scale-110 shadow-sm'
-                  : 'bg-[var(--brand-50)] text-[var(--brand-700)] hover:bg-[var(--brand)] hover:text-white'
+                  ? 'bg-[var(--brand)] text-[#2A1300] scale-110 shadow-sm'
+                  : 'bg-[var(--brand-50)] text-[var(--brand-700)] hover:bg-[var(--brand)] hover:text-[#2A1300]'
               }`}
               title="Phát âm chuẩn IPA"
               aria-label="Phát âm"
@@ -121,7 +121,7 @@ export const VocabCard: React.FC<VocabCardProps> = ({
           </div>
 
           <div className="my-auto text-center py-2 min-w-0">
-            <h3 className="text-2xl sm:text-3xl font-bold font-display text-[var(--text)] tracking-tight [overflow-wrap:anywhere] break-normal">
+            <h3 className="text-xl sm:text-2xl font-semibold font-display text-[var(--text)] tracking-tight line-clamp-2 leading-snug [overflow-wrap:anywhere]">
               {word}
             </h3>
             {phonetic && (

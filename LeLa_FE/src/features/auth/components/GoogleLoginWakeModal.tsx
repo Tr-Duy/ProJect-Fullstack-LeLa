@@ -70,7 +70,7 @@ export const GoogleLoginWakeModal: React.FC<GoogleLoginWakeModalProps> = ({
       <div className="text-center py-4 px-2">
         {/* Mascot & Icon Header */}
         <div className="flex items-center justify-center gap-3 mb-4">
-          <div className="w-12 h-12 flex items-center justify-center p-1 bg-amber-100 rounded-2xl border-[2px] border-black shadow-[2px_2px_0px_0px_#000]">
+          <div className="w-12 h-12 flex items-center justify-center p-1 bg-amber-100 rounded-2xl border border-[var(--border)] shadow-[var(--shadow-sm)]">
             <img
               src="/images/lela_fox_logo.png"
               alt="LeLa Logo"
@@ -86,7 +86,7 @@ export const GoogleLoginWakeModal: React.FC<GoogleLoginWakeModalProps> = ({
         </div>
 
         {/* Title & Descriptions */}
-        <h3 className="text-2xl font-black uppercase text-brand-navy mb-2 tracking-tight">
+        <h3 className="text-2xl font-black  text-brand-navy mb-2 tracking-tight">
           {title}
         </h3>
         <p className="text-base font-bold text-gray-700 mb-1">
@@ -101,7 +101,7 @@ export const GoogleLoginWakeModal: React.FC<GoogleLoginWakeModalProps> = ({
           <div className="flex gap-3 justify-center pt-2">
             <Button
               onClick={onClose}
-              className="brutal-pill border-[2px] border-black bg-white text-black font-bold h-12 px-6 hover:bg-gray-100 transition-transform"
+              className="brutal-pill border border-[var(--border)] bg-white text-black font-bold h-12 px-6 hover:bg-gray-100 transition-transform"
             >
               Đóng
             </Button>
@@ -109,13 +109,13 @@ export const GoogleLoginWakeModal: React.FC<GoogleLoginWakeModalProps> = ({
               type="primary"
               onClick={onRetry}
               icon={<GoogleOutlined />}
-              className="brutal-pill border-[2px] border-black !bg-brand-coral !text-white font-black h-12 px-6 shadow-[3px_3px_0px_0px_#000] hover:!bg-[#d94f41] transition-all"
+              className="brutal-pill border border-[var(--border)] !bg-brand-coral !text-white font-black h-12 px-6 shadow-[var(--shadow-sm)] hover:!bg-[#d94f41] transition-all"
             >
               Thử lại
             </Button>
           </div>
         ) : (
-          <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden border border-black/20">
+          <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden border border-[var(--border)]/20">
             <div
               className={`h-full bg-brand-coral transition-all duration-500 ${
                 status === 'ready' ? 'w-full !bg-green-500' : 'w-2/3 animate-pulse'

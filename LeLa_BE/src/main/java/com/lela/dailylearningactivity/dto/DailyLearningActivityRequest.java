@@ -15,5 +15,6 @@ public class DailyLearningActivityRequest {
     private Integer quizCount;
     private Integer minutesSpent;
     private Integer xpEarned;
+    private Integer voiceSessionCount;
     private Boolean goalMet;
 }

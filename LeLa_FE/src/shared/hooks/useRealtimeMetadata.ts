@@ -23,7 +23,7 @@ export function useRealtimeMetadata() {
           message: data.title || 'Thông báo mới',
           description: data.message,
           placement: 'topRight',
-          className: 'brutal-border brutal-shadow'
+          className: 'border border-[var(--border)] shadow-[var(--shadow-md)]'
         });
 
         // Invalidate queries to refresh notifications list
@@ -61,7 +61,7 @@ export function useRealtimeMetadata() {
             description: 'Tuyệt vời, bạn vừa nhận được XP.',
             placement: 'top',
             duration: 2,
-            className: 'brutal-border brutal-shadow bg-[#ccffcc] font-bold'
+            className: 'border border-[var(--border)] shadow-[var(--shadow-md)] bg-[#ccffcc] font-bold'
           });
         }
       } catch (e) {
@@ -78,7 +78,7 @@ export function useRealtimeMetadata() {
           description: `Chúc mừng! Bạn đã mở khóa danh hiệu mới và nhận ${data.xpReward} XP.`,
           placement: 'top',
           duration: 5,
-          className: 'brutal-border brutal-shadow bg-[#FFD700] text-brand-navy font-bold text-lg'
+          className: 'border border-[var(--border)] shadow-[var(--shadow-md)] bg-[#FFD700] text-brand-navy font-bold text-lg'
         });
       } catch (e) {
         console.error('Failed to parse SSE badge_unlocked', e);

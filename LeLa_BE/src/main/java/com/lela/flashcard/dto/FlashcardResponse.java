@@ -1,9 +1,11 @@
 package com.lela.flashcard.dto;
 
 import com.lela.flashcard.domain.Flashcard;
+import com.lela.flashcard.util.FlashcardDataSanitizer;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Data
@@ -32,6 +34,15 @@ public class FlashcardResponse {
     private LocalDateTime deletedAt;
     private Long version;
     private List<Long> tagIds;
+
+    // Standardized fields
+    private String word;
+    private String vietnameseMeaning;
+    private String exampleEn;
+    private String exampleVi;
+    private String definitionEn;
+    private List<String> synonyms = new ArrayList<>();
+    private List<String> antonyms = new ArrayList<>();
 
     public static FlashcardResponse fromEntity(Flashcard flashcard, List<Long> tagIds) {
         if (flashcard == null) return null;
@@ -81,103 +92,36 @@ public class FlashcardResponse {
     public static void enrich(FlashcardResponse r) {
         if (r == null || r.getFrontText() == null) return;
 
-        String word = r.getFrontText().trim();
-        String meaning = r.getBackText() != null ? r.getBackText().trim() : "";
+        FlashcardDataSanitizer.SanitizedResult res = FlashcardDataSanitizer.sanitize(
+                r.getFrontText(),
+                r.getBackText(),
+                r.getPhonetic(),
+                r.getPartOfSpeech(),
+                r.getDefinition(),
+                r.getExampleText(),
+                r.getExampleTranslation(),
+                r.getRelatedWords(),
+                r.getHint(),
+                r.getNote()
+        );
 
-        // 1. Phonetic
-        if (r.getPhonetic() == null || r.getPhonetic().isBlank()) {
-            r.setPhonetic(inferPhonetic(word));
-        } else {
-            String p = r.getPhonetic().trim();
-            if (!p.startsWith("/")) p = "/" + p;
-            if (!p.endsWith("/")) p = p + "/";
-            r.setPhonetic(p);
-        }
+        // Standardize base fields
+        r.setFrontText(res.getWord());
+        r.setBackText(res.getVietnameseMeaning());
+        r.setPhonetic(res.getPhonetic());
+        r.setPartOfSpeech(res.getPartOfSpeech());
+        r.setDefinition(res.getDefinition());
+        r.setExampleText(res.getExampleEn());
+        r.setExampleTranslation(res.getExampleVi());
+        r.setRelatedWords(res.getRelatedWords());
 
-        // 2. Part of Speech
-        if (r.getPartOfSpeech() == null || r.getPartOfSpeech().isBlank()) {
-            r.setPartOfSpeech(inferPartOfSpeech(word, meaning));
-        }
-
-        // 3. Definition / Explanation
-        if (r.getDefinition() == null || r.getDefinition().isBlank()) {
-            if (r.getHint() != null && !r.getHint().isBlank()) {
-                r.setDefinition(r.getHint().trim());
-            } else {
-                r.setDefinition(inferDefinition(word, meaning));
-            }
-        }
-
-        // 4. Example Translation
-        if (r.getExampleTranslation() == null || r.getExampleTranslation().isBlank()) {
-            r.setExampleTranslation(inferExampleTranslation(word, r.getExampleText(), meaning));
-        }
-
-        // 5. Related Words
-        if (r.getRelatedWords() == null || r.getRelatedWords().isBlank()) {
-            r.setRelatedWords(inferRelatedWords(word));
-        }
-    }
-
-    private static String inferPhonetic(String word) {
-        String lower = word.toLowerCase();
-        return switch (lower) {
-            case "new" -> "/njuː/";
-            case "apple" -> "/ˈæp.əl/";
-            case "banana" -> "/bəˈnɑː.nə/";
-            case "orange" -> "/ˈɒr.ɪndʒ/";
-            case "watermelon" -> "/ˈwɔː.təˌmel.ən/";
-            case "strawberry" -> "/ˈstrɔː.bər.i/";
-            case "contract" -> "/ˈkɒn.trækt/";
-            case "agreement" -> "/əˈɡriː.mənt/";
-            case "negotiate" -> "/nəˈɡəʊ.ʃi.eɪt/";
-            default -> "/" + lower + "/";
-        };
-    }
-
-    private static String inferPartOfSpeech(String word, String meaning) {
-        String lowerMeaning = meaning.toLowerCase();
-        if (lowerMeaning.contains("tính từ") || lowerMeaning.contains("mới") || lowerMeaning.contains("đẹp") || lowerMeaning.contains("tốt")) {
-            return "Tính từ";
-        }
-        if (lowerMeaning.contains("động từ") || lowerMeaning.contains("chạy") || lowerMeaning.contains("học") || lowerMeaning.contains("ký")) {
-            return "Động từ";
-        }
-        if (lowerMeaning.contains("phó từ") || lowerMeaning.contains("trạng từ")) {
-            return "Trạng từ";
-        }
-        return "Danh từ";
-    }
-
-    private static String inferDefinition(String word, String meaning) {
-        if (meaning != null && !meaning.isBlank()) {
-            return meaning + " - Khái niệm, thông tin hoặc thuộc tính trong bài học tiếng Anh.";
-        }
-        return "Nghĩa tiếng Việt và thông tin bài học của từ " + word + ".";
-    }
-
-    private static String inferExampleTranslation(String word, String exampleText, String meaning) {
-        if (exampleText == null || exampleText.isBlank()) return "";
-        if (exampleText.contains("I eat an apple")) return "Tôi ăn một quả táo mỗi ngày.";
-        if (exampleText.contains("Monkeys love bananas")) return "Những chú khỉ rất thích ăn chuối.";
-        if (exampleText.contains("Orange juice is good")) return "Nước cam rất tốt cho sức khỏe.";
-        if (exampleText.contains("Watermelon is refreshing")) return "Dưa hấu rất thanh mát vào mùa hè.";
-        if (exampleText.contains("basket of strawberries")) return "Cô ấy đã mua một giỏ dâu tây.";
-        if (exampleText.contains("new school")) return "Trường, ý tưởng, vở tuồng, nhà mới";
-        return "Bản dịch ví dụ minh họa cho từ " + word + ".";
-    }
-
-    private static String inferRelatedWords(String word) {
-        String lower = word.toLowerCase();
-        return switch (lower) {
-            case "new" -> "newness · newly · renew · novel";
-            case "apple" -> "fruit · orchard · cider · red apple";
-            case "banana" -> "fruit · tropical · peel · yellow";
-            case "orange" -> "citrus · juice · vitamin c · fruit";
-            case "watermelon" -> "fruit · summer · melon · sweet";
-            case "strawberry" -> "berry · fruit · sweet · red";
-            case "contract" -> "agreement · deal · clause · sign";
-            default -> lower + "s · " + lower + "ing · " + lower + "ed";
-        };
+        // Populate standardized DTO alias fields
+        r.setWord(res.getWord());
+        r.setVietnameseMeaning(res.getVietnameseMeaning());
+        r.setExampleEn(res.getExampleEn());
+        r.setExampleVi(res.getExampleVi());
+        r.setDefinitionEn(res.getDefinition());
+        r.setSynonyms(res.getSynonyms() != null ? res.getSynonyms() : new ArrayList<>());
+        r.setAntonyms(res.getAntonyms() != null ? res.getAntonyms() : new ArrayList<>());
     }
 }

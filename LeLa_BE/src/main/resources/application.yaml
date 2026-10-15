@@ -68,3 +68,8 @@ gemini:
   api-key: ${GEMINI_API_KEY}
   api-url: https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:streamGenerateContent
 
+typing-game:
+  stale-timeout-minutes: 30
+  cleanup-cron: "0 */15 * * * *"
+  daily-xp-cap: 150
+

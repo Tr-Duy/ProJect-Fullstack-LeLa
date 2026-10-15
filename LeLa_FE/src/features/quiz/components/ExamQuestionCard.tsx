@@ -41,11 +41,11 @@ export const ExamQuestionCard: React.FC<ExamQuestionCardProps> = ({
   const formattedText = rawText.replace(/\.{3,}/g, '_____');
 
   return (
-    <div className="brutal-card bg-white p-6 md:p-8 mb-8 border-[3px] border-black shadow-[6px_6px_0px_0px_#000] rounded-xl">
+    <div className="rounded-[var(--radius-card)] bg-white p-6 md:p-8 mb-8 border border-[var(--border)] shadow-[var(--shadow-sm)] rounded-xl">
       {/* Question Header Bar */}
-      <div className="flex items-center justify-between pb-4 mb-6 border-b-[2px] border-black/15 flex-wrap gap-2">
+      <div className="flex items-center justify-between pb-4 mb-6 border-b-[2px] border-[var(--border)]/15 flex-wrap gap-2">
         <div className="flex items-center gap-3">
-          <span className="bg-[#1D2A3A] text-white font-black text-xs md:text-sm px-3.5 py-1.5 rounded-md uppercase tracking-wider border-[2px] border-black shadow-[2px_2px_0px_0px_#000]">
+          <span className="bg-[#2B1B0E] text-white font-black text-xs md:text-sm px-3.5 py-1.5 rounded-md  tracking-normal border border-[var(--border)] shadow-[var(--shadow-sm)]">
             CÂU {formattedNumber}
           </span>
           <span className="text-xs md:text-sm font-bold text-gray-500">
@@ -59,7 +59,7 @@ export const ExamQuestionCard: React.FC<ExamQuestionCardProps> = ({
 
       {/* Question Text */}
       <div className="mb-8">
-        <h2 className="text-xl md:text-2xl font-bold leading-relaxed text-[#1D2A3A] whitespace-pre-line tracking-wide">
+        <h2 className="text-xl md:text-2xl font-bold leading-relaxed text-[#2B1B0E] whitespace-pre-line tracking-wide">
           {formattedText}
         </h2>
         {question.questionImageUrl && (
@@ -67,7 +67,7 @@ export const ExamQuestionCard: React.FC<ExamQuestionCardProps> = ({
             <img
               src={question.questionImageUrl}
               alt={`Question ${questionNumber}`}
-              className="max-w-full max-h-[360px] h-auto object-contain rounded-lg brutal-border border-[3px] border-black shadow-[3px_3px_0px_0px_#000]"
+              className="max-w-full max-h-[360px] h-auto object-contain rounded-lg border border-[var(--border)] border border-[var(--border)] shadow-[var(--shadow-sm)]"
             />
           </div>
         )}
@@ -76,12 +76,12 @@ export const ExamQuestionCard: React.FC<ExamQuestionCardProps> = ({
       {/* Options or Fill Blank Input */}
       <div className="flex flex-col gap-3.5 w-full">
         {question.questionType === 'FILL_BLANK' ? (
-          <div className="p-4 bg-[#F8F7F2] border-[3px] border-black rounded-xl shadow-[3px_3px_0px_0px_#000]">
+          <div className="p-4 bg-[#F8F7F2] border border-[var(--border)] rounded-xl shadow-[var(--shadow-sm)]">
             <label className="block text-sm font-bold text-gray-700 mb-2">Câu trả lời của bạn:</label>
             <Input
               size="large"
               placeholder="Nhập câu trả lời của bạn vào đây..."
-              className="brutal-border border-[2.5px] border-black h-14 text-lg px-4 focus:ring-0 focus:border-black font-bold rounded-lg"
+              className="border border-[var(--border)] border border-[var(--border)] h-14 text-lg px-4 focus:ring-0 focus:border-[var(--border)] font-bold rounded-lg"
               value={currentAnswer?.answerText || ''}
               onChange={(e) => onTextAnswer(question.id, e.target.value)}
             />
@@ -100,18 +100,18 @@ export const ExamQuestionCard: React.FC<ExamQuestionCardProps> = ({
                   w-full text-left flex items-center gap-4 p-4 md:p-5 border-[3px] rounded-xl cursor-pointer transition-all duration-150 select-none
                   ${
                     isSelected
-                      ? 'bg-[#2A8B9D] text-white border-black shadow-[4px_4px_0px_0px_#000] -translate-y-0.5'
-                      : 'bg-white text-[#1D2A3A] border-black hover:bg-[#F4F3EE] hover:-translate-y-0.5 hover:shadow-[3px_3px_0px_0px_#000]'
+                      ? 'bg-[#2A8B9D] text-white border-[var(--border)] shadow-[var(--shadow-sm)] -translate-y-0.5'
+                      : 'bg-white text-[#2B1B0E] border-[var(--border)] hover:bg-[#F4F3EE] hover:-translate-y-0.5 hover:shadow-[var(--shadow-sm)]'
                   }
                 `}
               >
                 <div
                   className={`
-                    w-9 h-9 border-[2px] border-black rounded-lg flex items-center justify-center font-black text-base shrink-0 transition-colors
+                    w-9 h-9 border border-[var(--border)] rounded-lg flex items-center justify-center font-black text-base shrink-0 transition-colors
                     ${
                       isSelected
                         ? 'bg-white text-[#2A8B9D]'
-                        : 'bg-[#F4F3EE] text-[#1D2A3A]'
+                        : 'bg-[#F4F3EE] text-[#2B1B0E]'
                     }
                   `}
                 >

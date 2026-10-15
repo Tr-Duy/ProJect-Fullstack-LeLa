@@ -183,7 +183,7 @@ export function AchievementsAdminPage() {
                 <tr><td colSpan={8} className="px-4 py-12 text-center text-gray-500 font-medium">Đang tải danh sách thành tựu...</td></tr>
               ) : filteredList.map((ach) => (
                 <tr key={ach.id} className="hover:bg-gray-50/80 transition-colors">
-                  <td className="px-4 py-3 font-mono text-xs text-gray-800 font-bold">{ach.code}</td>
+                  <td className="px-4 py-3 font-sans text-xs text-gray-800 font-bold">{ach.code}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       <span className="text-2xl p-1 bg-amber-50 rounded-lg border border-amber-200">{ach.iconUrl || '🏆'}</span>
@@ -199,7 +199,7 @@ export function AchievementsAdminPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-xs font-medium text-gray-700">
-                    <span className="font-mono font-bold text-blue-700">{ach.conditionType}</span> ≥ <span className="font-bold text-amber-700">{ach.conditionValue}</span>
+                    <span className="font-sans font-bold text-[var(--brand-700)]">{ach.conditionType}</span> ≥ <span className="font-bold text-amber-700">{ach.conditionValue}</span>
                   </td>
                   <td className="px-4 py-3 text-center">
                     <span className="font-extrabold text-xs px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 border border-amber-300">
@@ -313,7 +313,7 @@ export function AchievementsAdminPage() {
               <label className="text-sm font-medium text-gray-900">Loại điều kiện (Condition Type)</label>
               <select
                 {...register('conditionType', { required: true })}
-                className="w-full p-2.5 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 font-mono"
+                className="w-full p-2.5 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 font-sans"
               >
                 <option value="STREAK">STREAK</option>
                 <option value="CARDS_REVIEWED">CARDS_REVIEWED</option>

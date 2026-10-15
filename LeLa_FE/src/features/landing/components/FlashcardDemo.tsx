@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { Button } from 'antd';
-import { Volume2, Compass } from 'lucide-react';
+import { Volume2, Compass, CheckCircle2 } from 'lucide-react';
 import { SwapOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 
@@ -64,23 +63,23 @@ export function FlashcardDemo({ playSound }: Props) {
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = 'en-US';
         window.speechSynthesis.speak(utterance);
-      } catch (err) {
-        // Speech synthesis not permitted or unsupported in this context
+      } catch {
+        // Speech synthesis not permitted or unsupported
       }
     }
   };
 
   return (
-    <section className="w-full py-20 bg-white border-b-[3px] border-black">
+    <section className="w-full py-20 bg-white border-b-2 border-black">
       <div className="mx-auto max-w-[1400px] px-6 lg:px-12">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           {/* Left Text */}
           <div className="flex flex-col items-start gap-6">
-            <span className="inline-block bg-[#2A8B9D] text-white font-black uppercase text-xs px-4 py-1.5 rounded-full border-[2px] border-black shadow-[2px_2px_0px_0px_#000]">
+            <span className="inline-block bg-[#0D9488] text-white font-black uppercase text-xs px-4 py-1.5 rounded-full border-2 border-black shadow-[3px_3px_0px_#000]">
               TRẢI NGHIỆM THỰC TẾ
             </span>
 
-            <h2 className="text-3xl md:text-5xl font-black uppercase text-[#1D2A3A] tracking-tight leading-tight">
+            <h2 className="text-3xl md:text-5xl font-black uppercase text-[#18181B] tracking-tight leading-tight">
               Học Thử Ngay Không Cần Đăng Nhập
             </h2>
 
@@ -88,26 +87,30 @@ export function FlashcardDemo({ playSound }: Props) {
               Trải nghiệm cách thẻ Flashcard LeLa hoạt động. Nhấp trực tiếp vào mặt thẻ để lật xem nghĩa tiếng Việt và ví dụ câu minh họa.
             </p>
 
-            <div className="p-4 bg-[#F4F3EE] rounded-2xl border-[2px] border-black w-full space-y-2">
-              <div className="flex items-center gap-2 text-sm font-bold text-[#1D2A3A]">
-                <span className="text-green-600">✓</span> <span>Phát âm chuẩn tiếng Anh bản xứ</span>
+            <div className="p-4 bg-[#F5F0E8] rounded-xl border border-black/20 w-full space-y-2.5">
+              <div className="flex items-center gap-2 text-sm font-bold text-[#18181B]">
+                <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />
+                <span>Phát âm chuẩn tiếng Anh bản xứ</span>
               </div>
-              <div className="flex items-center gap-2 text-sm font-bold text-[#1D2A3A]">
-                <span className="text-green-600">✓</span> <span>Ví dụ câu thực tế dễ ghi nhớ</span>
+              <div className="flex items-center gap-2 text-sm font-bold text-[#18181B]">
+                <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />
+                <span>Ví dụ câu thực tế dễ ghi nhớ</span>
               </div>
-              <div className="flex items-center gap-2 text-sm font-bold text-[#1D2A3A]">
-                <span className="text-green-600">✓</span> <span>Tự do xem hàng ngàn bộ thẻ miễn phí</span>
+              <div className="flex items-center gap-2 text-sm font-bold text-[#18181B]">
+                <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />
+                <span>Tự do xem hàng ngàn bộ thẻ miễn phí</span>
               </div>
             </div>
 
             <div className="pt-2 flex flex-wrap gap-4">
-              <Button
+              <button
+                type="button"
                 onClick={() => navigate('/decks')}
-                className="brutal-pill border-[2px] border-black font-black uppercase text-white bg-[#F05A4A] hover:!bg-[#d94f41] h-12 px-8 text-base shadow-[3px_3px_0px_0px_#000] flex items-center gap-2"
+                className="bg-[#FF5733] hover:bg-[#ea4a27] text-white font-black uppercase h-12 px-8 text-base rounded-xl border-2 border-black shadow-[3px_3px_0px_#000] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all flex items-center gap-2 cursor-pointer"
               >
                 <Compass className="w-5 h-5" />
                 <span>Khám Phá Tất Cả Bộ Thẻ</span>
-              </Button>
+              </button>
             </div>
           </div>
 
@@ -115,42 +118,43 @@ export function FlashcardDemo({ playSound }: Props) {
           <div className="flex flex-col items-center gap-4">
             <div
               onClick={handleFlip}
-              className="w-full max-w-[400px] h-[300px] bg-[#F4F3EE] border-[3px] border-black rounded-[24px] shadow-[6px_6px_0px_0px_#000] p-8 flex flex-col justify-between cursor-pointer relative hover:-translate-y-1 transition-transform select-none"
+              className="w-full max-w-[420px] h-[310px] bg-white border-2 border-black rounded-2xl p-8 shadow-[5px_5px_0px_0px_#000] flex flex-col justify-between cursor-pointer relative hover:-translate-y-1 transition-transform select-none"
             >
               {/* Header inside Card */}
               <div className="flex justify-between items-center">
-                <span className="text-[10px] font-black uppercase bg-[#FFD700] text-black px-3 py-1 rounded-full border-[1px] border-black">
+                <span className="text-[11px] font-black uppercase bg-[#FDE047] text-black px-3 py-1 rounded-full border border-black">
                   {currentCard.topic}
                 </span>
 
-                <Button
-                  type="text"
+                <button
+                  type="button"
                   onClick={(e) => handleSpeak(e, currentCard.word)}
-                  icon={<Volume2 className="w-5 h-5 text-[#2A8B9D]" />}
                   aria-label="Phát âm từ vựng"
-                  className="p-1 hover:bg-white rounded-full"
-                />
+                  className="p-1.5 hover:bg-gray-100 rounded-full border border-black shadow-[1px_1px_0px_#000] transition-colors cursor-pointer"
+                >
+                  <Volume2 className="w-4 h-4 text-[#0D9488]" />
+                </button>
               </div>
 
               {/* Card Center Content */}
               {!isFlipped ? (
                 <div className="text-center my-auto flex flex-col gap-2">
-                  <h3 className="text-4xl font-black text-[#1D2A3A] m-0 tracking-tight">
+                  <h3 className="text-4xl font-black text-[#18181B] m-0 tracking-tight">
                     {currentCard.word}
                   </h3>
                   <span className="text-sm font-bold text-gray-600 font-mono">
                     {currentCard.ipa}
                   </span>
-                  <span className="text-xs font-bold text-[#2A8B9D] mt-2 block">
+                  <span className="text-xs font-bold text-green-600 mt-2 block">
                     (Nhấp vào thẻ để xem nghĩa)
                   </span>
                 </div>
               ) : (
                 <div className="text-center my-auto flex flex-col gap-2">
-                  <h3 className="text-3xl font-black text-[#F05A4A] m-0 tracking-tight">
+                  <h3 className="text-3xl font-black text-[#FF5733] m-0 tracking-tight">
                     {currentCard.meaning}
                   </h3>
-                  <p className="text-xs md:text-sm font-semibold text-gray-700 italic m-0 mt-2 bg-white p-3 rounded-xl border-[1px] border-black">
+                  <p className="text-xs md:text-sm font-semibold text-gray-700 italic m-0 mt-2 bg-[#FDFBF7] p-3 rounded-xl border border-black">
                     "{currentCard.example}"
                   </p>
                 </div>
@@ -164,22 +168,24 @@ export function FlashcardDemo({ playSound }: Props) {
             </div>
 
             {/* Stepper Controls */}
-            <div className="flex items-center gap-4 mt-2">
-              <Button
+            <div className="flex items-center gap-3 mt-2">
+              <button
+                type="button"
                 onClick={handlePrev}
-                className="brutal-pill border-[2px] border-black font-bold bg-white text-black h-10 px-4 shadow-[2px_2px_0px_0px_#000]"
+                className="border border-black rounded-full px-4 py-1.5 shadow-[2px_2px_0px_#000] bg-white font-bold text-sm text-[#18181B] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all cursor-pointer"
               >
-                ◄ Trước
-              </Button>
-              <span className="font-black text-sm text-[#1D2A3A]">
+                &lt; Trước
+              </button>
+              <span className="font-black text-sm text-[#18181B] px-2">
                 {currentIndex + 1} / {demoCards.length}
               </span>
-              <Button
+              <button
+                type="button"
                 onClick={handleNext}
-                className="brutal-pill border-[2px] border-black font-bold bg-white text-black h-10 px-4 shadow-[2px_2px_0px_0px_#000]"
+                className="border border-black rounded-full px-4 py-1.5 shadow-[2px_2px_0px_#000] bg-white font-bold text-sm text-[#18181B] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all cursor-pointer"
               >
-                Tiếp ►
-              </Button>
+                Tiếp &gt;
+              </button>
             </div>
           </div>
         </div>
@@ -187,3 +193,4 @@ export function FlashcardDemo({ playSound }: Props) {
     </section>
   );
 }
+export default FlashcardDemo;
