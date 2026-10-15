@@ -1,14 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../providers/AuthProvider';
-import { Dropdown, Badge, Popover, Drawer, Tooltip } from 'antd';
+import { Badge, Popover, Drawer, Tooltip } from 'antd';
 import {
   BellOutlined,
   ThunderboltFilled,
   FireFilled,
   UserOutlined,
   LogoutOutlined,
-  CreditCardOutlined,
   SettingOutlined,
   RocketOutlined,
 } from '@ant-design/icons';
@@ -56,16 +55,43 @@ export function LearnerLayout() {
   // Mobile Drawer state
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
+  // Profile Dropdown state & refs for click-outside
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const userDropdownRef = useRef<HTMLDivElement>(null);
+  const mobileDropdownRef = useRef<HTMLDivElement>(null);
+
   // Sidebar navigation scroll ref
   const desktopNavRef = useRef<HTMLElement>(null);
 
-  // Close mobile drawer and ensure sidebar navigation scrolls to top on route change
+  // Close mobile drawer and dropdown, and ensure sidebar navigation scrolls to top on route change
   useEffect(() => {
     setMobileDrawerOpen(false);
+    setIsDropdownOpen(false);
     if (desktopNavRef.current) {
       desktopNavRef.current.scrollTop = 0;
     }
   }, [location.pathname]);
+
+  // Click outside to close user profile dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Node;
+      const clickedDesktop = userDropdownRef.current && userDropdownRef.current.contains(target);
+      const clickedMobile = mobileDropdownRef.current && mobileDropdownRef.current.contains(target);
+      if (!clickedDesktop && !clickedMobile) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    if (isDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [isDropdownOpen]);
 
   const toggleSidebar = () => {
     setCollapsed((prev) => {
@@ -75,9 +101,10 @@ export function LearnerLayout() {
     });
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
+  const handleLogout = async () => {
+    setIsDropdownOpen(false);
+    await logout();
+    window.location.href = '/';
   };
 
   // Click bubble sound effect
@@ -158,44 +185,70 @@ export function LearnerLayout() {
     return 'Lela TOEIC';
   };
 
-  const userMenuItems = [
-    {
-      key: 'profile',
-      icon: <UserOutlined />,
-      label: <span className="font-medium" onClick={() => navigate('/profile')}>Trang cá nhân</span>,
-    },
-    {
-      key: 'pricing',
-      icon: <CreditCardOutlined />,
-      label: <span className="font-medium" onClick={() => navigate('/pricing')}>Gói cước & thanh toán</span>,
-    },
-    {
-      key: 'goal',
-      icon: <SettingOutlined />,
-      label: <span className="font-medium" onClick={() => navigate('/profile#goals')}>Mục tiêu học ngày</span>,
-    },
-    ...(hasRole(['ADMIN', 'CONTENT_CREATOR'])
-      ? [
-          {
-            key: 'admin',
-            icon: <RocketOutlined className="text-[var(--brand)]" />,
-            label: (
-              <span className="font-semibold text-[var(--brand)]" onClick={() => navigate('/admin/dashboard')}>
-                Trang Quản trị
-              </span>
-            ),
-          },
-        ]
-      : []),
-    {
-      type: 'divider' as const,
-    },
-    {
-      key: 'logout',
-      icon: <LogoutOutlined className="text-[var(--danger)]" />,
-      label: <span className="font-medium text-[var(--danger)]" onClick={handleLogout}>Đăng xuất</span>,
-    },
-  ];
+  const renderProfileDropdownMenu = () => {
+    if (!user) return null;
+    return (
+      <div className="absolute right-0 mt-2 w-56 bg-white border-2 border-black rounded-xl shadow-[4px_4px_0px_0px_#000] p-2 z-50 animate-in fade-in zoom-in-95 duration-100">
+        {/* Thông tin cá nhân: Email / Username và Trình độ hiện tại (nhãn xám nhỏ) */}
+        <div className="px-2.5 py-2 border-b border-slate-100 mb-1">
+          <div className="font-bold text-xs text-slate-900 truncate">
+            {displayName}
+          </div>
+          <div className="text-[11px] text-slate-500 truncate mt-0.5">
+            {user.email || user.username}
+          </div>
+          <div className="mt-1.5 flex items-center">
+            <span className="inline-block px-2 py-0.5 text-[10px] font-semibold bg-slate-100 text-slate-700 rounded-md border border-slate-200 truncate">
+              {user.currentLevel?.name || 'Khá - Giỏi (700 - 850)'}
+            </span>
+          </div>
+        </div>
+
+        {/* Đường dẫn chức năng */}
+        <div className="py-1 space-y-0.5">
+          <Link
+            to="/profile"
+            onClick={() => setIsDropdownOpen(false)}
+            className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-100 hover:text-black transition-colors"
+          >
+            <UserOutlined className="text-sm" />
+            <span>Hồ sơ cá nhân</span>
+          </Link>
+          <Link
+            to="/settings"
+            onClick={() => setIsDropdownOpen(false)}
+            className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-100 hover:text-black transition-colors"
+          >
+            <SettingOutlined className="text-sm" />
+            <span>Cài đặt tài khoản</span>
+          </Link>
+          {hasRole(['ADMIN', 'CONTENT_CREATOR']) && (
+            <Link
+              to="/admin/dashboard"
+              onClick={() => setIsDropdownOpen(false)}
+              className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-bold text-[var(--brand)] hover:bg-amber-50 transition-colors"
+            >
+              <RocketOutlined className="text-sm" />
+              <span>Trang Quản trị</span>
+            </Link>
+          )}
+        </div>
+
+        {/* Đường kẻ phân cách */}
+        <div className="border-t border-slate-200 my-1" />
+
+        {/* Nút Đăng Xuất (Logout) */}
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="text-rose-600 hover:bg-rose-50 font-bold p-2 rounded-lg flex items-center gap-2 cursor-pointer w-full text-left text-xs transition-colors"
+        >
+          <LogoutOutlined className="text-sm text-rose-600" />
+          <span>Đăng xuất</span>
+        </button>
+      </div>
+    );
+  };
 
   const notificationPopoverContent = (
     <div className="w-80 max-h-96 overflow-y-auto bg-white rounded-[16px] shadow-[var(--shadow-md)] border border-[var(--border)]">
@@ -521,16 +574,22 @@ export function LearnerLayout() {
 
             {/* User Avatar + Dropdown */}
             {user ? (
-              <Dropdown menu={{ items: userMenuItems }} trigger={['click']} placement="bottomRight">
+              <div className="relative" ref={userDropdownRef}>
                 <button
-                  className="h-9 pl-1 pr-3 rounded-full bg-[var(--surface-2)] hover:bg-[var(--border)] flex items-center gap-2 text-xs font-semibold text-[var(--text)] transition-colors cursor-pointer"
+                  type="button"
+                  onClick={() => setIsDropdownOpen((prev) => !prev)}
+                  aria-expanded={isDropdownOpen}
+                  aria-haspopup="true"
+                  className="h-9 pl-1 pr-3 rounded-full bg-[var(--surface-2)] hover:bg-[var(--border)] border border-black/10 flex items-center gap-2 text-xs font-semibold text-[var(--text)] transition-colors cursor-pointer"
                 >
-                  <div className="w-7 h-7 rounded-full bg-[var(--brand)] text-[#2A1300] text-xs font-bold flex items-center justify-center shrink-0">
+                  <div className="w-7 h-7 rounded-full bg-[var(--brand)] text-[#2A1300] text-xs font-bold flex items-center justify-center shrink-0 border border-black/20">
                     {initialLetter}
                   </div>
                   <span className="max-w-[140px] truncate">{displayName}</span>
                 </button>
-              </Dropdown>
+
+                {isDropdownOpen && renderProfileDropdownMenu()}
+              </div>
             ) : (
               <button
                 onClick={() => navigate('/login')}
@@ -583,14 +642,19 @@ export function LearnerLayout() {
             </Popover>
 
             {user ? (
-              <Dropdown menu={{ items: userMenuItems }} trigger={['click']} placement="bottomRight">
+              <div className="relative" ref={mobileDropdownRef}>
                 <button
-                  className="w-8 h-8 rounded-full bg-[var(--brand)] text-[#2A1300] font-bold text-xs flex items-center justify-center cursor-pointer"
+                  type="button"
+                  onClick={() => setIsDropdownOpen((prev) => !prev)}
+                  className="w-8 h-8 rounded-full bg-[var(--brand)] text-[#2A1300] font-bold text-xs flex items-center justify-center cursor-pointer border border-black/20"
                   aria-label="Tài khoản cá nhân"
+                  aria-expanded={isDropdownOpen}
                 >
                   {initialLetter}
                 </button>
-              </Dropdown>
+
+                {isDropdownOpen && renderProfileDropdownMenu()}
+              </div>
             ) : (
               <button
                 onClick={() => navigate('/login')}

@@ -162,13 +162,16 @@ public class QuizServiceImpl implements QuizService {
                             targetLvlId = nextLevel.getId();
                         }
                     }
-                    if (targetLvlId != null) {
-                        List<Quiz> levelUpQuizzes = quizRepository.findByQuizCategoryAndLevelIdAndIsActiveTrue(QuizCategory.LEVEL_UP, targetLvlId);
-                        List<Quiz> sortedQuizzes = new ArrayList<>(levelUpQuizzes);
-                        sortedQuizzes.sort((a, b) -> (a.getQuizCode() != null ? a.getQuizCode() : "")
-                                .compareTo(b.getQuizCode() != null ? b.getQuizCode() : ""));
-                        return computeSequentialChainForLevelUp(user, sortedQuizzes, pageable);
+                    List<Quiz> levelUpQuizzes = targetLvlId != null
+                            ? quizRepository.findByQuizCategoryAndLevelIdAndIsActiveTrue(QuizCategory.LEVEL_UP, targetLvlId)
+                            : quizRepository.findByQuizCategoryAndIsActiveTrue(QuizCategory.LEVEL_UP);
+                    if (levelUpQuizzes.isEmpty() && targetLvlId != null) {
+                        levelUpQuizzes = quizRepository.findByQuizCategoryAndIsActiveTrue(QuizCategory.LEVEL_UP);
                     }
+                    List<Quiz> sortedQuizzes = new ArrayList<>(levelUpQuizzes);
+                    sortedQuizzes.sort((a, b) -> (a.getQuizCode() != null ? a.getQuizCode() : "")
+                            .compareTo(b.getQuizCode() != null ? b.getQuizCode() : ""));
+                    return computeSequentialChainForLevelUp(user, sortedQuizzes, pageable);
                 }
 
                 return quizRepository.findAllForLearnerLevel(currentLevelId, pageable)
@@ -575,14 +578,17 @@ public class QuizServiceImpl implements QuizService {
                         targetLvlId = nextLevel.getId();
                     }
                 }
-                if (targetLvlId != null) {
-                    List<Quiz> levelUpQuizzes = quizRepository.findByQuizCategoryAndLevelIdAndIsActiveTrue(QuizCategory.LEVEL_UP, targetLvlId);
-                    List<Quiz> sortedQuizzes = new ArrayList<>(levelUpQuizzes);
-                    sortedQuizzes.sort((a, b) -> (a.getQuizCode() != null ? a.getQuizCode() : "")
-                            .compareTo(b.getQuizCode() != null ? b.getQuizCode() : ""));
-
-                    return computeSequentialChainForLevelUp(user, sortedQuizzes, Pageable.unpaged()).getContent();
+                List<Quiz> levelUpQuizzes = targetLvlId != null
+                        ? quizRepository.findByQuizCategoryAndLevelIdAndIsActiveTrue(QuizCategory.LEVEL_UP, targetLvlId)
+                        : quizRepository.findByQuizCategoryAndIsActiveTrue(QuizCategory.LEVEL_UP);
+                if (levelUpQuizzes.isEmpty() && targetLvlId != null) {
+                    levelUpQuizzes = quizRepository.findByQuizCategoryAndIsActiveTrue(QuizCategory.LEVEL_UP);
                 }
+                List<Quiz> sortedQuizzes = new ArrayList<>(levelUpQuizzes);
+                sortedQuizzes.sort((a, b) -> (a.getQuizCode() != null ? a.getQuizCode() : "")
+                        .compareTo(b.getQuizCode() != null ? b.getQuizCode() : ""));
+
+                return computeSequentialChainForLevelUp(user, sortedQuizzes, Pageable.unpaged()).getContent();
             }
             if (category == QuizCategory.PLACEMENT) {
                 return quizRepository.findByQuizCategoryAndIsActiveTrue(QuizCategory.PLACEMENT)
@@ -633,15 +639,24 @@ public class QuizServiceImpl implements QuizService {
     }
 
     private ProficiencyLevel resolveNextLearnerLevel(Users user) {
-        ProficiencyLevel currentLevel = user.getCurrentLevel();
-        if (currentLevel == null || currentLevel.getExamType() == null) {
+        ProficiencyLevel currentLevel = user != null ? user.getCurrentLevel() : null;
+        Long examTypeId = (currentLevel != null && currentLevel.getExamType() != null)
+                ? currentLevel.getExamType().getId()
+                : 1L;
+        List<ProficiencyLevel> allLevels = proficiencyLevelRepository
+                .findByExamTypeIdOrderByDisplayOrderAsc(examTypeId);
+        if (allLevels.isEmpty()) {
             return null;
         }
-        List<ProficiencyLevel> allLevels = proficiencyLevelRepository
-                .findByExamTypeIdOrderByDisplayOrderAsc(currentLevel.getExamType().getId());
+        if (currentLevel == null) {
+            return allLevels.size() >= 4 ? allLevels.get(3) : allLevels.get(allLevels.size() - 1);
+        }
         int currentRank = getLevelRank(currentLevel, allLevels);
-        if (currentRank <= 0 || currentRank >= allLevels.size()) {
-            return null;
+        if (currentRank <= 0) {
+            return allLevels.size() > 1 ? allLevels.get(1) : allLevels.get(0);
+        }
+        if (currentRank >= allLevels.size()) {
+            return allLevels.get(allLevels.size() - 1);
         }
         return allLevels.get(currentRank);
     }

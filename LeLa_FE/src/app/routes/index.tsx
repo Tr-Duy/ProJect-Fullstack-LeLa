@@ -96,6 +96,7 @@ export function AppRoutes() {
           <Route path="/level-exam" element={<Navigate to="/final-level-tests" replace />} />
           <Route path="/explore" element={<Navigate to="/decks" replace />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/settings" element={<Navigate to="/profile" replace />} />
         </Route>
       </Route>
 

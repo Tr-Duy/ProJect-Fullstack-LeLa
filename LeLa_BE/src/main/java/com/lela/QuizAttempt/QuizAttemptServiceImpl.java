@@ -777,7 +777,7 @@ public class QuizAttemptServiceImpl implements QuizAttemptService {
                         return BigDecimal.valueOf(700);
                     if (code.contains("ADVANCED") || code.contains("TOEIC_ADVANCED"))
                         return BigDecimal.valueOf(850);
-                    if (code.contains("EXCELLENT") || code.contains("TOEIC_EXCELLENT"))
+                    if (code.contains("EXCELLENT") || code.contains("TOEIC_EXCELLENT") || code.contains("EXPERT"))
                         return BigDecimal.valueOf(990);
                 }
             }
