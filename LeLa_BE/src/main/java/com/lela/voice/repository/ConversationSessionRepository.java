@@ -45,4 +45,33 @@ public interface ConversationSessionRepository extends JpaRepository<Conversatio
 
     @Query("SELECT COALESCE(SUM(s.xpAwarded), 0) FROM ConversationSession s WHERE s.user.id = :userId AND s.quotaDate = :quotaDate")
     int sumDailyXpAwarded(@Param("userId") Long userId, @Param("quotaDate") LocalDate quotaDate);
+
+    long countByScenarioId(Long scenarioId);
+
+    long countByStatus(String status);
+
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"scenario", "user"})
+    @Query("""
+        SELECT s FROM ConversationSession s
+        WHERE (:status IS NULL OR :status = '' OR s.status = :status)
+          AND (:userId IS NULL OR s.user.id = :userId)
+          AND (:scenarioId IS NULL OR s.scenario.id = :scenarioId)
+          AND (:startDate IS NULL OR s.startedAt >= :startDate)
+          AND (:endDate IS NULL OR s.startedAt <= :endDate)
+          AND (:search IS NULL OR :search = '' OR 
+               LOWER(s.user.fullName) LIKE LOWER(CONCAT('%', :search, '%')) OR 
+               LOWER(s.user.username) LIKE LOWER(CONCAT('%', :search, '%')) OR 
+               LOWER(s.scenario.title) LIKE LOWER(CONCAT('%', :search, '%')) OR 
+               s.publicId LIKE CONCAT('%', :search, '%'))
+        ORDER BY s.startedAt DESC
+    """)
+    org.springframework.data.domain.Page<ConversationSession> findWithFilters(
+            @Param("status") String status,
+            @Param("userId") Long userId,
+            @Param("scenarioId") Long scenarioId,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate,
+            @Param("search") String search,
+            org.springframework.data.domain.Pageable pageable
+    );
 }

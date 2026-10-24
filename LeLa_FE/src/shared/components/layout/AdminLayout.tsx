@@ -1,7 +1,7 @@
 import { Outlet, Link, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '../../providers/AuthProvider';
 import { useTheme } from '../../providers/ThemeProvider';
-import { LogOut, LayoutDashboard, Tags, Languages, Book, HelpCircle, Moon, Sun, Monitor, Users, CreditCard, Bell, Crown, FolderTree, Trophy, MessageSquare } from 'lucide-react';
+import { LogOut, LayoutDashboard, Tags, Languages, Book, HelpCircle, Moon, Sun, Monitor, Users, CreditCard, Bell, Crown, FolderTree, Trophy, MessageSquare, Mic, Sparkles } from 'lucide-react';
 import type { UserRole } from '../../types/lela';
 
 export function AdminLayout() {
@@ -22,6 +22,8 @@ export function AdminLayout() {
   type NavItem = { name: string; path: string; icon: any; roles: UserRole[] };
   const navItems: NavItem[] = [
     { name: 'Bảng điều khiển', path: '/admin/dashboard', icon: LayoutDashboard, roles: ['ADMIN'] },
+    { name: 'Kịch bản AI Voice', path: '/admin/ai-scenarios', icon: Mic, roles: ['ADMIN'] },
+    { name: 'Giám sát & Hạn mức AI', path: '/admin/ai-monitoring', icon: Sparkles, roles: ['ADMIN'] },
     { name: 'Gửi thông báo', path: '/admin/notifications', icon: Bell, roles: ['ADMIN'] },
     { name: 'Người dùng', path: '/admin/users', icon: Users, roles: ['ADMIN', 'MODERATOR'] },
     { name: 'Giao dịch', path: '/admin/transactions', icon: CreditCard, roles: ['ADMIN'] },

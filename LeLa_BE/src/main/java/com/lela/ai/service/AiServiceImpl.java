@@ -32,6 +32,8 @@ public class AiServiceImpl implements AiService {
     private final GeminiClient geminiClient;
     private final UsersRepository usersRepository;
     private final ObjectMapper objectMapper;
+    private final com.lela.chat.ChatConversationRepository chatConversationRepository;
+    private final com.lela.chat.ChatMessageRepository chatMessageRepository;
 
     @Override
     public SseEmitter chat(AiChatRequest request) {
@@ -63,11 +65,38 @@ public class AiServiceImpl implements AiService {
                         .build())
                 .build();
 
+        // Log session & user message
+        com.lela.chat.domain.ChatConversation conversation = null;
+        try {
+            conversation = chatConversationRepository.findByUserIdAndStatus(user.getId(), com.lela.chat.domain.ConversationStatus.OPEN)
+                    .filter(c -> "AI_TUTOR".equals(c.getChannelType()))
+                    .orElseGet(() -> chatConversationRepository.save(com.lela.chat.domain.ChatConversation.builder()
+                            .user(user)
+                            .channelType("AI_TUTOR")
+                            .status(com.lela.chat.domain.ConversationStatus.OPEN)
+                            .isFallbackTriggered(false)
+                            .build()));
+
+            chatMessageRepository.save(com.lela.chat.domain.ChatMessage.builder()
+                    .conversation(conversation)
+                    .senderType(com.lela.chat.domain.SenderType.LEARNER)
+                    .senderId(user.getId())
+                    .content(request.getMessage())
+                    .isRead(true)
+                    .isFallback(false)
+                    .tokensUsed(Math.max(1, request.getMessage().length() / 4))
+                    .build());
+        } catch (Exception ex) {
+            log.warn("Failed to log initial AI Tutor message: {}", ex.getMessage());
+        }
+        final com.lela.chat.domain.ChatConversation activeConv = conversation;
+
         // 4. Setup SSE
         SseEmitter emitter = new SseEmitter(60000L); // 1 min timeout
         
         CompletableFuture.runAsync(() -> {
             boolean sentAnyChunk = false;
+            StringBuilder aiReplyAccumulator = new StringBuilder();
             try {
                 var response = geminiClient.streamGenerateContent(geminiReq).join();
 
@@ -87,6 +116,7 @@ public class AiServiceImpl implements AiService {
                                     String text = geminiRes.getCandidates().get(0).getContent().getParts().get(0).getText();
                                     if (text != null) {
                                         emitter.send(SseEmitter.event().name("message").data(text));
+                                        aiReplyAccumulator.append(text);
                                         sentAnyChunk = true;
                                     }
                                 }
@@ -97,11 +127,38 @@ public class AiServiceImpl implements AiService {
                         }
                     }
                 }
+
+                if (activeConv != null && aiReplyAccumulator.length() > 0) {
+                    try {
+                        chatMessageRepository.save(com.lela.chat.domain.ChatMessage.builder()
+                                .conversation(activeConv)
+                                .senderType(com.lela.chat.domain.SenderType.AI)
+                                .senderId(null)
+                                .content(aiReplyAccumulator.toString())
+                                .isRead(true)
+                                .isFallback(false)
+                                .tokensUsed(Math.max(1, aiReplyAccumulator.length() / 4))
+                                .build());
+                    } catch (Exception ex) {
+                        log.warn("Failed to log AI reply: {}", ex.getMessage());
+                    }
+                }
+
                 emitter.complete();
             } catch (Exception e) {
                 log.error("Streaming error from Gemini API: {}", e.getMessage());
+                if (activeConv != null) {
+                    try {
+                        activeConv.setIsFallbackTriggered(true);
+                        activeConv.setFallbackReason("Lỗi kết nối Gemini API (" + e.getClass().getSimpleName() + ") -> Kích hoạt Smart Fallback");
+                        activeConv.setErrorMessage(e.getMessage());
+                        chatConversationRepository.save(activeConv);
+                    } catch (Exception ex) {
+                        log.warn("Failed to save fallback trigger status: {}", ex.getMessage());
+                    }
+                }
                 if (!sentAnyChunk) {
-                    sendDataDrivenFallback(emitter, contextDto, request.getMessage());
+                    sendDataDrivenFallback(emitter, contextDto, request.getMessage(), activeConv);
                 } else {
                     emitter.complete();
                 }
@@ -111,7 +168,7 @@ public class AiServiceImpl implements AiService {
         return emitter;
     }
 
-    private void sendDataDrivenFallback(SseEmitter emitter, com.lela.ai.dto.AiContextDto context, String message) {
+    private void sendDataDrivenFallback(SseEmitter emitter, com.lela.ai.dto.AiContextDto context, String message, com.lela.chat.domain.ChatConversation activeConv) {
         try {
             String reply = generateResponseFromContext(context, message);
             String[] tokens = reply.split("(?<=\\s|\\n)");
@@ -121,6 +178,23 @@ public class AiServiceImpl implements AiService {
                     Thread.sleep(15);
                 }
             }
+
+            if (activeConv != null) {
+                try {
+                    chatMessageRepository.save(com.lela.chat.domain.ChatMessage.builder()
+                            .conversation(activeConv)
+                            .senderType(com.lela.chat.domain.SenderType.AI)
+                            .senderId(null)
+                            .content(reply)
+                            .isRead(true)
+                            .isFallback(true)
+                            .tokensUsed(0)
+                            .build());
+                } catch (Exception ex) {
+                    log.warn("Failed to save fallback message: {}", ex.getMessage());
+                }
+            }
+
             emitter.complete();
         } catch (Exception e) {
             log.error("Error sending data-driven fallback response", e);

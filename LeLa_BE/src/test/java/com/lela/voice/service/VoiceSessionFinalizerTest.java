@@ -47,6 +47,8 @@ class VoiceSessionFinalizerTest {
     private DailyLearningActivityService dailyLearningActivityService;
     @Mock
     private UsersRepository usersRepository;
+    @Mock
+    private com.lela.voice.repository.UsageLedgerRepository usageLedgerRepository;
 
     private VoiceConfigurationProperties props;
     private VoiceSessionFinalizer finalizer;
@@ -70,7 +72,8 @@ class VoiceSessionFinalizerTest {
                 cardProgressRepository,
                 dailyLearningActivityService,
                 usersRepository,
-                props
+                props,
+                usageLedgerRepository
         );
 
         testUser = new Users();

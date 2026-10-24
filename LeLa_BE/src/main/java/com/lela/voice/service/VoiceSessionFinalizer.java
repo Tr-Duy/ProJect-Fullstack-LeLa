@@ -33,6 +33,7 @@ public class VoiceSessionFinalizer {
     private final DailyLearningActivityService dailyLearningActivityService;
     private final UsersRepository usersRepository;
     private final VoiceConfigurationProperties props;
+    private final UsageLedgerRepository usageLedgerRepository;
 
     /**
      * Chốt phiên hội thoại và chấm điểm (Idempotent transaction)
@@ -124,6 +125,24 @@ public class VoiceSessionFinalizer {
                 actReq.setVoiceSessionCount(1);
                 dailyLearningActivityService.logActivity(actReq);
             }
+        }
+
+        // 5. Ghi nhận bút toán vào Sổ Ghi Hạn Mức (SO_GHI_HAN_MUC)
+        try {
+            ZoneId zone = ZoneId.of(props.getTimezone());
+            LocalDate today = LocalDate.now(zone);
+            int minutesUsed = Math.max(1, (int) Math.ceil((session.getDurationSeconds() != null ? session.getDurationSeconds() : 0) / 60.0));
+            UsageLedger ledger = UsageLedger.builder()
+                    .user(session.getUser())
+                    .session(session)
+                    .entryType("SESSION")
+                    .minutesUsed(minutesUsed)
+                    .usageDate(today)
+                    .reason(session.getScenario() != null ? "Hội thoại AI Voice: " + session.getScenario().getTitle() : "Hội thoại AI Voice")
+                    .build();
+            usageLedgerRepository.save(ledger);
+        } catch (Exception e) {
+            log.error("Failed to record usage ledger for session {}: {}", session.getPublicId(), e.getMessage());
         }
 
         return sessionRepository.save(session);

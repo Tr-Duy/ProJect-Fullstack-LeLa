@@ -17,6 +17,8 @@ const SubscriptionPlansAdminPage = lazy(() => import('../../features/subscriptio
 const NotificationsAdminPage = lazy(() => import('../../features/notifications/pages/NotificationsAdminPage').then(module => ({ default: module.NotificationsAdminPage })));
 const TopicsAdminPage = lazy(() => import('../../features/master-data/pages/TopicsAdminPage').then(module => ({ default: module.TopicsAdminPage })));
 const AchievementsAdminPage = lazy(() => import('../../features/quiz/pages/AchievementsAdminPage').then(module => ({ default: module.AchievementsAdminPage })));
+const AdminAiScenariosPage = lazy(() => import('../../features/admin-ai/pages/AdminAiScenariosPage').then(module => ({ default: module.AdminAiScenariosPage || module.default })));
+const AdminAiMonitoringPage = lazy(() => import('../../features/admin-ai/pages/AdminAiMonitoringPage').then(module => ({ default: module.AdminAiMonitoringPage || module.default })));
 const LearnerAchievementsPage = lazy(() => import('../../features/quiz/pages/LearnerAchievementsPage').then(module => ({ default: module.LearnerAchievementsPage })));
 const DecksAdminPage = lazy(() => import('../../features/study-content/pages/DecksAdminPage').then(module => ({ default: module.DecksAdminPage })));
 const FlashcardsAdminPage = lazy(() => import('../../features/study-content/pages/FlashcardsAdminPage').then(module => ({ default: module.FlashcardsAdminPage })));
@@ -116,6 +118,8 @@ export function AppRoutes() {
             <Route path="/admin/topics" element={<TopicsAdminPage />} />
             <Route path="/admin/achievements" element={<AchievementsAdminPage />} />
             <Route path="/admin/chat" element={<AdminChatDashboard />} />
+            <Route path="/admin/ai-scenarios" element={<AdminAiScenariosPage />} />
+            <Route path="/admin/ai-monitoring" element={<AdminAiMonitoringPage />} />
           </Route>
           <Route path="/admin/decks" element={<DecksAdminPage />} />
           <Route path="/admin/decks/:deckId/flashcards" element={<FlashcardsAdminPage />} />

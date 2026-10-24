@@ -50,6 +50,20 @@ public class ChatConversation {
     @Column(nullable = false)
     private ConversationStatus status;
 
+    @Column(name = "channel_type", length = 30)
+    @Builder.Default
+    private String channelType = "SUPPORT";
+
+    @Column(name = "is_fallback_triggered")
+    @Builder.Default
+    private Boolean isFallbackTriggered = false;
+
+    @Column(name = "fallback_reason")
+    private String fallbackReason;
+
+    @Column(name = "error_message", columnDefinition = "TEXT")
+    private String errorMessage;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

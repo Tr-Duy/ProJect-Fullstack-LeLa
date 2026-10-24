@@ -37,7 +37,16 @@ public class ChatMessage {
     private String content;
 
     @Column(name = "is_read")
+    @Builder.Default
     private Boolean isRead = false;
+
+    @Column(name = "is_fallback")
+    @Builder.Default
+    private Boolean isFallback = false;
+
+    @Column(name = "tokens_used")
+    @Builder.Default
+    private Integer tokensUsed = 0;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

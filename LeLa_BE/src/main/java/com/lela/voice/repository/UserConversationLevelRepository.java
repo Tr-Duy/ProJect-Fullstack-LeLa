@@ -13,6 +13,8 @@ import java.util.Optional;
 @Repository
 public interface UserConversationLevelRepository extends JpaRepository<UserConversationLevel, Long> {
 
+    Optional<UserConversationLevel> findByUserId(Long userId);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT ucl FROM UserConversationLevel ucl WHERE ucl.userId = :userId")
     Optional<UserConversationLevel> findByUserIdForUpdate(@Param("userId") Long userId);
