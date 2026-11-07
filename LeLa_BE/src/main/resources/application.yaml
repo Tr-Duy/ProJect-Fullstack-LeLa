@@ -64,6 +64,12 @@ app:
 sepay:
   api-key: ${SEPAY_API_KEY:}
 
+payment:
+  bank:
+    code: ${PAYMENT_BANK_CODE:MB}
+    account-number: ${PAYMENT_BANK_ACCOUNT_NUMBER:0339999999}
+    account-name: ${PAYMENT_BANK_ACCOUNT_NAME:CONG TY LELA}
+
 gemini:
   api-key: ${GEMINI_API_KEY}
   api-url: https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:streamGenerateContent

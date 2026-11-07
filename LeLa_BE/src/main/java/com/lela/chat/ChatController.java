@@ -37,6 +37,15 @@ public class ChatController {
         return ApiResponse.success(chatService.getMessages(id), "Lấy danh sách tin nhắn");
     }
 
+    @PostMapping("/conversations/{id}/messages")
+    @PreAuthorize("hasRole('LEARNER') or hasRole('ADMIN')")
+    public ApiResponse<ChatMessageResponse> sendMessage(
+            @PathVariable Long id,
+            @RequestBody SendMessageRequest request) {
+        String username = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName();
+        return ApiResponse.success(chatService.sendLearnerMessageByUsername(id, request.getContent(), username), "Gửi tin nhắn thành công");
+    }
+
     @GetMapping("/guest/{guestToken}/messages")
     public ApiResponse<List<ChatMessageResponse>> getGuestMessages(@PathVariable String guestToken) {
         ConversationResponse conversation = chatService.findConversationIdByGuestToken(guestToken);

@@ -16,5 +16,11 @@ app:
 sepay:
   api-key: ${SEPAY_API_KEY:dev-sepay-key}
 
+payment:
+  bank:
+    code: ${PAYMENT_BANK_CODE:MB}
+    account-number: ${PAYMENT_BANK_ACCOUNT_NUMBER:0339999999}
+    account-name: ${PAYMENT_BANK_ACCOUNT_NAME:CONG TY LELA}
+
 gemini:
   api-key: ${GEMINI_API_KEY:YOUR_GEMINI_API_KEY_HERE}

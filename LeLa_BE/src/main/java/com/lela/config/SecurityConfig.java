@@ -68,6 +68,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/auth/refresh-token").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/logout").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/oauth2/exchange").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/auth/oauth2/mobile/google").permitAll()
 
                         // ── Public browse (guest có thể xem) ─────────────
                         .requestMatchers(HttpMethod.POST, "/payments/webhook/sepay").permitAll()

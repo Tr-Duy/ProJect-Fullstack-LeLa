@@ -165,8 +165,23 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
         // 4. Cache it and get code
         String exchangeCode = oauth2Service.cacheAuthResponse(authResponse);
 
-        // 5. Redirect to frontend with exchange code
-        getRedirectStrategy().sendRedirect(request, response, frontendUrl + "/oauth2/redirect?code=" + exchangeCode);
+        // 5. Redirect to frontend or mobile app with exchange code
+        String redirectUri = null;
+        if (request.getSession(false) != null) {
+            Object sessUri = request.getSession(false).getAttribute("redirect_uri");
+            if (sessUri != null) {
+                redirectUri = sessUri.toString();
+            }
+        }
+        if (redirectUri == null && request.getParameter("redirect_uri") != null) {
+            redirectUri = request.getParameter("redirect_uri");
+        }
+
+        String targetUrl = (redirectUri != null && !redirectUri.isEmpty())
+                ? redirectUri + (redirectUri.contains("?") ? "&" : "?") + "code=" + exchangeCode
+                : frontendUrl + "/oauth2/redirect?code=" + exchangeCode;
+
+        getRedirectStrategy().sendRedirect(request, response, targetUrl);
     }
 
     private ExamTypeDTO toExamTypeDto(com.lela.common.domain.ExamType examType) {

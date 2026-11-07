@@ -35,7 +35,7 @@ public class ProfileController {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
     }
 
-    @PatchMapping
+    @RequestMapping(method = {RequestMethod.PATCH, RequestMethod.PUT})
     public ResponseEntity<ApiResponse<UsersResponse>> updateMyProfile(@RequestBody ProfileUpdateRequest request) {
         UsersPatchRequest patchRequest = new UsersPatchRequest();
         patchRequest.setFullName(request.getFullName());
@@ -44,6 +44,9 @@ public class ProfileController {
         patchRequest.setDailyGoalCards(request.getDailyGoalCards());
         patchRequest.setNativeLanguageId(request.getNativeLanguageId());
         patchRequest.setTargetLanguageId(request.getTargetLanguageId());
+        if (request.getPassword() != null && !request.getPassword().trim().isEmpty()) {
+            patchRequest.setPassword(request.getPassword().trim());
+        }
         
         return ResponseEntity.ok(ApiResponse.success(
                 usersService.patch(getCurrentUserId(), patchRequest), 

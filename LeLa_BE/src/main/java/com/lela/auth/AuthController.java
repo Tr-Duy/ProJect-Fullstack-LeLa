@@ -24,6 +24,7 @@ import com.lela.language.LanguageRepository;
 import com.lela.common.dto.ExamTypeDTO;
 import com.lela.common.dto.ProficiencyLevelDTO;
 import com.lela.auth.dto.ProfileUpdateRequest;
+import com.lela.auth.dto.ChangePasswordRequest;
 import com.lela.subscriptionplan.domain.SubscriptionPlan;
 import com.lela.subscriptionplan.SubscriptionPlanRepository;
 import com.lela.usersubscription.domain.UserSubscription;
@@ -47,6 +48,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -336,6 +338,16 @@ public class AuthController {
                 return ResponseEntity.ok(ApiResponse.success(authResponse, "Làm mới token thành công"));
         }
 
+        @GetMapping("/oauth2/mobile/google")
+        @Operation(summary = "Khởi tạo đăng nhập Google từ Mobile", description = "Lưu redirect_uri vào session và chuyển hướng đến Google OAuth2")
+        public void mobileGoogleAuth(
+                        @org.springframework.web.bind.annotation.RequestParam(required = false, defaultValue = "com.lela.mobile://auth/callback") String redirectUri,
+                        HttpServletRequest request,
+                        jakarta.servlet.http.HttpServletResponse response) throws java.io.IOException {
+                request.getSession().setAttribute("redirect_uri", redirectUri);
+                response.sendRedirect(request.getContextPath() + "/oauth2/authorization/google");
+        }
+
         @PostMapping("/oauth2/exchange")
         @Transactional(readOnly = true)
         @Operation(summary = "Đổi mã xác thực OAuth2", description = "Đổi mã xác thực một lần lấy AuthResponse")
@@ -429,6 +441,32 @@ public class AuthController {
 
                 return ResponseEntity
                                 .ok(ApiResponse.success(buildUserInfo(user), "Cập nhật thông tin cá nhân thành công"));
+        }
+
+        @PutMapping("/change-password")
+        @Transactional
+        @Operation(summary = "Đổi mật khẩu", description = "Đổi mật khẩu tài khoản người dùng.")
+        @ApiResponses({
+                        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Đổi mật khẩu thành công"),
+                        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Mật khẩu cũ không chính xác hoặc dữ liệu không hợp lệ")
+        })
+        public ResponseEntity<ApiResponse<Void>> changePassword(Authentication authentication,
+                        @RequestBody @Valid ChangePasswordRequest request) {
+                if (authentication == null) {
+                        return ResponseEntity.status(401).build();
+                }
+                String username = authentication.getName();
+                Users user = usersRepository.findByUsername(username)
+                                .orElseThrow(() -> new NotFoundExeception("Không tìm thấy người dùng"));
+
+                if (!passwordEncoder.matches(request.getOldPassword(), user.getPasswordHash())) {
+                        throw new BadRequestException("Mật khẩu hiện tại không chính xác");
+                }
+
+                user.setPasswordHash(passwordEncoder.encode(request.getNewPassword().trim()));
+                usersRepository.save(user);
+
+                return ResponseEntity.ok(ApiResponse.successMessage("Đổi mật khẩu thành công"));
         }
 
         private String hashToken(String token) {

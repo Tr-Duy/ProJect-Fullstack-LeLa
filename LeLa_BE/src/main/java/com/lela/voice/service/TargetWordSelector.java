@@ -18,6 +18,7 @@ public class TargetWordSelector {
 
     private final CardProgressRepository cardProgressRepository;
     private final ConversationTargetWordRepository targetWordRepository;
+    private final com.lela.flashcard.FlashcardRepository flashcardRepository;
 
     /**
      * Chọn 3–5 từ mục tiêu:
@@ -27,52 +28,61 @@ public class TargetWordSelector {
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public List<Flashcard> selectTargetWords(Long userId) {
         List<CardProgress> userCards = cardProgressRepository.findAllByUserId(userId);
-        if (userCards.isEmpty()) {
-            return Collections.emptyList();
-        }
-
-        // 1. Phân loại từ yếu và từ đang học
-        List<CardProgress> weakCards = userCards.stream()
-                .filter(cp -> cp.getState() != CardProgressState.NEW && cp.getState() != CardProgressState.SUSPENDED)
-                .filter(cp -> (cp.getLapseCount() != null && cp.getLapseCount() >= 2) || (cp.getAgainCount() != null && cp.getAgainCount() > 0))
-                .sorted(Comparator.comparingInt(CardProgress::getLapseCount).reversed())
-                .collect(Collectors.toList());
-
-        List<CardProgress> learningCards = userCards.stream()
-                .filter(cp -> cp.getState() == CardProgressState.LEARNING || cp.getState() == CardProgressState.RELEARNING)
-                .collect(Collectors.toList());
-
-        List<CardProgress> reviewCards = userCards.stream()
-                .filter(cp -> cp.getState() == CardProgressState.REVIEW)
-                .collect(Collectors.toList());
-
-        // Tập hợp danh sách ứng viên có thứ tự ưu tiên
         Set<Long> selectedFlashcardIds = new LinkedHashSet<>();
         List<Flashcard> candidates = new ArrayList<>();
 
-        // Thêm weak cards trước
-        for (CardProgress cp : weakCards) {
-            if (candidates.size() >= 5) break;
-            if (cp.getCard() != null && selectedFlashcardIds.add(cp.getCard().getId())) {
-                candidates.add(cp.getCard());
-            }
-        }
+        if (!userCards.isEmpty()) {
+            // 1. Phân loại từ yếu và từ đang học
+            List<CardProgress> weakCards = userCards.stream()
+                    .filter(cp -> cp.getState() != CardProgressState.NEW && cp.getState() != CardProgressState.SUSPENDED)
+                    .filter(cp -> (cp.getLapseCount() != null && cp.getLapseCount() >= 2) || (cp.getAgainCount() != null && cp.getAgainCount() > 0))
+                    .sorted(Comparator.comparingInt(CardProgress::getLapseCount).reversed())
+                    .collect(Collectors.toList());
 
-        // Thêm learning cards tiếp theo
-        for (CardProgress cp : learningCards) {
-            if (candidates.size() >= 5) break;
-            if (cp.getCard() != null && selectedFlashcardIds.add(cp.getCard().getId())) {
-                candidates.add(cp.getCard());
-            }
-        }
+            List<CardProgress> learningCards = userCards.stream()
+                    .filter(cp -> cp.getState() == CardProgressState.LEARNING || cp.getState() == CardProgressState.RELEARNING)
+                    .collect(Collectors.toList());
 
-        // Thêm review cards nếu vẫn chưa đủ 3 từ
-        if (candidates.size() < 3) {
-            Collections.shuffle(reviewCards);
-            for (CardProgress cp : reviewCards) {
+            List<CardProgress> reviewCards = userCards.stream()
+                    .filter(cp -> cp.getState() == CardProgressState.REVIEW)
+                    .collect(Collectors.toList());
+
+            // Thêm weak cards trước
+            for (CardProgress cp : weakCards) {
                 if (candidates.size() >= 5) break;
                 if (cp.getCard() != null && selectedFlashcardIds.add(cp.getCard().getId())) {
                     candidates.add(cp.getCard());
+                }
+            }
+
+            // Thêm learning cards tiếp theo
+            for (CardProgress cp : learningCards) {
+                if (candidates.size() >= 5) break;
+                if (cp.getCard() != null && selectedFlashcardIds.add(cp.getCard().getId())) {
+                    candidates.add(cp.getCard());
+                }
+            }
+
+            // Thêm review cards nếu vẫn chưa đủ 3 từ
+            if (candidates.size() < 3) {
+                Collections.shuffle(reviewCards);
+                for (CardProgress cp : reviewCards) {
+                    if (candidates.size() >= 5) break;
+                    if (cp.getCard() != null && selectedFlashcardIds.add(cp.getCard().getId())) {
+                        candidates.add(cp.getCard());
+                    }
+                }
+            }
+        }
+
+        // Dự phòng: Nếu người học chưa có đủ từ đang học/ôn tập, lấy từ vựng khả dụng từ kho hệ thống
+        if (candidates.size() < 3) {
+            org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(0, 15);
+            List<Flashcard> availableCards = flashcardRepository.findAll(pageable).getContent();
+            for (Flashcard fc : availableCards) {
+                if (candidates.size() >= 5) break;
+                if (fc.isActive && selectedFlashcardIds.add(fc.getId())) {
+                    candidates.add(fc);
                 }
             }
         }

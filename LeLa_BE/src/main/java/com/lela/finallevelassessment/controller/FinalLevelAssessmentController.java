@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1/final-level-tests")
+@RequestMapping("/final-level-tests")
 public class FinalLevelAssessmentController {
 
     @Autowired

@@ -188,4 +188,20 @@ public class ChatService {
         
         return response;
     }
+
+    @Transactional
+    public ChatMessageResponse sendLearnerMessageByUsername(Long conversationId, String content, String username) {
+        Users user = usersRepository.findByUsername(username)
+                .or(() -> usersRepository.findByEmail(username))
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.UNAUTHORIZED, "User không tồn tại"));
+
+        boolean isAdmin = user.getRoleAssignments() != null && user.getRoleAssignments().stream()
+                .anyMatch(role -> role.getRole() != null && "ADMIN".equals(role.getRole().getRoleCode()));
+        SenderType senderType = isAdmin ? SenderType.ADMIN : SenderType.LEARNER;
+
+        SendMessageRequest request = new SendMessageRequest();
+        request.setConversationId(conversationId);
+        request.setContent(content);
+        return sendMessage(request, senderType, user.getId());
+    }
 }

@@ -122,8 +122,13 @@ public class VoiceConversationServiceImpl implements VoiceConversationService {
     public VoiceStartResponse startSession(Users user, VoiceStartRequest req) {
         // 1. Chọn Scenario
         ConversationScenario scenario = null;
-        if (req != null && req.scenarioSlug() != null && !req.scenarioSlug().isBlank()) {
-            scenario = scenarioRepository.findBySlug(req.scenarioSlug()).orElse(null);
+        if (req != null) {
+            if (req.scenarioId() != null) {
+                scenario = scenarioRepository.findById(req.scenarioId()).orElse(null);
+            }
+            if (scenario == null && req.scenarioSlug() != null && !req.scenarioSlug().isBlank()) {
+                scenario = scenarioRepository.findBySlug(req.scenarioSlug()).orElse(null);
+            }
         }
         if (scenario == null) {
             UserConversationLevel lvl = levelService.getOrCreateLevel(user.getId(), user);

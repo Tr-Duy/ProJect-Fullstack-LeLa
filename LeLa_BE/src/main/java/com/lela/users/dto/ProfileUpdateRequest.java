@@ -10,4 +10,5 @@ public class ProfileUpdateRequest {
     private Integer dailyGoalCards;
     private Long nativeLanguageId;
     private Long targetLanguageId;
+    private String password;
 }

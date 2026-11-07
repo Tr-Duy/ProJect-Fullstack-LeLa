@@ -1,0 +1,238 @@
+1 | AchievementAdminController | GET /admin/achievements | Body: - | Return: ResponseEntity<ApiResponse<List<AchievementResponse>>> | Auth: None | Method: getAll | File: com/lela/achievement/AchievementAdminController.java
+2 | AchievementAdminController | POST /admin/achievements | Body: AchievementAdminRequest | Return: ResponseEntity<ApiResponse<AchievementResponse>> | Auth: None | Method: create | File: com/lela/achievement/AchievementAdminController.java
+3 | AchievementAdminController | PUT /admin/achievements/{id} | Body: AchievementAdminRequest | Return: ResponseEntity<ApiResponse<AchievementResponse>> | Auth: None | Method: update | File: com/lela/achievement/AchievementAdminController.java
+4 | AchievementAdminController | PATCH /admin/achievements/{id}/toggle-active | Body: - | Return: ResponseEntity<ApiResponse<AchievementResponse>> | Auth: None | Method: toggleActive | File: com/lela/achievement/AchievementAdminController.java
+5 | AchievementController | GET /achievements/me | Body: - | Return: ResponseEntity<ApiResponse<List<UserAchievement>>> | Auth: None | Method: getMyAchievements | File: com/lela/achievement/AchievementController.java
+6 | AchievementController | GET /achievements/my-progress | Body: - | Return: ResponseEntity<ApiResponse<List<com.lela.achievement.dto.UserAchievementProgressResponse>>> | Auth: None | Method: getMyAchievementsProgress | File: com/lela/achievement/AchievementController.java
+7 | AdminMetricsController | GET /admin/metrics | Body: - | Return: ApiResponse<Map<String, Object>> | Auth: None | Method: getMetrics | File: com/lela/admin/AdminMetricsController.java
+8 | AdminAiMonitoringController | GET /admin/ai/monitoring/overview | Body: - | Return: ResponseEntity<ApiResponse<AdminAiOverviewStats>> | Auth: None | Method: getOverviewStats | File: com/lela/admin/ai/controller/AdminAiMonitoringController.java
+9 | AdminAiMonitoringController | GET /admin/ai/monitoring/sessions | Body: - | Return: ResponseEntity<ApiResponse<Page<AdminVoiceSessionResponse>>> | Auth: None | Method: getVoiceSessions | File: com/lela/admin/ai/controller/AdminAiMonitoringController.java
+10 | AdminAiMonitoringController | GET /admin/ai/monitoring/sessions/{id} | Body: - | Return: ResponseEntity<ApiResponse<AdminVoiceSessionDetailResponse>> | Auth: None | Method: getVoiceSessionDetail | File: com/lela/admin/ai/controller/AdminAiMonitoringController.java
+11 | AdminAiMonitoringController | GET /admin/ai/monitoring/quota-ledger | Body: - | Return: ResponseEntity<ApiResponse<Page<AdminQuotaLedgerResponse>>> | Auth: None | Method: getQuotaLedger | File: com/lela/admin/ai/controller/AdminAiMonitoringController.java
+12 | AdminAiMonitoringController | POST /admin/ai/monitoring/quota-ledger/adjust | Body: AdminAdjustQuotaRequest | Return: ResponseEntity<ApiResponse<AdminQuotaLedgerResponse>> | Auth: None | Method: adjustQuota | File: com/lela/admin/ai/controller/AdminAiMonitoringController.java
+13 | AdminAiMonitoringController | GET /admin/ai/monitoring/quota-ledger/users | Body: - | Return: ResponseEntity<ApiResponse<List<AdminUserQuotaSummaryResponse>>> | Auth: None | Method: getUserQuotaSummaries | File: com/lela/admin/ai/controller/AdminAiMonitoringController.java
+14 | AdminAiMonitoringController | GET /admin/ai/monitoring/ai-tutor-logs | Body: - | Return: ResponseEntity<ApiResponse<Page<AdminAiTutorSessionResponse>>> | Auth: None | Method: getAiTutorLogs | File: com/lela/admin/ai/controller/AdminAiMonitoringController.java
+15 | AdminAiMonitoringController | GET /admin/ai/monitoring/ai-tutor-logs/{id} | Body: - | Return: ResponseEntity<ApiResponse<AdminAiTutorSessionResponse>> | Auth: None | Method: getAiTutorLogDetail | File: com/lela/admin/ai/controller/AdminAiMonitoringController.java
+16 | AdminAiScenarioController | GET /admin/ai/scenarios | Body: - | Return: ResponseEntity<ApiResponse<Page<AdminScenarioResponse>>> | Auth: None | Method: getScenarios | File: com/lela/admin/ai/controller/AdminAiScenarioController.java
+17 | AdminAiScenarioController | GET /admin/ai/scenarios/{id} | Body: - | Return: ResponseEntity<ApiResponse<AdminScenarioResponse>> | Auth: None | Method: getScenarioById | File: com/lela/admin/ai/controller/AdminAiScenarioController.java
+18 | AdminAiScenarioController | POST /admin/ai/scenarios | Body: AdminScenarioRequest | Return: ResponseEntity<ApiResponse<AdminScenarioResponse>> | Auth: None | Method: createScenario | File: com/lela/admin/ai/controller/AdminAiScenarioController.java
+19 | AdminAiScenarioController | PUT /admin/ai/scenarios/{id} | Body: AdminScenarioRequest | Return: ResponseEntity<ApiResponse<AdminScenarioResponse>> | Auth: None | Method: updateScenario | File: com/lela/admin/ai/controller/AdminAiScenarioController.java
+20 | AdminAiScenarioController | DELETE /admin/ai/scenarios/{id} | Body: - | Return: ResponseEntity<ApiResponse<Void>> | Auth: None | Method: deleteScenario | File: com/lela/admin/ai/controller/AdminAiScenarioController.java
+21 | AdminAiScenarioController | POST /admin/ai/scenarios/{id}/clone | Body: - | Return: ResponseEntity<ApiResponse<AdminScenarioResponse>> | Auth: None | Method: cloneScenario | File: com/lela/admin/ai/controller/AdminAiScenarioController.java
+22 | AdminAiScenarioController | PATCH /admin/ai/scenarios/{id}/toggle-status | Body: - | Return: ResponseEntity<ApiResponse<AdminScenarioResponse>> | Auth: None | Method: toggleStatus | File: com/lela/admin/ai/controller/AdminAiScenarioController.java
+23 | AiController | POST /ai/chat | Body: AiChatRequest | Return: SseEmitter | Auth: None | Method: chat | File: com/lela/ai/controller/AiController.java
+24 | AiController | GET /ai/context | Body: - | Return: ResponseEntity<ApiResponse<AiContextDto>> | Auth: None | Method: getContext | File: com/lela/ai/controller/AiController.java
+25 | AiGenerationController | POST /ai/generate/quiz | Body: - | Return: ResponseEntity<QuizResponse> | Auth: None | Method: generateQuiz | File: com/lela/ai/controller/AiGenerationController.java
+26 | AuthController | GET /auth/check-username | Body: - | Return: ResponseEntity<ApiResponse<Boolean>> | Auth: None | Method: checkUsername | File: com/lela/auth/AuthController.java
+27 | AuthController | GET /auth/check-email | Body: - | Return: ResponseEntity<ApiResponse<Boolean>> | Auth: None | Method: checkEmail | File: com/lela/auth/AuthController.java
+28 | CardProgressController | GET /card-progress/{cardId} | Body: - | Return: ResponseEntity<CardProgressResponse> | Auth: None | Method: getProgressDetail | File: com/lela/cardprogress/CardProgressController.java
+29 | CardProgressController | GET /card-progress/deck/{deckId} | Body: - | Return: ResponseEntity<Page<CardProgressSummaryRepponse>> | Auth: None | Method: getProgressByDeck | File: com/lela/cardprogress/CardProgressController.java
+30 | CardProgressController | GET /card-progress/deck/{deckId}/review | Body: - | Return: ResponseEntity<Page<CardProgressSummaryRepponse>> | Auth: None | Method: getReviewCards | File: com/lela/cardprogress/CardProgressController.java
+31 | CardProgressController | GET /card-progress/deck/{deckId}/new | Body: - | Return: ResponseEntity<Page<CardProgressSummaryRepponse>> | Auth: None | Method: getNewCards | File: com/lela/cardprogress/CardProgressController.java
+32 | CardProgressController | POST /card-progress/suspend/{cardId} | Body: - | Return: ResponseEntity<Void> | Auth: None | Method: suspendCard | File: com/lela/cardprogress/CardProgressController.java
+33 | CardProgressController | POST /card-progress/reset/{cardId} | Body: - | Return: ResponseEntity<Void> | Auth: None | Method: resetProgress | File: com/lela/cardprogress/CardProgressController.java
+34 | ChatController | POST /chat/guest/start | Body: GuestStartChatRequest | Return: ApiResponse<ConversationResponse> | Auth: None | Method: startGuestChat | File: com/lela/chat/ChatController.java
+35 | ChatController | GET /chat/guest/{guestToken}/messages | Body: - | Return: ApiResponse<List<ChatMessageResponse>> | Auth: None | Method: getGuestMessages | File: com/lela/chat/ChatController.java
+36 | ChatController | GET /chat/guest/{guestToken}/conversation | Body: - | Return: ApiResponse<ConversationResponse> | Auth: None | Method: getGuestConversation | File: com/lela/chat/ChatController.java
+37 | ExamTypeController | GET /exam-types/exam-types | Body: - | Return: class ExamTypeController {
+    private final ExamTypeService examTypeService;
+    private final ProficiencyLevelService proficiencyLevelService;
+
+    @GetMapping
+    public ResponseEntity<List<ExamTypeDTO>> | Auth: None | Method: getAllExamTypes | File: com/lela/common/ExamTypeController.java
+38 | ExamTypeController | GET /exam-types/{id}/levels | Body: - | Return: ResponseEntity<List<ProficiencyLevelDTO>> | Auth: None | Method: getLevelsByExamType | File: com/lela/common/ExamTypeController.java
+39 | DailyLearningActivityController | POST /daily-activities/log | Body: DailyLearningActivityRequest | Return: ResponseEntity<ApiResponse<DailyLearningActivityResponse>> | Auth: None | Method: logActivity | File: com/lela/dailylearningactivity/DailyLearningActivityController.java
+40 | DailyLearningActivityController | GET /daily-activities/today | Body: - | Return: ResponseEntity<ApiResponse<DailyLearningActivityResponse>> | Auth: None | Method: getTodayActivity | File: com/lela/dailylearningactivity/DailyLearningActivityController.java
+41 | DailyLearningActivityController | GET /daily-activities/history | Body: - | Return: ResponseEntity<ApiResponse<java.util.List<DailyLearningActivityResponse>>> | Auth: None | Method: getHistory | File: com/lela/dailylearningactivity/DailyLearningActivityController.java
+42 | DeckController | GET /decks/decks | Body: DeckRequest | Return: class DeckController {
+
+    private final DeckService deckService;
+
+    @PostMapping
+    public ResponseEntity<DeckResponse> | Auth: None | Method: createDeck | File: com/lela/deck/DeckController.java
+43 | DeckController | PATCH /decks/{id} | Body: DeckRequest | Return: ResponseEntity<DeckResponse> | Auth: None | Method: updateDeck | File: com/lela/deck/DeckController.java
+44 | DeckController | GET /decks/{id} | Body: - | Return: ResponseEntity<DeckResponse> | Auth: None | Method: getDeckById | File: com/lela/deck/DeckController.java
+45 | DeckController | GET /decks | Body: - | Return: ResponseEntity<Page<DeckResponse>> | Auth: None | Method: getAllDecks | File: com/lela/deck/DeckController.java
+46 | DeckController | GET /decks/owner/{ownerId} | Body: - | Return: ResponseEntity<Page<DeckResponse>> | Auth: None | Method: getDecksByOwner | File: com/lela/deck/DeckController.java
+47 | DeckController | DELETE /decks/{id} | Body: - | Return: ResponseEntity<Void> | Auth: None | Method: deleteDeck | File: com/lela/deck/DeckController.java
+48 | TopicController | GET /topics/topics | Body: - | Return: class TopicController {
+
+    private final TopicService topicService;
+
+    @GetMapping
+    public ResponseEntity<List<TopicDTO>> | Auth: None | Method: getAllTopics | File: com/lela/deck/TopicController.java
+49 | TopicController | GET /topics/{id} | Body: - | Return: ResponseEntity<TopicDTO> | Auth: None | Method: getTopicById | File: com/lela/deck/TopicController.java
+50 | TopicController | POST /topics | Body: TopicDTO | Return: ResponseEntity<TopicDTO> | Auth: None | Method: createTopic | File: com/lela/deck/TopicController.java
+51 | TopicController | PATCH /topics/{id} | Body: TopicDTO | Return: ResponseEntity<TopicDTO> | Auth: None | Method: updateTopic | File: com/lela/deck/TopicController.java
+52 | DeckEnrollmentController | POST /enrollments/decks/{deckId}/enroll | Body: DeckEnrollmentRequest | Return: ResponseEntity<ApiResponse<DeckEnrollmentResponse>> | Auth: None | Method: enrollDeck | File: com/lela/deckenrollment/DeckEnrollmentController.java
+53 | DeckEnrollmentController | PATCH /enrollments/decks/{deckId}/status | Body: DeckEnrollmentRequest | Return: ResponseEntity<ApiResponse<DeckEnrollmentResponse>> | Auth: None | Method: updateStatus | File: com/lela/deckenrollment/DeckEnrollmentController.java
+54 | DeckEnrollmentController | GET /enrollments/my-list | Body: - | Return: ResponseEntity<ApiResponse<Page<DeckEnrollmentResponse>>> | Auth: None | Method: getUserEnrollList | File: com/lela/deckenrollment/DeckEnrollmentController.java
+55 | DeckEnrollmentController | GET /enrollments/today-reviews | Body: - | Return: ResponseEntity<ApiResponse<Page<DeckEnrollmentResponse>>> | Auth: None | Method: getReviewToday | File: com/lela/deckenrollment/DeckEnrollmentController.java
+56 | FinalLevelAssessmentController | GET /api/v1/final-level-tests/api/v1/final-level-tests | Body: - | Return: class FinalLevelAssessmentController {
+
+    @Autowired
+    private FinalLevelAssessmentService assessmentService;
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<FinalLevelAssessmentResponse>> | Auth: None | Method: getOverview | File: com/lela/finallevelassessment/controller/FinalLevelAssessmentController.java
+57 | FinalLevelAssessmentController | POST /api/v1/final-level-tests/reset-cycle | Body: - | Return: ResponseEntity<ApiResponse<FinalLevelAssessmentResponse>> | Auth: None | Method: resetCycle | File: com/lela/finallevelassessment/controller/FinalLevelAssessmentController.java
+58 | FinalLevelAssessmentController | POST /api/v1/final-level-tests/complete-deck/{deckId} | Body: - | Return: ResponseEntity<ApiResponse<FinalLevelAssessmentResponse>> | Auth: None | Method: completeDeck | File: com/lela/finallevelassessment/controller/FinalLevelAssessmentController.java
+59 | FlashcardController | GET /flashcards/flashcards | Body: FlashcardRequest | Return: class FlashcardController {
+
+    private final FlashcardService flashcardService;
+
+    @PostMapping
+    public ResponseEntity<FlashcardResponse> | Auth: None | Method: createFlashcard | File: com/lela/flashcard/FlashcardController.java
+60 | FlashcardController | POST /flashcards/bulk | Body: - | Return: ResponseEntity<java.util.List<FlashcardResponse>> | Auth: None | Method: bulkCreateFlashcards | File: com/lela/flashcard/FlashcardController.java
+61 | FlashcardController | PATCH /flashcards/{id} | Body: FlashcardRequest | Return: ResponseEntity<FlashcardResponse> | Auth: None | Method: updateFlashcard | File: com/lela/flashcard/FlashcardController.java
+62 | FlashcardController | GET /flashcards/{id} | Body: - | Return: ResponseEntity<FlashcardResponse> | Auth: None | Method: getFlashcardById | File: com/lela/flashcard/FlashcardController.java
+63 | FlashcardController | GET /flashcards/deck/{deckId} | Body: - | Return: ResponseEntity<Page<FlashcardResponse>> | Auth: None | Method: getFlashcardsByDeck | File: com/lela/flashcard/FlashcardController.java
+64 | FlashcardController | GET /flashcards/tag/{tagId} | Body: - | Return: ResponseEntity<Page<FlashcardResponse>> | Auth: None | Method: getFlashcardsByTag | File: com/lela/flashcard/FlashcardController.java
+65 | FlashcardController | DELETE /flashcards/{id} | Body: - | Return: ResponseEntity<Void> | Auth: None | Method: deleteFlashcard | File: com/lela/flashcard/FlashcardController.java
+66 | FlashcardController | PATCH /flashcards/deck/{deckId}/reorder | Body: - | Return: ResponseEntity<?> | Auth: None | Method: reorderFlashcards | File: com/lela/flashcard/FlashcardController.java
+67 | HealthController | GET /health/health | Body: - | Return: class HealthController {
+
+    @GetMapping
+    public ResponseEntity<Map<String, String>> | Auth: None | Method: healthCheck | File: com/lela/health/HealthController.java
+68 | LanguageController | GET /languages/languages | Body: - | Return: class LanguageController {
+    private final LanguageService service;
+
+    // API lấy danh sách toàn bộ ngôn ngữ.
+    @GetMapping
+    public ResponseEntity<ApiResponse<List<LanguageResponse>>> | Auth: None | Method: findAll | File: com/lela/language/LanguageController.java
+69 | LanguageController | GET /languages/{id} | Body: - | Return: ResponseEntity<ApiResponse<LanguageResponse>> | Auth: None | Method: findById | File: com/lela/language/LanguageController.java
+70 | LeaderboardSnapshotController | GET /leaderboards/top | Body: - | Return: ResponseEntity<ApiResponse<Page<LeaderboardSnapshotResponse>>> | Auth: None | Method: getTopRanking | File: com/lela/leaderboardsnapshot/LeaderboardSnapshotController.java
+71 | LeaderboardSnapshotController | GET /leaderboards/daily | Body: - | Return: ResponseEntity<ApiResponse<Page<LeaderboardSnapshotResponse>>> | Auth: None | Method: getDailyRanking | File: com/lela/leaderboardsnapshot/LeaderboardSnapshotController.java
+72 | LeaderboardSnapshotController | GET /leaderboards/weekly | Body: - | Return: ResponseEntity<ApiResponse<Page<LeaderboardSnapshotResponse>>> | Auth: None | Method: getWeeklyRanking | File: com/lela/leaderboardsnapshot/LeaderboardSnapshotController.java
+73 | LeaderboardSnapshotController | GET /leaderboards/monthly | Body: - | Return: ResponseEntity<ApiResponse<Page<LeaderboardSnapshotResponse>>> | Auth: None | Method: getMonthlyRanking | File: com/lela/leaderboardsnapshot/LeaderboardSnapshotController.java
+74 | LeaderboardSnapshotController | GET /leaderboards/me | Body: - | Return: ResponseEntity<ApiResponse<LeaderboardSnapshotResponse>> | Auth: None | Method: getMyRanking | File: com/lela/leaderboardsnapshot/LeaderboardSnapshotController.java
+75 | NotificationController | GET /notifications/notifications | Body: - | Return: class NotificationController {
+
+    private final NotificationService notificationService;
+    private final SseService sseService;
+    private final com.lela.users.UsersRepository usersRepository;
+
+    private static final String MSG_FETCH_ALL_SUCCESS = "Tải danh sách tất cả thông báo thành công.";
+    private static final String MSG_FETCH_UNREAD_SUCCESS = "Tải danh sách thông báo chưa đọc thành công.";
+    private static final String MSG_MARK_READ_SUCCESS = "Đã đánh dấu đọc thông báo thành công.";
+    private static final String MSG_MARK_ALL_READ_SUCCESS = "Đã đánh dấu đọc toàn bộ thông báo thành công.";
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<Page<NotificationResponse>>> | Auth: None | Method: getAll | File: com/lela/notification/NotificationController.java
+76 | NotificationController | GET /notifications/stream | Body: - | Return: SseEmitter | Auth: None | Method: stream | File: com/lela/notification/NotificationController.java
+77 | NotificationController | GET /notifications/unread | Body: - | Return: ResponseEntity<ApiResponse<Page<NotificationResponse>>> | Auth: None | Method: getUnread | File: com/lela/notification/NotificationController.java
+78 | NotificationController | PATCH /notifications/{id}/read | Body: - | Return: ResponseEntity<ApiResponse<Void>> | Auth: None | Method: markAsRead | File: com/lela/notification/NotificationController.java
+79 | NotificationController | PATCH /notifications/read-all | Body: - | Return: ResponseEntity<ApiResponse<Void>> | Auth: None | Method: markAllAsRead | File: com/lela/notification/NotificationController.java
+80 | NotificationController | DELETE /notifications/{id} | Body: - | Return: ResponseEntity<ApiResponse<Void>> | Auth: None | Method: deleteNotification | File: com/lela/notification/NotificationController.java
+81 | NotificationController | DELETE /notifications/clear-all | Body: - | Return: ResponseEntity<ApiResponse<Void>> | Auth: None | Method: deleteAllNotifications | File: com/lela/notification/NotificationController.java
+82 | PaymentController | GET /payments/payments | Body: - | Return: class PaymentController {
+
+    private final PaymentService service;
+    private final SepayWebhookValidator sepayWebhookValidator;
+
+    @GetMapping
+    public ApiResponse<Page<PaymentResponse>> | Auth: None | Method: getAll | File: com/lela/payment/PaymentController.java
+83 | PaymentController | GET /payments/{id} | Body: - | Return: ApiResponse<PaymentResponse> | Auth: None | Method: getById | File: com/lela/payment/PaymentController.java
+84 | PaymentController | POST /payments/checkout | Body: - | Return: ApiResponse<com.lela.payment.dto.CheckoutResponse> | Auth: None | Method: checkout | File: com/lela/payment/PaymentController.java
+85 | PaymentController | GET /payments/{id}/status | Body: - | Return: ApiResponse<String> | Auth: None | Method: getPaymentStatus | File: com/lela/payment/PaymentController.java
+86 | PaymentController | POST /payments/webhook/sepay | Body: - | Return: org.springframework.http.ResponseEntity<Map<String, Object>> | Auth: None | Method: processSepayWebhook | File: com/lela/payment/PaymentController.java
+87 | QuizController | GET /quizzes/quizzes | Body: - | Return: class QuizController {
+    private final QuizService quizService;
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<Page<QuizResponse>>> | Auth: None | Method: findAll | File: com/lela/Quiz/QuizController.java
+88 | QuizController | GET /quizzes/deck/{deckId} | Body: - | Return: ResponseEntity<ApiResponse<java.util.List<QuizResponse>>> | Auth: None | Method: findByDeckId | File: com/lela/Quiz/QuizController.java
+89 | QuizController | GET /quizzes/search | Body: - | Return: ResponseEntity<ApiResponse<java.util.List<QuizResponse>>> | Auth: None | Method: searchQuizzes | File: com/lela/Quiz/QuizController.java
+90 | QuizController | GET /quizzes/{id} | Body: - | Return: ResponseEntity<ApiResponse<QuizResponse>> | Auth: None | Method: findById | File: com/lela/Quiz/QuizController.java
+91 | RefreshTokenSessionController | GET /refresh-token-sessions/refresh-token-sessions | Body: - | Return: class RefreshTokenSessionController {
+    private final RefreshTokenSessionService service;
+
+    // API lấy danh sách toàn bộ phiên làm việc.
+    @GetMapping
+    public List<RefreshTokenSessionResponse> | Auth: None | Method: findAll | File: com/lela/refreshtokensession/RefreshTokenSessionController.java
+92 | RefreshTokenSessionController | GET /refresh-token-sessions/{id} | Body: - | Return: ResponseEntity<RefreshTokenSessionResponse> | Auth: None | Method: findById | File: com/lela/refreshtokensession/RefreshTokenSessionController.java
+93 | RefreshTokenSessionController | POST /refresh-token-sessions | Body: RefreshTokenSessionCreateRequest | Return: RefreshTokenSessionResponse | Auth: None | Method: create | File: com/lela/refreshtokensession/RefreshTokenSessionController.java
+94 | RefreshTokenSessionController | PATCH /refresh-token-sessions/{id} | Body: RefreshTokenSessionPatchRequest | Return: RefreshTokenSessionResponse | Auth: None | Method: patch | File: com/lela/refreshtokensession/RefreshTokenSessionController.java
+95 | RefreshTokenSessionController | DELETE /refresh-token-sessions/{id} | Body: - | Return: void | Auth: None | Method: deleteById | File: com/lela/refreshtokensession/RefreshTokenSessionController.java
+96 | ReviewSessionController | POST /review-sessions/start | Body: ReviewSessionRequest | Return: ResponseEntity<ApiResponse<ReviewSessionResponse>> | Auth: None | Method: startSession | File: com/lela/reviewsession/ReviewSessionController.java
+97 | ReviewSessionController | POST /review-sessions/sync | Body: SyncReviewRequest | Return: ResponseEntity<ApiResponse<Void>> | Auth: None | Method: syncOfflineReviews | File: com/lela/reviewsession/ReviewSessionController.java
+98 | ReviewSessionController | GET /review-sessions/current | Body: - | Return: ResponseEntity<ApiResponse<ReviewSessionResponse>> | Auth: None | Method: getCurrentSession | File: com/lela/reviewsession/ReviewSessionController.java
+99 | ReviewSessionController | POST /review-sessions/{publicId}/abandon | Body: - | Return: ResponseEntity<ApiResponse<Void>> | Auth: None | Method: abandonSession | File: com/lela/reviewsession/ReviewSessionController.java
+100 | ReviewSessionController | GET /review-sessions/stats/today | Body: - | Return: ResponseEntity<ApiResponse<Map<String, Object>>> | Auth: None | Method: getTodayStats | File: com/lela/reviewsession/ReviewSessionController.java
+101 | ReviewSessionController | GET /review-sessions/stats/weekly | Body: - | Return: ResponseEntity<ApiResponse<Map<String, Object>>> | Auth: None | Method: getWeeklyStats | File: com/lela/reviewsession/ReviewSessionController.java
+102 | RoleController | GET /roles | Body: - | Return: ResponseEntity<ApiResponse<List<RoleResponse>>> | Auth: None | Method: findAll | File: com/lela/role/RoleController.java
+103 | RoleController | GET /roles/{id} | Body: - | Return: ResponseEntity<ApiResponse<RoleResponse>> | Auth: None | Method: findById | File: com/lela/role/RoleController.java
+104 | RoleController | POST /roles | Body: RoleCreateRequest | Return: ResponseEntity<ApiResponse<RoleResponse>> | Auth: None | Method: create | File: com/lela/role/RoleController.java
+105 | RoleController | PATCH /roles/{id} | Body: RolePatchRequest | Return: ResponseEntity<ApiResponse<RoleResponse>> | Auth: None | Method: patch | File: com/lela/role/RoleController.java
+106 | RoleController | DELETE /roles/{id} | Body: - | Return: ResponseEntity<ApiResponse<Void>> | Auth: None | Method: deleteById | File: com/lela/role/RoleController.java
+107 | SrsReviewController | GET /srs-reviews/srs-reviews | Body: SrsReviewRequest | Return: class SrsReviewController {
+
+    private final SrsReviewService service;
+
+    @PostMapping
+    public ApiResponse<SrsReviewResponse> | Auth: None | Method: reviewCard | File: com/lela/srsreview/SrsReviewController.java
+108 | SrsReviewController | GET /srs-reviews/history | Body: - | Return: ApiResponse<Page<SrsReviewResponse>> | Auth: None | Method: getReviewHistory | File: com/lela/srsreview/SrsReviewController.java
+109 | SrsReviewController | GET /srs-reviews/statistics | Body: - | Return: ApiResponse<Object> | Auth: None | Method: getReviewStatistics | File: com/lela/srsreview/SrsReviewController.java
+110 | StudyController | GET /study/decks/{deckId}/cards | Body: - | Return: ApiResponse<List<FlashcardResponse>> | Auth: None | Method: getStudyCards | File: com/lela/study/StudyController.java
+111 | SubscriptionPlanController | GET /subscription-plans/subscription-plans | Body: - | Return: class SubscriptionPlanController {
+    private final SubscriptionPlanService service;
+
+    // API lấy danh sách toàn bộ gói đăng ký.
+    @GetMapping
+    public ResponseEntity<ApiResponse<List<SubscriptionPlanResponse>>> | Auth: None | Method: findAll | File: com/lela/subscriptionplan/SubscriptionPlanController.java
+112 | SubscriptionPlanController | GET /subscription-plans/{id} | Body: - | Return: ResponseEntity<ApiResponse<SubscriptionPlanResponse>> | Auth: None | Method: findById | File: com/lela/subscriptionplan/SubscriptionPlanController.java
+113 | TagController | GET /tags/tags | Body: TagRequest | Return: class TagController {
+
+    private final TagService tagService;
+
+    @PostMapping
+    public ResponseEntity<ApiResponse<TagResponse>> | Auth: None | Method: createTag | File: com/lela/tag/TagController.java
+114 | TagController | PATCH /tags/{id} | Body: TagRequest | Return: ResponseEntity<ApiResponse<TagResponse>> | Auth: None | Method: updateTag | File: com/lela/tag/TagController.java
+115 | TagController | GET /tags/{id} | Body: - | Return: ResponseEntity<ApiResponse<TagResponse>> | Auth: None | Method: getTagById | File: com/lela/tag/TagController.java
+116 | TagController | GET /tags | Body: - | Return: ResponseEntity<ApiResponse<Page<TagResponse>>> | Auth: None | Method: getAllTags | File: com/lela/tag/TagController.java
+117 | TagController | DELETE /tags/{id} | Body: - | Return: ResponseEntity<ApiResponse<Void>> | Auth: None | Method: deleteTag | File: com/lela/tag/TagController.java
+118 | TypingGameController | GET /typing-game/decks | Body: - | Return: ResponseEntity<ApiResponse<List<TypingGameDeckDto>>> | Auth: None | Method: getDecks | File: com/lela/typinggame/TypingGameController.java
+119 | TypingGameController | POST /typing-game/runs | Body: StartTypingRunRequest | Return: ResponseEntity<ApiResponse<TypingRunResponse>> | Auth: None | Method: startRun | File: com/lela/typinggame/TypingGameController.java
+120 | TypingGameController | GET /typing-game/runs/{publicId} | Body: - | Return: ResponseEntity<ApiResponse<TypingRunResponse>> | Auth: None | Method: getRun | File: com/lela/typinggame/TypingGameController.java
+121 | TypingGameController | POST /typing-game/runs/{publicId}/stages/{stageNo}/complete | Body: CompleteStageRequest | Return: ResponseEntity<ApiResponse<TypingRunResponse>> | Auth: None | Method: completeStage | File: com/lela/typinggame/TypingGameController.java
+122 | TypingGameController | POST /typing-game/runs/{publicId}/finish | Body: FinishTypingRunRequest | Return: ResponseEntity<ApiResponse<TypingRunResultResponse>> | Auth: None | Method: finishRun | File: com/lela/typinggame/TypingGameController.java
+123 | TypingGameController | POST /typing-game/runs/{publicId}/abandon | Body: - | Return: ResponseEntity<ApiResponse<Void>> | Auth: None | Method: abandonRun | File: com/lela/typinggame/TypingGameController.java
+124 | TypingGameController | GET /typing-game/high-scores | Body: - | Return: ResponseEntity<ApiResponse<List<TypingLeaderboardEntryDto>>> | Auth: None | Method: getHighScores | File: com/lela/typinggame/TypingGameController.java
+125 | UserRoleAssignmentController | GET /user-roles/user/{userId} | Body: - | Return: ResponseEntity<ApiResponse<List<UserRoleAssignmentResponse>>> | Auth: None | Method: findByUserId | File: com/lela/userroleassignment/UserRoleAssignmentController.java
+126 | UserRoleAssignmentController | POST /user-roles | Body: UserRoleAssignmentCreateRequest | Return: ResponseEntity<ApiResponse<UserRoleAssignmentResponse>> | Auth: None | Method: assignRole | File: com/lela/userroleassignment/UserRoleAssignmentController.java
+127 | UserRoleAssignmentController | DELETE /user-roles/user/{userId}/role/{roleId} | Body: - | Return: ResponseEntity<ApiResponse<Void>> | Auth: None | Method: unassignRole | File: com/lela/userroleassignment/UserRoleAssignmentController.java
+128 | DailyGoalController | GET /users/me/daily-goal/users/me/daily-goal | Body: - | Return: class DailyGoalController {
+
+    private final DailyGoalService dailyGoalService;
+
+    @GetMapping
+    public ResponseEntity<DailyGoalStatusResponse> | Auth: None | Method: getDailyGoalStatus | File: com/lela/users/DailyGoalController.java
+129 | DailyGoalController | POST /users/me/daily-goal | Body: DailyGoalRequest | Return: ResponseEntity<DailyGoalStatusResponse> | Auth: None | Method: confirmDailyGoal | File: com/lela/users/DailyGoalController.java
+130 | OnboardingController | POST /onboarding/submit-placement | Body: PlacementSubmitRequest | Return: ResponseEntity<PlacementTestResult> | Auth: None | Method: submitPlacement | File: com/lela/users/OnboardingController.java
+131 | OnboardingController | POST /onboarding/manual-select | Body: ManualLevelSelectRequest | Return: ResponseEntity<UsersResponse> | Auth: None | Method: manualSelectLevel | File: com/lela/users/OnboardingController.java
+132 | ProfileController | GET /profile | Body: - | Return: ResponseEntity<ApiResponse<UsersResponse>> | Auth: isAuthenticated() | Method: getMyProfile | File: com/lela/users/ProfileController.java
+133 | ProfileController | PATCH /profile | Body: ProfileUpdateRequest | Return: ResponseEntity<ApiResponse<UsersResponse>> | Auth: isAuthenticated() | Method: updateMyProfile | File: com/lela/users/ProfileController.java
+134 | UsersController | GET /users | Body: - | Return: ResponseEntity<ApiResponse<Page<UsersResponse>>> | Auth: None | Method: findAll | File: com/lela/users/UsersController.java
+135 | UsersController | GET /users/{id} | Body: - | Return: ResponseEntity<ApiResponse<UsersResponse>> | Auth: None | Method: findById | File: com/lela/users/UsersController.java
+136 | UsersController | POST /users | Body: UsersCreateRequest | Return: ResponseEntity<ApiResponse<UsersResponse>> | Auth: None | Method: create | File: com/lela/users/UsersController.java
+137 | UsersController | PATCH /users/{id} | Body: UsersPatchRequest | Return: ResponseEntity<ApiResponse<UsersResponse>> | Auth: None | Method: patch | File: com/lela/users/UsersController.java
+138 | UsersController | DELETE /users/{id} | Body: - | Return: ResponseEntity<ApiResponse<Void>> | Auth: None | Method: deleteById | File: com/lela/users/UsersController.java
+139 | UserSubscriptionController | GET /user-subscriptions/user-subscriptions | Body: - | Return: class UserSubscriptionController {
+
+    private final UserSubscriptionService service;
+
+    @GetMapping
+    public ApiResponse<Page<UserSubscriptionResponse>> | Auth: None | Method: getAll | File: com/lela/usersubscription/UserSubscriptionController.java
+140 | UserSubscriptionController | GET /user-subscriptions/{id} | Body: - | Return: ApiResponse<UserSubscriptionResponse> | Auth: None | Method: getById | File: com/lela/usersubscription/UserSubscriptionController.java
+141 | VoiceConversationController | GET / | Body: - | Return: class VoiceConversationController {
+
+    private final UsersRepository usersRepository;
+    private final VoiceConversationService voiceConversationService;
+
+    private Users | Auth: None | Method: getCurrentUser | File: com/lela/voice/controller/VoiceConversationController.java
+142 | VoiceConversationController | GET /status | Body: - | Return: ResponseEntity<VoiceStatusResponse> | Auth: None | Method: getStatus | File: com/lela/voice/controller/VoiceConversationController.java
+143 | VoiceConversationController | GET /scenarios | Body: - | Return: ResponseEntity<List<ConversationScenarioDto>> | Auth: None | Method: getScenarios | File: com/lela/voice/controller/VoiceConversationController.java
+144 | VoiceConversationController | POST /sessions/start | Body: VoiceStartRequest | Return: ResponseEntity<VoiceStartResponse> | Auth: None | Method: startSession | File: com/lela/voice/controller/VoiceConversationController.java
+145 | VoiceConversationController | POST /sessions/{publicId}/turns | Body: VoiceTurnRequest | Return: ResponseEntity<VoiceTurnResponse> | Auth: None | Method: processTurn | File: com/lela/voice/controller/VoiceConversationController.java
+146 | VoiceConversationController | POST /sessions/{publicId}/finish | Body: VoiceFinishRequest | Return: ResponseEntity<VoiceReportResponse> | Auth: None | Method: finishSession | File: com/lela/voice/controller/VoiceConversationController.java
+147 | VoiceConversationController | POST /sessions/{publicId}/abandon | Body: - | Return: ResponseEntity<Void> | Auth: None | Method: abandonSession | File: com/lela/voice/controller/VoiceConversationController.java

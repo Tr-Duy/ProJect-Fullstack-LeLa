@@ -1,7 +1,9 @@
 package com.lela.voice.dto;
 
-import java.util.List;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public record VoiceStartRequest(
-        String scenarioSlug
+        String scenarioSlug,
+        Long scenarioId
 ) {}
