@@ -170,6 +170,13 @@ public class VoiceAiService {
                 Scenario: %s
                 Target words for learner: %s
                 
+                CONTEXT-AWARE SPEECH RECOGNITION CORRECTION:
+                The user is an English language learner speaking through Web/Mobile Speech-to-Text, which frequently mishears phonetically similar words.
+                You MUST interpret the user's intent based on the CURRENT SCENARIO and YOUR PREVIOUS QUESTION before responding:
+                - Example: In a coffee shop scenario, if you ask 'Would you like that hot or iced?' and the user's transcript says 'I like horse' or 'horse', recognize that they meant 'hot'.
+                - Example: 'eyes' -> 'iced', 'tree' -> 'three', 'bear' -> 'beer', 'coke' -> 'cold'.
+                DO NOT comment on the misheard word (e.g., do not talk about horses in a coffee shop). Seamlessly respond to their intended meaning ('hot') and model the correct phrasing naturally in your dialogue.
+
                 CRITICAL INSTRUCTIONS:
                 1. Always reply in clear, concise English appropriate for level %d. Keep each reply under 2-3 sentences so it is natural to listen to via TTS.
                 2. Do not lecture or explain grammar in your conversational reply. Reply naturally in-character!

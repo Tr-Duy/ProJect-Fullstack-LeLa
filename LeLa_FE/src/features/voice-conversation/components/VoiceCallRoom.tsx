@@ -205,7 +205,7 @@ export const VoiceCallRoom: React.FC<VoiceCallRoomProps> = ({
         state: 'AI_SPEAKING',
         tooltip: 'AI đang nói. Bấm để ngắt và nói ngay!',
         buttonClass:
-          'bg-gradient-to-tr from-[var(--teal)] to-[var(--teal)]/80 hover:brightness-110 shadow-[0_0_25px_rgba(99,102,241,0.6)] animate-pulse active:scale-95',
+          'bg-gradient-to-tr from-orange-500 to-amber-500 hover:brightness-110 shadow-[0_0_25px_rgba(234,88,12,0.6)] animate-pulse active:scale-95',
         icon: <Volume2 className="w-8 h-8 text-white animate-bounce" />,
         statusText: 'AI đang nói... (Bấm vào nút để ngắt và nói ngay)',
         disabled: false,
@@ -226,7 +226,7 @@ export const VoiceCallRoom: React.FC<VoiceCallRoomProps> = ({
       state: 'READY',
       tooltip: 'Bấm vào Micro để bắt đầu nói',
       buttonClass:
-        'bg-teal-600 hover:bg-teal-700 shadow-[0_0_20px_rgba(42,139,157,0.4)] active:scale-95',
+        'bg-orange-600 hover:bg-orange-700 shadow-[0_0_20px_rgba(234,88,12,0.4)] active:scale-95',
       icon: <Mic className="w-8 h-8 text-white" />,
       statusText: 'Bấm vào Micro để bắt đầu nói.',
       disabled: false,
@@ -238,31 +238,33 @@ export const VoiceCallRoom: React.FC<VoiceCallRoomProps> = ({
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Top Header Room */}
-      <div className="bg-slate-900 border-2 border-slate-800 rounded-3xl p-6 text-white shadow-xl flex flex-wrap items-center justify-between gap-4">
+      <div className="bg-gradient-to-r from-orange-600 to-amber-600 border-2 border-orange-400 rounded-3xl p-6 text-white shadow-xl shadow-orange-500/20 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <span className="text-xs  text-teal-400 font-bold">Kịch bản đàm thoại</span>
-          <h2 className="text-2xl font-black">{sessionData.scenarioTitle}</h2>
-          <p className="text-slate-400 text-sm mt-0.5">
-            Bạn: <span className="text-slate-200 font-semibold">{sessionData.userRole}</span> • AI:{' '}
-            <span className="text-teal-300 font-semibold">{sessionData.aiRole}</span>
+          <span className="text-xs text-orange-100 font-bold tracking-wider">Kịch bản đàm thoại</span>
+          <h2 className="text-2xl font-black text-white" style={{ color: '#ffffff' }}>
+            {sessionData.scenarioTitle}
+          </h2>
+          <p className="text-orange-100 text-sm mt-0.5">
+            Bạn: <span className="text-white font-bold">{sessionData.userRole}</span> • AI:{' '}
+            <span className="text-amber-200 font-bold">{sessionData.aiRole}</span>
           </p>
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 bg-slate-800 px-4 py-2 rounded-2xl border border-slate-700">
-            <Clock className="w-5 h-5 text-amber-400" />
-            <span className="font-sans text-xl font-bold text-amber-300">{formatTime(secondsLeft)}</span>
+          <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-2xl border border-white/30">
+            <Clock className="w-5 h-5 text-amber-200" />
+            <span className="font-sans text-xl font-bold text-white">{formatTime(secondsLeft)}</span>
           </div>
 
-          <div className="bg-slate-800 px-4 py-2 rounded-2xl border border-slate-700 text-sm font-bold">
-            <span className="text-slate-400">Lượt: </span>
-            <span className="text-teal-400">{validTurns}</span>
-            <span className="text-slate-400">/{sessionData.maxTurns || 10}</span>
+          <div className="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-2xl border border-white/30 text-sm font-bold text-white">
+            <span className="text-orange-100">Lượt: </span>
+            <span className="text-white">{validTurns}</span>
+            <span className="text-orange-100">/{sessionData.maxTurns || 10}</span>
           </div>
 
           <Button
             type="default"
-            className="rounded-2xl font-bold flex items-center gap-2 h-10 border-slate-600 text-slate-300 hover:text-white"
+            className="rounded-2xl font-bold flex items-center gap-2 h-10 border-white/40 bg-white/10 text-white hover:bg-white/20"
             onClick={onFinishSession}
           >
             Kết thúc phiên
@@ -270,7 +272,7 @@ export const VoiceCallRoom: React.FC<VoiceCallRoomProps> = ({
           <Button
             danger
             type="primary"
-            className="rounded-2xl font-bold flex items-center gap-2 h-10"
+            className="rounded-2xl font-bold flex items-center gap-2 h-10 shadow-sm"
             onClick={onAbandonSession}
           >
             <PhoneOff className="w-4 h-4" />
@@ -309,30 +311,32 @@ export const VoiceCallRoom: React.FC<VoiceCallRoomProps> = ({
       </div>
 
       {/* Main Conversation Visualizer */}
-      <div className="bg-slate-900 border-2 border-slate-800 rounded-3xl p-8 text-white min-h-[340px] flex flex-col justify-between items-center text-center relative overflow-hidden shadow-2xl">
+      <div className="bg-white border-2 border-orange-200 shadow-xl rounded-3xl p-8 min-h-[340px] flex flex-col justify-between items-center text-center relative overflow-hidden">
         {/* AI Avatar & Audio Waves */}
         <div className="space-y-4 my-auto w-full max-w-xl">
           <div className="relative inline-block">
             <div
-              className={`w-24 h-24 rounded-full bg-gradient-to-tr from-teal-500 to-emerald-400 flex items-center justify-center shadow-lg transition-transform ${
-                isSpeaking ? 'scale-110 shadow-[0_0_35px_rgba(42,139,157,0.8)]' : ''
+              className={`w-24 h-24 rounded-full bg-[#EA580C] shadow-lg flex items-center justify-center transition-all ${
+                isSpeaking
+                  ? 'scale-110 ring-8 ring-orange-300/50 shadow-[0_0_35px_rgba(234,88,12,0.6)]'
+                  : 'shadow-orange-500/20'
               }`}
             >
               <Volume2 className={`w-10 h-10 text-white ${isSpeaking ? 'animate-bounce' : ''}`} />
             </div>
             {isSpeaking && (
-              <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-teal-400 text-slate-950 font-black text-[10px] px-2 py-0.5 rounded-full ">
+              <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-orange-600 text-white font-black text-[10px] px-2.5 py-0.5 rounded-full shadow-md">
                 Đang nói
               </span>
             )}
           </div>
 
           <div className="space-y-2">
-            <p className="text-xl md:text-2xl font-bold text-slate-100 leading-relaxed transition-all">
+            <p className="text-xl md:text-2xl font-bold text-slate-900 leading-relaxed transition-all">
               "{currentAiSpeech}"
             </p>
             {isAiThinking && (
-              <div className="inline-flex items-center gap-2 text-teal-400 text-sm font-semibold animate-pulse">
+              <div className="inline-flex items-center gap-2 text-orange-600 text-sm font-semibold animate-pulse">
                 <Sparkles className="w-4 h-4 animate-spin" />
                 AI đang suy nghĩ và phân tích câu trả lời...
               </div>
@@ -342,16 +346,16 @@ export const VoiceCallRoom: React.FC<VoiceCallRoomProps> = ({
 
         {/* Silence Prompt & Gợi ý mẫu khi im lặng >= 8s */}
         {silenceCounter >= 8 && currentSuggestion && (
-          <div className="bg-slate-800/90 border border-teal-500/50 rounded-2xl px-4 py-2.5 max-w-lg mb-4 text-xs text-teal-200 flex items-center justify-between gap-3 animate-fade-in">
+          <div className="bg-orange-50 border border-orange-200 rounded-2xl px-4 py-2.5 max-w-lg mb-4 text-xs text-orange-800 flex items-center justify-between gap-3 animate-fade-in shadow-xs">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-amber-400 flex-shrink-0" />
+              <Sparkles className="w-4 h-4 text-amber-500 flex-shrink-0" />
               <span>Gợi ý mẫu: "{currentSuggestion}"</span>
             </div>
             {!manualTextMode && (
               <Button
                 size="small"
                 type="link"
-                className="text-teal-300 hover:text-teal-100 font-bold p-0"
+                className="text-orange-600 hover:text-orange-700 font-bold p-0"
                 onClick={() => {
                   if (!isListening) handleMicAction();
                 }}
@@ -364,7 +368,7 @@ export const VoiceCallRoom: React.FC<VoiceCallRoomProps> = ({
 
         {/* Trạng thái Đang nghe... khi status === 'listening' */}
         {status === 'listening' && (
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-rose-500/20 border border-rose-500/40 text-rose-300 text-xs font-bold mb-2 animate-pulse">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-rose-50 border border-rose-200 text-rose-600 text-xs font-bold mb-2 animate-pulse">
             <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping flex-shrink-0" />
             <span>Đang nghe...</span>
           </div>
@@ -372,10 +376,10 @@ export const VoiceCallRoom: React.FC<VoiceCallRoomProps> = ({
 
         {/* User Speech Real-time Transcript qua interimResults */}
         {transcript && (
-          <div className="text-sm font-medium text-teal-300 italic max-w-lg bg-slate-800/80 border border-teal-500/30 px-5 py-2.5 rounded-2xl mb-2 shadow-inner animate-fade-in flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-teal-400 flex-shrink-0" />
+          <div className="text-sm font-medium text-orange-800 italic max-w-lg bg-orange-50 border border-orange-200 px-5 py-2.5 rounded-2xl mb-2 shadow-inner animate-fade-in flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-orange-500 flex-shrink-0" />
             <span>
-              Bạn đang nói: <strong className="text-white">"{transcript}"</strong>
+              Bạn đang nói: <strong className="text-slate-900 not-italic font-bold">"{transcript}"</strong>
             </span>
           </div>
         )}
@@ -409,7 +413,7 @@ export const VoiceCallRoom: React.FC<VoiceCallRoomProps> = ({
             <Button
               type="primary"
               size="large"
-              className="font-bold bg-teal-600 hover:bg-teal-700 h-12 px-6 rounded-2xl"
+              className="font-bold bg-orange-600 hover:bg-orange-700 text-white border-none h-12 px-6 rounded-2xl shadow-md shadow-orange-600/20"
               onClick={finishNow}
               disabled={isAiThinking || status === 'processing'}
             >
@@ -425,7 +429,7 @@ export const VoiceCallRoom: React.FC<VoiceCallRoomProps> = ({
                 <Button
                   size="small"
                   type="link"
-                  className="text-teal-600 font-bold p-0 text-xs"
+                  className="text-orange-600 font-bold p-0 text-xs"
                   onClick={() => setManualTextMode(false)}
                 >
                   (Thử lại bằng Micro)
@@ -445,11 +449,11 @@ export const VoiceCallRoom: React.FC<VoiceCallRoomProps> = ({
                 }}
                 disabled={isAiThinking}
                 placeholder="Nhập câu trả lời bằng tiếng Anh của bạn tại đây..."
-                className="flex-1 px-4 py-2.5 rounded-xl border-2 border-slate-300 focus:outline-none focus:border-teal-500 font-medium text-sm"
+                className="flex-1 px-4 py-2.5 rounded-xl border-2 border-slate-300 focus:outline-none focus:border-orange-500 font-medium text-sm"
               />
               <Button
                 type="primary"
-                className="h-11 px-5 rounded-xl bg-teal-600 font-bold"
+                className="h-11 px-5 rounded-xl bg-orange-600 hover:bg-orange-700 font-bold border-none text-white shadow-md shadow-orange-600/20"
                 onClick={() => {
                   handleSendTurn(textInputFallback, 1.0, false);
                   setTextInputFallback('');
@@ -471,7 +475,7 @@ export const VoiceCallRoom: React.FC<VoiceCallRoomProps> = ({
           <Button
             type="link"
             size="small"
-            className="text-slate-400 hover:text-teal-600 text-xs font-semibold p-0"
+            className="text-slate-400 hover:text-orange-600 text-xs font-semibold p-0"
             onClick={() => setManualTextMode(true)}
           >
             Chuyển sang chế độ nhập văn bản

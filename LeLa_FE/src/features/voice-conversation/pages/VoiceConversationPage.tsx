@@ -134,14 +134,14 @@ export const VoiceConversationPage: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto py-8 px-4 space-y-8">
       {/* Banner Giới Thiệu */}
-      <div className="bg-gradient-to-r from-teal-800 to-slate-900 border-2 border-teal-600 rounded-3xl p-8 text-white shadow-xl relative overflow-hidden">
+      <div className="bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 border-2 border-orange-400 rounded-3xl p-8 text-white shadow-xl shadow-orange-500/20 relative overflow-hidden">
         <div className="relative z-10 max-w-xl space-y-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-teal-500/20 text-teal-300 rounded-full text-xs font-black  border border-teal-400/30">
-            <Sparkles className="w-4 h-4 text-amber-300" />
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/20 text-white rounded-full text-xs font-black border border-white/30 backdrop-blur-sm">
+            <Sparkles className="w-4 h-4 text-amber-200" />
             AI Voice Conversation
           </div>
-          <h1 className="text-3xl md:text-4xl font-black tracking-tight">Hội Thoại Giọng Nói Tương Tác Với AI</h1>
-          <p className="text-slate-300 text-sm leading-relaxed">
+          <h1 className="text-3xl md:text-4xl font-black text-white" style={{ color: '#ffffff' }}>Hội Thoại Giọng Nói Tương Tác Với AI</h1>
+          <p className="text-orange-50 text-sm leading-relaxed font-medium">
             Luyện phản xạ đàm thoại thời gian thực bằng giọng nói tiếng Anh. AI sẽ đóng vai các tình huống đời sống thực tế, sửa lỗi ngữ pháp và tăng cấp độ theo năng lực của bạn.
           </p>
         </div>

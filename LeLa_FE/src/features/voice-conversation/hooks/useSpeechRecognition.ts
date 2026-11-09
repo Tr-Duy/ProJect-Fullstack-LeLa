@@ -134,10 +134,10 @@ export function useSpeechRecognition({
     speechStartTimeRef.current = Date.now();
 
     const recognition = new SpeechRecognitionImpl();
-    recognition.lang = lang;
+    recognition.lang = lang || 'en-US';
     recognition.continuous = true;
     recognition.interimResults = true;
-    recognition.maxAlternatives = 1;
+    recognition.maxAlternatives = 3;
 
     recognition.onresult = (event: any) => {
       let interim = '';

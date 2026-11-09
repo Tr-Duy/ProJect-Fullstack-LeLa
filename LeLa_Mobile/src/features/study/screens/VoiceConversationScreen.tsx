@@ -213,9 +213,11 @@ export const VoiceConversationScreen: React.FC = () => {
 
       setTurnState('AI_SPEAKING');
       setIsSpeakingAi(true);
+      console.log('Mobile TTS Speaking:', text);
 
       Speech.speak(text, {
         language: 'en-US',
+        pitch: 1.0,
         rate: 0.95,
         onDone: () => {
           setIsSpeakingAi(false);
