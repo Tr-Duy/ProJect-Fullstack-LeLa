@@ -1,8 +1,9 @@
 package com.lela.voice.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.lela.ai.service.GeminiClient;
+import com.lela.ai.dto.GeminiRequest;
 import com.lela.ai.dto.GeminiResponse;
+import com.lela.ai.service.GeminiClient;
 import com.lela.voice.config.VoiceConfigurationProperties;
 import com.lela.voice.domain.ConversationScenario;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,6 +23,7 @@ import java.util.concurrent.TimeoutException;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -58,7 +60,7 @@ class VoiceAiServiceTest {
     }
 
     @Test
-    @DisplayName("Unit Test extractJson & parse: Trường hợp 1 - JSON sạch")
+    @DisplayName("Unit Test extractJson & parse: Trường hợp 1 - JSON sạch không có suggestedImprovement (EXCELLENT >= 85)")
     void testParseCleanJson() {
         String cleanJson = """
                 {
@@ -69,7 +71,7 @@ class VoiceAiServiceTest {
                     "status": "EXCELLENT",
                     "grammarCheck": "Ngữ pháp rất chuẩn xác",
                     "phoneticTip": "",
-                    "suggestedImprovement": "I would like a cup of hot coffee, please."
+                    "suggestedImprovement": ""
                   },
                   "aiReply": "Sure thing! That will be ready in just a few minutes.",
                   "isCompleted": false
@@ -87,6 +89,141 @@ class VoiceAiServiceTest {
         assertNotNull(output.getEvaluation());
         assertEquals(90, output.getEvaluation().getScore());
         assertEquals("EXCELLENT", output.getEvaluation().getStatus());
+    }
+
+    @Test
+    @DisplayName("Unit Test scoring rule: Nếu có suggestedImprovement thì score tối đa 84 và status không phải EXCELLENT")
+    void testScoreCappedAt84WhenSuggestedImprovementPresent() {
+        String json = """
+                {
+                  "intendedUtterance": "I like hot coffee",
+                  "evaluation": {
+                    "isGood": true,
+                    "score": 92,
+                    "status": "EXCELLENT",
+                    "grammarCheck": "Nên dùng I'd like",
+                    "phoneticTip": "",
+                    "suggestedImprovement": "I'd like a hot coffee, please."
+                  },
+                  "aiReply": "Sure thing!",
+                  "isCompleted": false
+                }
+                """;
+        VoiceAiService.TurnAiOutput output = aiService.parseAiOutput(json, "I like hot coffee");
+        assertNotNull(output);
+        assertNotNull(output.getEvaluation());
+        assertEquals(84, output.getEvaluation().getScore(), "Score phải bị giới hạn tối đa 84 khi có suggestedImprovement");
+        assertEquals("GOOD", output.getEvaluation().getStatus(), "Status phải là GOOD khi score = 84");
+    }
+
+    @Test
+    @DisplayName("STT context test (a): transcript 'I like horse coffee', alternatives ['I like hot coffee'], question 'Would you like hot or iced?' -> intendedUtterance chứa 'hot', prompt chứa context")
+    void testSttMisheardHorseToHot() {
+        when(geminiClient.getPrimaryModel()).thenReturn("gemini-3.5-flash");
+
+        String mockAiBody = """
+                {
+                  "intendedUtterance": "I like hot coffee",
+                  "evaluation": {
+                    "isGood": true,
+                    "score": 82,
+                    "status": "GOOD",
+                    "grammarCheck": "Nên dùng cấu trúc lịch sự hơn",
+                    "phoneticTip": "STT đã nghe nhầm hot thành horse",
+                    "suggestedImprovement": "I'd like a hot coffee, please."
+                  },
+                  "aiReply": "Sure! Hot coffee coming right up.",
+                  "isCompleted": false
+                }
+                """;
+
+        HttpResponse<String> mockResponse = mock(HttpResponse.class);
+        when(mockResponse.statusCode()).thenReturn(200);
+        when(mockResponse.body()).thenReturn(mockAiBody);
+
+        when(geminiClient.generateContent(eq("gemini-3.5-flash"), any()))
+                .thenAnswer(invocation -> {
+                    GeminiRequest req = invocation.getArgument(1);
+                    String promptText = req.getContents().get(0).getParts().get(0).getText();
+                    assertTrue(promptText.contains("Would you like hot or iced?"), "Prompt phải chứa previousAiQuestion");
+                    assertTrue(promptText.contains("I like hot coffee"), "Prompt phải chứa STT alternatives");
+                    assertTrue(promptText.contains("I like horse coffee"), "Prompt phải chứa transcript");
+                    return CompletableFuture.completedFuture(mockResponse);
+                });
+
+        VoiceAiService.TurnAiOutput output = aiService.generateTurnResponse(
+                scenario,
+                200,
+                "I like horse coffee",
+                Collections.emptyList(),
+                Collections.emptySet(),
+                Collections.emptyList(),
+                List.of("I like hot coffee"),
+                "Would you like hot or iced?"
+        );
+
+        assertNotNull(output);
+        assertNotNull(output.getIntendedUtterance());
+        assertTrue(output.getIntendedUtterance().contains("hot"), "intendedUtterance phải chứa 'hot'");
+        assertEquals("I like hot coffee", output.getIntendedUtterance());
+        assertNotNull(output.getEvaluation());
+        assertTrue(output.getEvaluation().getScore() <= 84);
+        assertEquals("GOOD", output.getEvaluation().getStatus());
+    }
+
+    @Test
+    @DisplayName("STT context test (b): transcript 'I like eyes coffee', alternatives ['I like iced coffee', 'I like ice coffee'], question 'Would you like hot or iced?' -> intendedUtterance chứa 'iced', prompt chứa context")
+    void testSttMisheardEyesToIced() {
+        when(geminiClient.getPrimaryModel()).thenReturn("gemini-3.5-flash");
+
+        String mockAiBody = """
+                {
+                  "intendedUtterance": "I like iced coffee",
+                  "evaluation": {
+                    "isGood": true,
+                    "score": 80,
+                    "status": "GOOD",
+                    "grammarCheck": "Nên dùng I would like",
+                    "phoneticTip": "STT nghe nhầm iced thành eyes",
+                    "suggestedImprovement": "I would like an iced coffee, please."
+                  },
+                  "aiReply": "Got it, one iced coffee for you!",
+                  "isCompleted": false
+                }
+                """;
+
+        HttpResponse<String> mockResponse = mock(HttpResponse.class);
+        when(mockResponse.statusCode()).thenReturn(200);
+        when(mockResponse.body()).thenReturn(mockAiBody);
+
+        when(geminiClient.generateContent(eq("gemini-3.5-flash"), any()))
+                .thenAnswer(invocation -> {
+                    GeminiRequest req = invocation.getArgument(1);
+                    String promptText = req.getContents().get(0).getParts().get(0).getText();
+                    assertTrue(promptText.contains("Would you like hot or iced?"), "Prompt phải chứa previousAiQuestion");
+                    assertTrue(promptText.contains("I like iced coffee"), "Prompt phải chứa STT alternatives");
+                    assertTrue(promptText.contains("I like eyes coffee"), "Prompt phải chứa transcript");
+                    return CompletableFuture.completedFuture(mockResponse);
+                });
+
+        VoiceAiService.TurnAiOutput output = aiService.generateTurnResponse(
+                scenario,
+                200,
+                "I like eyes coffee",
+                Collections.emptyList(),
+                Collections.emptySet(),
+                Collections.emptyList(),
+                List.of("I like iced coffee", "I like ice coffee"),
+                "Would you like hot or iced?"
+        );
+
+        assertNotNull(output);
+        assertNotNull(output.getIntendedUtterance());
+        assertTrue(output.getIntendedUtterance().contains("iced"), "intendedUtterance phải chứa 'iced'");
+        assertEquals("I like iced coffee", output.getIntendedUtterance());
+        assertNotNull(output.getEvaluation());
+        assertTrue(output.getEvaluation().getScore() <= 84);
+        assertEquals("GOOD", output.getEvaluation().getStatus());
     }
 
     @Test

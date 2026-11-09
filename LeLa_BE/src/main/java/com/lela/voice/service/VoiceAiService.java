@@ -317,6 +317,16 @@ public class VoiceAiService {
                 score = score * 10;
             }
             score = Math.max(0, Math.min(100, score));
+
+            String suggested = eval.getSuggestedImprovement();
+            boolean hasSuggestedImprovement = suggested != null
+                    && !suggested.trim().isEmpty()
+                    && !suggested.trim().equalsIgnoreCase(output.getIntendedUtterance() != null ? output.getIntendedUtterance().trim() : "");
+
+            // Quy tắc: EXCELLENT (>=85) chỉ khi câu đúng trọng tâm và không có lỗi ngữ pháp hay từ vựng đáng kể. Nếu có suggestedImprovement thì score tối đa 84.
+            if (hasSuggestedImprovement && score >= 85) {
+                score = 84;
+            }
             eval.setScore(score);
 
             if (score >= 85) {
@@ -372,7 +382,7 @@ public class VoiceAiService {
                 .build();
     }
 
-    private String buildPrompt(
+    public String buildPrompt(
             ConversationScenario scenario,
             String lastAiQuestion,
             List<String> history,
@@ -396,8 +406,20 @@ public class VoiceAiService {
                 STT alternatives: %s
 
                 Tasks:
-                1. Infer what the learner most likely MEANT, using the question you asked and the scenario. Only change a word if it is phonetically similar AND clearly fits the context. If unsure, keep the original and say so in phoneticTip.
-                2. Evaluate the intended utterance for relevance to the question, grammar and vocabulary. Score must be an integer between 0 and 100 (status: EXCELLENT >= 85, GOOD >= 60, NEEDS_IMPROVEMENT < 60). Do NOT claim to score pronunciation precisely, since you only see text. Score reflects relevance and language accuracy.
+                1. Infer what the learner most likely MEANT, using the question you asked, the scenario context, and STT alternatives:
+                   - Field "intendedUtterance": ONLY replace words that were misheard by STT due to phonetic similarity (e.g. replace "horse" with "hot", "eyes" with "iced").
+                   - CRITICAL: You MUST KEEP the learner's original grammar, vocabulary, and phrasing intact! DO NOT rewrite it to make it polite, more formal, or grammatically correct in this field.
+                     * If the learner said "I like horse coffee", intendedUtterance MUST be "I like hot coffee" (KEEP "I like", DO NOT change to "I'd like" or "I would like").
+                     * If the learner said "I like eyes coffee", intendedUtterance MUST be "I like iced coffee" (KEEP "I like", DO NOT change to "I'd like").
+                     * Rewriting for politeness or correct grammar belongs STRICTLY in suggestedImprovement.
+                2. Evaluate the intended utterance:
+                   - Field "suggestedImprovement": If the learner's phrasing could be more polite, more natural, or grammatically better (e.g. 'I'd like a hot coffee, please'), provide the improved English sentence here. If the learner's sentence is already natural, polite, and error-free, set suggestedImprovement to empty string ("").
+                   - Scoring Rules (score: 0 - 100):
+                     * EXCELLENT (score >= 85): ONLY when the sentence is completely on-topic, relevant, and has NO significant grammar or vocabulary errors, AND no suggestedImprovement is needed (suggestedImprovement is empty).
+                     * If there is ANY suggestedImprovement needed (for politeness, grammar, or phrasing), the score MUST NOT exceed 84 (status must be GOOD: 60-84, or NEEDS_IMPROVEMENT: < 60).
+                     * GOOD (60 - 84): Relevant and understandable, but has minor phrasing/grammar issues or could be more polite/natural.
+                     * NEEDS_IMPROVEMENT (< 60): Off-topic, inappropriate, or has severe grammatical flaws.
+                     Do NOT claim to score pronunciation precisely, since you only see text.
                 3. Reply in character with the next line of the scenario (1–2 short sentences, A2–B1 level).
                 Write grammarCheck and phoneticTip in Vietnamese. Write aiReply and suggestedImprovement in English. Output JSON only.
                 """.formatted(role, scenarioName, previousQuestion, historyStr, transcript, alternativesStr);
@@ -408,17 +430,26 @@ public class VoiceAiService {
         schema.put("type", "object");
 
         Map<String, Object> properties = new LinkedHashMap<>();
-        properties.put("intendedUtterance", Map.of("type", "string"));
+        properties.put("intendedUtterance", Map.of(
+                "type", "string",
+                "description", "Spoken sentence with ONLY STT phonetic errors replaced. Keep original grammar and phrasing intact. Never rewrite for politeness or grammar."
+        ));
         properties.put("aiReply", Map.of("type", "string"));
         properties.put("isCompleted", Map.of("type", "boolean"));
 
         Map<String, Object> evalProps = new LinkedHashMap<>();
         evalProps.put("isGood", Map.of("type", "boolean"));
-        evalProps.put("score", Map.of("type", "integer"));
+        evalProps.put("score", Map.of(
+                "type", "integer",
+                "description", "Score 0-100. Max 84 if suggestedImprovement is present. 85-100 only if perfect with no suggested improvement."
+        ));
         evalProps.put("status", Map.of("type", "string", "enum", List.of("EXCELLENT", "GOOD", "NEEDS_IMPROVEMENT")));
         evalProps.put("grammarCheck", Map.of("type", "string"));
         evalProps.put("phoneticTip", Map.of("type", "string"));
-        evalProps.put("suggestedImprovement", Map.of("type", "string"));
+        evalProps.put("suggestedImprovement", Map.of(
+                "type", "string",
+                "description", "Polite or grammatically improved version in English. Empty string if no improvement is needed."
+        ));
 
         Map<String, Object> evalSchema = new LinkedHashMap<>();
         evalSchema.put("type", "object");
