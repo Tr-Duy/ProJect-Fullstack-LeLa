@@ -36,6 +36,7 @@ public class VoiceConversationServiceImpl implements VoiceConversationService {
     private final ConversationSessionRepository sessionRepository;
     private final ConversationTurnRepository turnRepository;
     private final ConversationTargetWordRepository targetWordRepository;
+    private final UserConversationLevelRepository levelRepository;
     private final FoundationWordRepository foundationWordRepository;
     private final VoiceConfigurationProperties props;
     private final ObjectMapper objectMapper;
@@ -436,6 +437,7 @@ public class VoiceConversationServiceImpl implements VoiceConversationService {
             VoiceAiService.EvaluationAiOutput ev = aiOutput.getEvaluation();
             evalDto = UserEvaluationDto.builder()
                     .isGood(ev.getIsGood())
+                    .hasError(ev.getHasError())
                     .score(ev.getScore())
                     .status(ev.getStatus())
                     .grammarCheck(ev.getGrammarCheck())
@@ -465,11 +467,53 @@ public class VoiceConversationServiceImpl implements VoiceConversationService {
     @Override
     @Transactional
     public VoiceReportResponse finishSession(Users user, String publicId, VoiceFinishRequest req) {
-        String feedback = req != null ? req.feedback() : "COMFORTABLE";
+        String feedback = req != null ? req.feedback() : null;
 
         ConversationSession session = sessionFinalizer.finalizeSession(publicId, user.getId(), feedback);
+        UserConversationLevel userLvl = levelRepository.findById(user.getId())
+                .orElseGet(() -> levelService.getOrCreateLevel(user.getId(), user));
 
-        UserConversationLevel userLvl = levelService.getOrCreateLevel(user.getId(), user);
+        int displayLevel = userLvl.getCurrentLevel();
+        return buildReportResponse(session, userLvl, displayLevel);
+    }
+
+    @Override
+    @Transactional
+    public VoiceReportResponse submitFeedback(Users user, String publicId, String feedback) {
+        ConversationSession session = sessionRepository.findByPublicId(publicId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy phiên hội thoại"));
+
+        if (!session.getUser().getId().equals(user.getId())) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy phiên hội thoại");
+        }
+
+        // 1. Phiên chưa COMPLETED -> 409 CONFLICT
+        if (!"COMPLETED".equalsIgnoreCase(session.getStatus())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Phiên hội thoại chưa hoàn thành");
+        }
+
+        UserConversationLevel userLvl = levelRepository.findByUserIdForUpdate(user.getId())
+                .orElseGet(() -> levelService.getOrCreateLevel(user.getId(), user));
+
+        int newLevel = userLvl.getCurrentLevel();
+
+        // 2. Nếu đã có feedback do người dùng chọn trước đó -> Trả kết quả cũ (idempotent, không áp dụng lần 2)
+        if (session.getUserFeedback() != null && !session.getUserFeedback().isBlank()) {
+            log.info("Session {} already has feedback: {}, returning existing report without reapplying level delta",
+                    publicId, session.getUserFeedback());
+        } else {
+            // 3. Áp dụng điều chỉnh level đúng 1 lần
+            String upperFeedback = feedback != null ? feedback.trim().toUpperCase() : "COMFORTABLE";
+            newLevel = levelService.applySessionLevelAdjustment(userLvl, upperFeedback, session.getOverallScore(), session.getId());
+            session.setUserFeedback(upperFeedback);
+            sessionRepository.save(session);
+            log.info("Applied feedback {} to session {}, newLevel: {}", upperFeedback, publicId, newLevel);
+        }
+
+        return buildReportResponse(session, userLvl, newLevel);
+    }
+
+    private VoiceReportResponse buildReportResponse(ConversationSession session, UserConversationLevel userLvl, int currentLevel) {
         List<ConversationTargetWord> targetWords = targetWordRepository.findBySessionId(session.getId());
         List<ConversationTurn> turns = turnRepository.findBySessionIdOrderByTurnNumberAsc(session.getId());
 
@@ -506,8 +550,8 @@ public class VoiceConversationServiceImpl implements VoiceConversationService {
                 session.getSystemRecommendation(),
                 session.getUserFeedback(),
                 session.getLevelAtStart(),
-                userLvl.getCurrentLevel(),
-                session.getXpAwarded(),
+                currentLevel,
+                session.getXpAwarded() != null ? session.getXpAwarded() : 0,
                 hardWarning,
                 wordDtos,
                 corrections

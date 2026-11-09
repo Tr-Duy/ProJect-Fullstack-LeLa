@@ -111,7 +111,7 @@ class VoiceSessionFinalizerTest {
     }
 
     @Test
-    @DisplayName("Hoàn thành hợp lệ: Cộng 50 XP, gọi dailyLearningActivityService.logActivity với voiceSessionCount = 1")
+    @DisplayName("Hoàn thành hợp lệ: Tính đúng XP theo công thức mới, gọi dailyLearningActivityService.logActivity với voiceSessionCount = 1")
     void testFinalizeAwardsXpAndIncrementsVoiceSessionCount() {
         when(sessionRepository.findByPublicId("sess-finish-1")).thenReturn(Optional.of(inProgressSession));
 
@@ -131,13 +131,38 @@ class VoiceSessionFinalizerTest {
         finalizer.finalizeSession("sess-finish-1", 10L, "COMFORTABLE");
 
         assertEquals("COMPLETED", inProgressSession.getStatus());
-        assertEquals(50, inProgressSession.getXpAwarded());
+        // XP: 4 turns * 2 = 8, score 65 / 10 = 7, 2 target words * 3 = 6 -> Total = 21 XP
+        assertEquals(21, inProgressSession.getXpAwarded());
 
         ArgumentCaptor<DailyLearningActivityRequest> captor = ArgumentCaptor.forClass(DailyLearningActivityRequest.class);
         verify(dailyLearningActivityService).logActivity(captor.capture());
 
         DailyLearningActivityRequest captured = captor.getValue();
-        assertEquals(50, captured.getXpEarned());
+        assertEquals(21, captured.getXpEarned());
         assertEquals(1, captured.getVoiceSessionCount());
+    }
+
+    @Test
+    @DisplayName("Dưới 3 lượt nói hợp lệ: Nhận 0 XP và không gọi logActivity")
+    void testFinalizeUnderMinValidTurnsYieldsZeroXp() {
+        ConversationSession shortSession = ConversationSession.builder()
+                .id(3L)
+                .publicId("sess-short")
+                .user(testUser)
+                .status("IN_PROGRESS")
+                .validTurnCount(2)
+                .durationSeconds(60)
+                .build();
+
+        when(sessionRepository.findByPublicId("sess-short")).thenReturn(Optional.of(shortSession));
+        when(targetWordRepository.findBySessionId(3L)).thenReturn(Collections.emptyList());
+        when(turnRepository.findBySessionIdOrderByTurnNumberAsc(3L)).thenReturn(Collections.emptyList());
+        when(sessionRepository.save(any(ConversationSession.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        finalizer.finalizeSession("sess-short", 10L, null);
+
+        assertEquals("COMPLETED", shortSession.getStatus());
+        assertEquals(0, shortSession.getXpAwarded());
+        verify(dailyLearningActivityService, never()).logActivity(any());
     }
 }

@@ -37,6 +37,10 @@ public class VoiceAiService {
         @Builder.Default
         private Boolean isGood = true;
 
+        @JsonProperty("hasError")
+        @Builder.Default
+        private Boolean hasError = false;
+
         @JsonProperty("score")
         @Builder.Default
         private Integer score = 80;
@@ -318,13 +322,11 @@ public class VoiceAiService {
             }
             score = Math.max(0, Math.min(100, score));
 
-            String suggested = eval.getSuggestedImprovement();
-            boolean hasSuggestedImprovement = suggested != null
-                    && !suggested.trim().isEmpty()
-                    && !suggested.trim().equalsIgnoreCase(output.getIntendedUtterance() != null ? output.getIntendedUtterance().trim() : "");
+            Boolean hasError = eval.getHasError() != null ? eval.getHasError() : false;
 
-            // Quy tắc: EXCELLENT (>=85) chỉ khi câu đúng trọng tâm và không có lỗi ngữ pháp hay từ vựng đáng kể. Nếu có suggestedImprovement thì score tối đa 84.
-            if (hasSuggestedImprovement && score >= 85) {
+            // Quy tắc: Chỉ khi hasError == true mới trừ điểm và chặn score <= 84.
+            // Nếu câu đúng mà chỉ có thể nói tự nhiên hơn (hasError == false) thì giữ điểm cao, được phép EXCELLENT (>= 85).
+            if (Boolean.TRUE.equals(hasError) && score >= 85) {
                 score = 84;
             }
             eval.setScore(score);
@@ -338,13 +340,13 @@ public class VoiceAiService {
             }
 
             if (eval.getIsGood() == null) {
-                eval.setIsGood(score >= 60);
+                eval.setIsGood(!Boolean.TRUE.equals(hasError));
             }
             if (eval.getPhoneticTip() == null) {
                 eval.setPhoneticTip("");
             }
             if (eval.getGrammarCheck() == null || eval.getGrammarCheck().isBlank()) {
-                eval.setGrammarCheck(eval.getIsGood() ? "Ngữ pháp chính xác" : "Cần lưu ý cấu trúc câu");
+                eval.setGrammarCheck(Boolean.TRUE.equals(hasError) ? "Cần lưu ý cấu trúc câu" : "Ngữ pháp chính xác");
             }
         }
         if (output.getIsCompleted() == null) {
@@ -413,15 +415,16 @@ public class VoiceAiService {
                      * If the learner said "I like eyes coffee", intendedUtterance MUST be "I like iced coffee" (KEEP "I like", DO NOT change to "I'd like").
                      * Rewriting for politeness or correct grammar belongs STRICTLY in suggestedImprovement.
                 2. Evaluate the intended utterance:
-                   - Field "suggestedImprovement": If the learner's phrasing could be more polite, more natural, or grammatically better (e.g. 'I'd like a hot coffee, please'), provide the improved English sentence here. If the learner's sentence is already natural, polite, and error-free, set suggestedImprovement to empty string ("").
+                   - Field "hasError": Set to true if the learner's utterance has actual grammar errors, incorrect vocabulary, or is off-topic. Set to false if the sentence is grammatically correct and on-topic, even if it could be expressed more naturally or politely.
+                   - Field "suggestedImprovement": If hasError is true, provide the grammatically corrected sentence. If hasError is false but there is a more natural/polite phrasing, provide that phrasing. If the sentence is already completely natural and error-free, set suggestedImprovement to empty string ("").
                    - Scoring Rules (score: 0 - 100):
-                     * EXCELLENT (score >= 85): ONLY when the sentence is completely on-topic, relevant, and has NO significant grammar or vocabulary errors, AND no suggestedImprovement is needed (suggestedImprovement is empty).
-                     * If there is ANY suggestedImprovement needed (for politeness, grammar, or phrasing), the score MUST NOT exceed 84 (status must be GOOD: 60-84, or NEEDS_IMPROVEMENT: < 60).
-                     * GOOD (60 - 84): Relevant and understandable, but has minor phrasing/grammar issues or could be more polite/natural.
+                     * EXCELLENT (score >= 85): Allowed ONLY when hasError is false! If the sentence has no real errors (hasError = false), grant high score (85-100) and EXCELLENT, even if a more natural phrasing is suggested in suggestedImprovement.
+                     * If hasError is true (actual grammar, vocab, or off-topic mistake): The score MUST NOT exceed 84 (status must be GOOD: 60-84, or NEEDS_IMPROVEMENT: < 60).
+                     * GOOD (60 - 84): Relevant and understandable, but has grammar/vocab flaws (hasError = true) or could be improved.
                      * NEEDS_IMPROVEMENT (< 60): Off-topic, inappropriate, or has severe grammatical flaws.
                      Do NOT claim to score pronunciation precisely, since you only see text.
                 3. Reply in character with the next line of the scenario (1–2 short sentences, A2–B1 level).
-                Write grammarCheck and phoneticTip in Vietnamese. Write aiReply and suggestedImprovement in English. Output JSON only.
+                Write grammarCheck and phoneticTip in Vietnamese (do NOT imply listening to voice audio, label phonetic tip as helpful pronunciation tip). Write aiReply and suggestedImprovement in English. Output JSON only.
                 """.formatted(role, scenarioName, previousQuestion, historyStr, transcript, alternativesStr);
     }
 
@@ -439,22 +442,26 @@ public class VoiceAiService {
 
         Map<String, Object> evalProps = new LinkedHashMap<>();
         evalProps.put("isGood", Map.of("type", "boolean"));
+        evalProps.put("hasError", Map.of(
+                "type", "boolean",
+                "description", "true if utterance has actual grammar, vocabulary, or relevance errors. false if utterance is correct and only has suggestions for more natural phrasing."
+        ));
         evalProps.put("score", Map.of(
                 "type", "integer",
-                "description", "Score 0-100. Max 84 if suggestedImprovement is present. 85-100 only if perfect with no suggested improvement."
+                "description", "Score 0-100. Max 84 if hasError is true. 85-100 allowed if hasError is false."
         ));
         evalProps.put("status", Map.of("type", "string", "enum", List.of("EXCELLENT", "GOOD", "NEEDS_IMPROVEMENT")));
         evalProps.put("grammarCheck", Map.of("type", "string"));
         evalProps.put("phoneticTip", Map.of("type", "string"));
         evalProps.put("suggestedImprovement", Map.of(
                 "type", "string",
-                "description", "Polite or grammatically improved version in English. Empty string if no improvement is needed."
+                "description", "Polite or more natural English alternative. Empty string if no improvement is needed."
         ));
 
         Map<String, Object> evalSchema = new LinkedHashMap<>();
         evalSchema.put("type", "object");
         evalSchema.put("properties", evalProps);
-        evalSchema.put("required", List.of("isGood", "score", "status", "grammarCheck", "phoneticTip", "suggestedImprovement"));
+        evalSchema.put("required", List.of("isGood", "hasError", "score", "status", "grammarCheck", "phoneticTip", "suggestedImprovement"));
 
         properties.put("evaluation", evalSchema);
 

@@ -73,6 +73,7 @@ export interface UserEvaluationDto {
   grammarCheck: string;
   phoneticTip?: string;
   suggestedImprovement: string;
+  hasError?: boolean;
 }
 
 export interface VoiceTurnResponse {
@@ -138,7 +139,9 @@ export const voiceConversationApi = {
       previousAiQuestion,
     }),
   finishSession: (publicId: string, feedback?: string) =>
-    api.post<VoiceReportResponse>(`/voice-conversations/sessions/${publicId}/finish`, { feedback }),
+    api.post<VoiceReportResponse>(`/voice-conversations/sessions/${publicId}/finish`, feedback ? { feedback } : {}),
+  submitFeedback: (publicId: string, feedback: 'HARD' | 'COMFORTABLE' | 'EASY') =>
+    api.post<VoiceReportResponse>(`/voice-conversations/sessions/${publicId}/feedback`, { feedback }),
   abandonSession: (publicId: string) =>
     api.post(`/voice-conversations/sessions/${publicId}/abandon`),
 };

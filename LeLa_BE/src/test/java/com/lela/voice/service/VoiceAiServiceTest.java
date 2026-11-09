@@ -92,16 +92,43 @@ class VoiceAiServiceTest {
     }
 
     @Test
-    @DisplayName("Unit Test scoring rule: Nếu có suggestedImprovement thì score tối đa 84 và status không phải EXCELLENT")
-    void testScoreCappedAt84WhenSuggestedImprovementPresent() {
+    @DisplayName("Unit Test scoring rule: Nếu hasError == true thì score tối đa 84 và status GOOD")
+    void testScoreCappedAt84WhenHasErrorTrue() {
         String json = """
                 {
-                  "intendedUtterance": "I like hot coffee",
+                  "intendedUtterance": "I likes hot coffee",
                   "evaluation": {
-                    "isGood": true,
+                    "isGood": false,
+                    "hasError": true,
                     "score": 92,
                     "status": "EXCELLENT",
-                    "grammarCheck": "Nên dùng I'd like",
+                    "grammarCheck": "Lỗi chia động từ likes với chủ ngữ I",
+                    "phoneticTip": "",
+                    "suggestedImprovement": "I like hot coffee."
+                  },
+                  "aiReply": "Sure thing!",
+                  "isCompleted": false
+                }
+                """;
+        VoiceAiService.TurnAiOutput output = aiService.parseAiOutput(json, "I likes hot coffee");
+        assertNotNull(output);
+        assertNotNull(output.getEvaluation());
+        assertEquals(84, output.getEvaluation().getScore(), "Score phải bị giới hạn tối đa 84 khi hasError == true");
+        assertEquals("GOOD", output.getEvaluation().getStatus(), "Status phải là GOOD khi score = 84");
+    }
+
+    @Test
+    @DisplayName("Unit Test scoring rule: Nếu hasError == false nhưng có suggestedImprovement (cách nói tự nhiên hơn) thì giữ điểm EXCELLENT >= 85")
+    void testScoreRemainsExcellentWhenHasErrorFalse() {
+        String json = """
+                {
+                  "intendedUtterance": "I want hot coffee",
+                  "evaluation": {
+                    "isGood": true,
+                    "hasError": false,
+                    "score": 92,
+                    "status": "EXCELLENT",
+                    "grammarCheck": "Câu đúng ngữ pháp",
                     "phoneticTip": "",
                     "suggestedImprovement": "I'd like a hot coffee, please."
                   },
@@ -109,11 +136,11 @@ class VoiceAiServiceTest {
                   "isCompleted": false
                 }
                 """;
-        VoiceAiService.TurnAiOutput output = aiService.parseAiOutput(json, "I like hot coffee");
+        VoiceAiService.TurnAiOutput output = aiService.parseAiOutput(json, "I want hot coffee");
         assertNotNull(output);
         assertNotNull(output.getEvaluation());
-        assertEquals(84, output.getEvaluation().getScore(), "Score phải bị giới hạn tối đa 84 khi có suggestedImprovement");
-        assertEquals("GOOD", output.getEvaluation().getStatus(), "Status phải là GOOD khi score = 84");
+        assertEquals(92, output.getEvaluation().getScore(), "Score phải được giữ 92 khi hasError == false");
+        assertEquals("EXCELLENT", output.getEvaluation().getStatus(), "Status phải là EXCELLENT khi score >= 85 và hasError == false");
     }
 
     @Test

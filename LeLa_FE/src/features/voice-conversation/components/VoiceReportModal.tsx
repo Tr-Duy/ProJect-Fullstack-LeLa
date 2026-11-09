@@ -8,6 +8,7 @@ interface VoiceReportModalProps {
   report: VoiceReportResponse | null;
   onFeedback: (feedback: 'HARD' | 'COMFORTABLE' | 'EASY') => void;
   onClose: () => void;
+  isSubmitting?: boolean;
 }
 
 export const VoiceReportModal: React.FC<VoiceReportModalProps> = ({
@@ -15,6 +16,7 @@ export const VoiceReportModal: React.FC<VoiceReportModalProps> = ({
   report,
   onFeedback,
   onClose,
+  isSubmitting = false,
 }) => {
   if (!report) return null;
 
@@ -158,6 +160,8 @@ export const VoiceReportModal: React.FC<VoiceReportModalProps> = ({
             <Button
               danger
               size="large"
+              loading={isSubmitting}
+              disabled={isSubmitting}
               className="font-bold rounded-xl h-11"
               onClick={() => onFeedback('HARD')}
             >
@@ -166,6 +170,8 @@ export const VoiceReportModal: React.FC<VoiceReportModalProps> = ({
             <Button
               type="primary"
               size="large"
+              loading={isSubmitting}
+              disabled={isSubmitting}
               className="font-bold rounded-xl h-11 !bg-teal-600 hover:!bg-teal-700"
               onClick={() => onFeedback('COMFORTABLE')}
             >
@@ -173,7 +179,8 @@ export const VoiceReportModal: React.FC<VoiceReportModalProps> = ({
             </Button>
             <Button
               size="large"
-              disabled={isEasyBlocked}
+              loading={isSubmitting}
+              disabled={isSubmitting || isEasyBlocked}
               className={`font-bold rounded-xl h-11 border-2 ${
                 isEasyBlocked ? 'border-slate-200 text-slate-300' : 'border-emerald-500 text-emerald-600 hover:bg-emerald-50'
               }`}

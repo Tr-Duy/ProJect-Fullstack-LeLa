@@ -17,5 +17,7 @@ public interface VoiceConversationService {
 
     VoiceReportResponse finishSession(Users user, String publicId, VoiceFinishRequest req);
 
+    VoiceReportResponse submitFeedback(Users user, String publicId, String feedback);
+
     void abandonSession(Users user, String publicId);
 }

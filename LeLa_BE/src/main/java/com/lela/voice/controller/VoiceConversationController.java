@@ -4,6 +4,7 @@ import com.lela.users.domain.Users;
 import com.lela.users.UsersRepository;
 import com.lela.voice.dto.*;
 import com.lela.voice.service.VoiceConversationService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -66,6 +67,15 @@ public class VoiceConversationController {
     ) {
         Users user = getCurrentUser();
         return ResponseEntity.ok(voiceConversationService.finishSession(user, publicId, req));
+    }
+
+    @PostMapping("/sessions/{publicId}/feedback")
+    public ResponseEntity<VoiceReportResponse> submitFeedback(
+            @PathVariable String publicId,
+            @RequestBody @Valid VoiceFeedbackRequest req
+    ) {
+        Users user = getCurrentUser();
+        return ResponseEntity.ok(voiceConversationService.submitFeedback(user, publicId, req.feedback()));
     }
 
     @PostMapping("/sessions/{publicId}/abandon")

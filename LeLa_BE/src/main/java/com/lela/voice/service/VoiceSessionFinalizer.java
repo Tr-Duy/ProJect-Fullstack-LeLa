@@ -75,7 +75,7 @@ public class VoiceSessionFinalizer {
         session.setVocabularyScore(vocabScore);
         session.setFluencyScore(fluencyScore);
         session.setOverallScore(overallScore);
-        session.setUserFeedback(userFeedback != null ? userFeedback.toUpperCase() : "COMFORTABLE");
+        session.setUserFeedback(userFeedback != null && !userFeedback.isBlank() ? userFeedback.toUpperCase() : null);
 
         // Đề xuất hệ thống (Tăng/Giữ/Hạ)
         long correctTargetWords = targetWords.stream().filter(ConversationTargetWord::getUsedCorrectly).count();
@@ -89,10 +89,12 @@ public class VoiceSessionFinalizer {
 
         session.setStatus("COMPLETED");
 
-        // 2. Cập nhật Level người học (Server-enforced logic)
-        UserConversationLevel userLvl = levelRepository.findByUserIdForUpdate(userId)
-                .orElseGet(() -> levelService.getOrCreateLevel(userId, session.getUser()));
-        levelService.applySessionLevelAdjustment(userLvl, session.getUserFeedback(), overallScore, session.getId());
+        // 2. Cập nhật Level người học (chỉ áp dụng nếu userFeedback đã được cung cấp)
+        if (session.getUserFeedback() != null) {
+            UserConversationLevel userLvl = levelRepository.findByUserIdForUpdate(userId)
+                    .orElseGet(() -> levelService.getOrCreateLevel(userId, session.getUser()));
+            levelService.applySessionLevelAdjustment(userLvl, session.getUserFeedback(), overallScore, session.getId());
+        }
 
         // 3. Cập nhật SRS cho Target Words
         // Quy tắc: dùng đúng KHÔNG đổi due_date/interval; dùng sai thì lapse_count++ (tối đa 1 lần / từ / phiên)
@@ -107,23 +109,36 @@ public class VoiceSessionFinalizer {
         }
 
         // 4. Trao thưởng Gamification (XP & Streak)
-        // Điều kiện nhận XP: phiên COMPLETED, >= 3 lượt hợp lệ & >= 2 target words dùng đúng
-        if (session.getValidTurnCount() >= 3 && correctTargetWords >= 2) {
+        // Điều kiện nhận XP: phiên COMPLETED, >= minValidTurnsForXp (mặc định 3 lượt hợp lệ)
+        int validTurns = session.getValidTurnCount() != null ? session.getValidTurnCount() : 0;
+        if (validTurns >= props.getMinValidTurnsForXp()) {
             ZoneId zone = ZoneId.of(props.getTimezone());
             LocalDate today = LocalDate.now(zone);
             int todayXpUsed = sessionRepository.sumDailyXpAwarded(userId, today);
             int remainingCap = Math.max(0, props.getDailyXpCap() - todayXpUsed);
-            int xpToAward = Math.min(props.getXpPerCompletedSession(), remainingCap);
 
-            if (xpToAward > 0) {
+            int xpFromTurns = Math.min(validTurns * props.getXpPerValidTurn(), props.getMaxXpFromTurns());
+            int xpFromScore = Math.round(overallScore / 10.0f);
+            int xpFromWords = Math.min((int) correctTargetWords * props.getXpPerTargetWord(), props.getMaxXpFromTargetWords());
+            int rawXp = xpFromTurns + xpFromScore + xpFromWords;
+            int xpToAward = Math.min(rawXp, remainingCap);
+
+            if (session.getXpAwarded() == null || session.getXpAwarded() == 0) {
                 session.setXpAwarded(xpToAward);
-                // Ghi nhận hoạt động vào DailyLearningActivity để kích hoạt streak & gamification
-                DailyLearningActivityRequest actReq = new DailyLearningActivityRequest();
-                actReq.setActivityDate(today);
-                actReq.setXpEarned(xpToAward);
-                actReq.setMinutesSpent(Math.max(1, session.getDurationSeconds() / 60));
-                actReq.setVoiceSessionCount(1);
-                dailyLearningActivityService.logActivity(actReq);
+                if (xpToAward > 0) {
+                    DailyLearningActivityRequest actReq = new DailyLearningActivityRequest();
+                    actReq.setActivityDate(today);
+                    actReq.setXpEarned(xpToAward);
+                    actReq.setMinutesSpent(Math.max(1, (session.getDurationSeconds() != null ? session.getDurationSeconds() : 0) / 60));
+                    actReq.setVoiceSessionCount(1);
+                    dailyLearningActivityService.logActivity(actReq);
+                    log.info("[VoiceSessionFinalizer] Awarded {} XP (turns={}, score={}, words={}) to user {} for session {}",
+                            xpToAward, xpFromTurns, xpFromScore, xpFromWords, userId, publicId);
+                }
+            }
+        } else {
+            if (session.getXpAwarded() == null) {
+                session.setXpAwarded(0);
             }
         }
 

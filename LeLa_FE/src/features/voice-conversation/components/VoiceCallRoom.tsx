@@ -467,13 +467,18 @@ export const VoiceCallRoom: React.FC<VoiceCallRoomProps> = ({
               {latestEvaluation.phoneticTip && (
                 <div className="flex items-start gap-1.5 text-xs text-amber-900 bg-amber-50/80 border border-amber-200/80 rounded-xl px-2.5 py-1.5">
                   <Volume2 className="w-3.5 h-3.5 text-amber-600 flex-shrink-0 mt-0.5" />
-                  <span>{latestEvaluation.phoneticTip}</span>
+                  <span>
+                    <strong className="font-semibold text-amber-800 mr-1">Mẹo phát âm:</strong>
+                    {latestEvaluation.phoneticTip}
+                  </span>
                 </div>
               )}
 
               {latestEvaluation.suggestedImprovement && (
                 <div className="text-xs text-slate-700 pt-1 border-t border-orange-100 flex flex-col sm:flex-row sm:items-baseline gap-1">
-                  <span className="font-semibold text-orange-700 flex-shrink-0">Gợi ý cách nói hay hơn:</span>
+                  <span className="font-semibold text-orange-700 flex-shrink-0">
+                    {latestEvaluation.hasError === false ? 'Cách nói tự nhiên hơn:' : 'Gợi ý câu đúng:'}
+                  </span>
                   <span className="italic font-medium text-orange-900">"{latestEvaluation.suggestedImprovement}"</span>
                 </div>
               )}

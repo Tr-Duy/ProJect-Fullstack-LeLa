@@ -64,6 +64,9 @@ public class VoiceConversationIntegrationTest {
     @Autowired
     private FlashcardRepository flashcardRepository;
 
+    @Autowired
+    private com.lela.voice.repository.UserConversationLevelRepository userConversationLevelRepository;
+
     @MockBean
     private VoiceAiService voiceAiService;
 
@@ -73,6 +76,14 @@ public class VoiceConversationIntegrationTest {
     void setUp() {
         testUser = usersRepository.findByUsername("admin")
                 .orElseThrow(() -> new IllegalStateException("Test user admin not found"));
+
+        // Reset level về 200 để các test case có giá trị ban đầu độc lập, ổn định
+        userConversationLevelRepository.findByUserId(testUser.getId())
+                .ifPresent(lvl -> {
+                    lvl.setCurrentLevel(200);
+                    lvl.setConsecutiveHardCount(0);
+                    userConversationLevelRepository.save(lvl);
+                });
 
         // Hủy bất kỳ session IN_PROGRESS nào trước đó để không bị kẹt hạn mức
         sessionRepository.findInProgressSessionByUserId(testUser.getId())
@@ -201,5 +212,61 @@ public class VoiceConversationIntegrationTest {
         // 5. Kiểm tra session trong DB đã chuyển sang COMPLETED
         ConversationSession saved = sessionRepository.findByPublicId(publicId).orElseThrow();
         assertThat(saved.getStatus()).isEqualTo("COMPLETED");
+    }
+
+    @Test
+    @WithMockUser(username = "admin")
+    @DisplayName("Feedback flow: POST /sessions/{id}/feedback điều chỉnh Level và đảm bảo Idempotent")
+    void testSubmitFeedbackAdjustsLevelAndIsIdempotent() throws Exception {
+        // 1. Start session
+        MvcResult startResult = mockMvc.perform(post("/api/v1/voice-conversations/sessions/start")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isOk())
+                .andReturn();
+        String publicId = objectMapper.readTree(startResult.getResponse().getContentAsString()).get("publicId").asText();
+
+        // 2. Finish session mà KHÔNG gửi feedback
+        mockMvc.perform(post("/api/v1/voice-conversations/sessions/" + publicId + "/finish")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.userFeedback").doesNotExist());
+
+        // 3. Gửi feedback HARD -> level giảm 50 (200 -> 150)
+        MvcResult hardResult = mockMvc.perform(post("/api/v1/voice-conversations/sessions/" + publicId + "/feedback")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"feedback\": \"HARD\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.userFeedback").value("HARD"))
+                .andExpect(jsonPath("$.newLevel").value(150))
+                .andReturn();
+
+        // 4. Gửi feedback lần 2 trên cùng session -> Idempotent, giữ nguyên 150 không bị trừ thêm
+        mockMvc.perform(post("/api/v1/voice-conversations/sessions/" + publicId + "/feedback")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"feedback\": \"HARD\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.userFeedback").value("HARD"))
+                .andExpect(jsonPath("$.newLevel").value(150));
+    }
+
+    @Test
+    @WithMockUser(username = "admin")
+    @DisplayName("Feedback trên phiên chưa COMPLETED (IN_PROGRESS) trả về 409 Conflict")
+    void testSubmitFeedbackOnInProgressSessionReturns409() throws Exception {
+        // 1. Start session
+        MvcResult startResult = mockMvc.perform(post("/api/v1/voice-conversations/sessions/start")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isOk())
+                .andReturn();
+        String publicId = objectMapper.readTree(startResult.getResponse().getContentAsString()).get("publicId").asText();
+
+        // 2. Gọi feedback khi chưa finish -> 409 Conflict
+        mockMvc.perform(post("/api/v1/voice-conversations/sessions/" + publicId + "/feedback")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"feedback\": \"EASY\"}"))
+                .andExpect(status().isConflict());
     }
 }

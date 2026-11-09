@@ -17,6 +17,11 @@ public class VoiceConfigurationProperties {
     private int idleTimeoutSeconds = 360; // 300 + 60
     private int dailyXpCap = 150;
     private int xpPerCompletedSession = 50;
+    private int minValidTurnsForXp = 3;
+    private int xpPerValidTurn = 2;
+    private int maxXpFromTurns = 20;
+    private int xpPerTargetWord = 3;
+    private int maxXpFromTargetWords = 15;
     private double minSttConfidence = 0.50;
     private double maxOffWhitelistRatio = 0.15; // Ngưỡng từ ngoài whitelist (15% tối ưu khi kho foundation đạt 2,480+ từ)
     private int maxRetriesGemini = 2;

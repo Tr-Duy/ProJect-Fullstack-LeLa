@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button, message, Checkbox } from 'antd';
 import { Sparkles, Mic, Zap, Clock, ShieldCheck, ArrowRight } from 'lucide-react';
+import { useAuth } from '../../../shared/providers/AuthProvider';
 import { voiceConversationApi } from '../api/voice-conversation.api';
 import { VoiceCallRoom } from '../components/VoiceCallRoom';
 import { VoiceReportModal } from '../components/VoiceReportModal';
@@ -9,12 +10,22 @@ import type { VoiceReportResponse, VoiceStartResponse } from '../api/voice-conve
 
 export const VoiceConversationPage: React.FC = () => {
   const queryClient = useQueryClient();
+  const { refreshUser } = useAuth();
   // Mặc định luôn đồng ý Micro để người dùng không bị chặn
   const [micConsentAccepted, setMicConsentAccepted] = useState(true);
   const [selectedScenarioSlug, setSelectedScenarioSlug] = useState<string>('');
   const [activeSession, setActiveSession] = useState<VoiceStartResponse | null>(null);
   const [reportModalVisible, setReportModalVisible] = useState(false);
   const [finalReport, setFinalReport] = useState<VoiceReportResponse | null>(null);
+
+  const invalidateAll = () => {
+    queryClient.invalidateQueries({ queryKey: ['voice-conversation', 'status'] });
+    queryClient.invalidateQueries({ queryKey: ['daily-activity', 'today'] });
+    queryClient.invalidateQueries({ queryKey: ['daily-activity', 'history'] });
+    queryClient.invalidateQueries({ queryKey: ['profile'] });
+    queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
+    refreshUser();
+  };
 
   // Lấy trạng thái hội thoại
   const { data: statusResp, isLoading: isStatusLoading } = useQuery({
@@ -57,18 +68,46 @@ export const VoiceConversationPage: React.FC = () => {
 
   // Kết thúc phiên và lấy báo cáo
   const finishMutation = useMutation({
-    mutationFn: (feedback?: string) => {
+    mutationFn: () => {
       if (!activeSession) return Promise.reject(new Error('No active session'));
-      return voiceConversationApi.finishSession(activeSession.publicId, feedback);
+      return voiceConversationApi.finishSession(activeSession.publicId);
     },
     onSuccess: (res: { data: VoiceReportResponse }) => {
       setFinalReport(res.data);
       setReportModalVisible(true);
       setActiveSession(null);
-      queryClient.invalidateQueries({ queryKey: ['voice-conversation', 'status'] });
+      invalidateAll();
     },
     onError: (err: any) => {
-      message.error(err.response?.data?.message || 'Lỗi kết thúc phiên thoại.');
+      console.error('[VoiceConversationPage] finishMutation error:', err);
+      const msg =
+        err.response?.data?.message ||
+        (err.response ? `Lỗi máy chủ (${err.response.status})` : err.message) ||
+        'Lỗi kết thúc phiên thoại.';
+      message.error(msg);
+    },
+  });
+
+  // Gửi đánh giá độ khó và cập nhật cấp độ
+  const feedbackMutation = useMutation({
+    mutationFn: (fb: 'HARD' | 'COMFORTABLE' | 'EASY') => {
+      const publicId = finalReport?.publicId;
+      if (!publicId) return Promise.reject(new Error('Không tìm thấy mã phiên báo cáo'));
+      return voiceConversationApi.submitFeedback(publicId, fb);
+    },
+    onSuccess: (res: { data: VoiceReportResponse }) => {
+      setFinalReport(res.data);
+      invalidateAll();
+      setReportModalVisible(false);
+      message.success('Đã ghi nhận độ khó và cập nhật cấp độ!');
+    },
+    onError: (err: any) => {
+      console.error('[VoiceConversationPage] feedbackMutation error:', err);
+      const msg =
+        err.response?.data?.message ||
+        (err.response ? `Lỗi máy chủ (${err.response.status})` : err.message) ||
+        'Lỗi ghi nhận độ khó.';
+      message.error(msg);
     },
   });
 
@@ -81,7 +120,7 @@ export const VoiceConversationPage: React.FC = () => {
     onSuccess: () => {
       setActiveSession(null);
       message.info('Đã hủy phiên hội thoại.');
-      queryClient.invalidateQueries({ queryKey: ['voice-conversation', 'status'] });
+      invalidateAll();
     },
   });
 
@@ -100,11 +139,11 @@ export const VoiceConversationPage: React.FC = () => {
   };
 
   const handleFinish = () => {
-    finishMutation.mutate(undefined);
+    finishMutation.mutate();
   };
 
   const handleFeedback = (fb: 'HARD' | 'COMFORTABLE' | 'EASY') => {
-    finishMutation.mutate(fb);
+    feedbackMutation.mutate(fb);
   };
 
   if (isStatusLoading) {
@@ -129,6 +168,7 @@ export const VoiceConversationPage: React.FC = () => {
           report={finalReport}
           onFeedback={handleFeedback}
           onClose={() => setReportModalVisible(false)}
+          isSubmitting={feedbackMutation.isPending}
         />
       </div>
     );
@@ -281,6 +321,7 @@ export const VoiceConversationPage: React.FC = () => {
         report={finalReport}
         onFeedback={handleFeedback}
         onClose={() => setReportModalVisible(false)}
+        isSubmitting={feedbackMutation.isPending}
       />
     </div>
   );

@@ -13,6 +13,8 @@ import lombok.NoArgsConstructor;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class UserEvaluationDto {
     private Boolean isGood;
+    @Builder.Default
+    private Boolean hasError = false;
     private Integer score;
     private String status; // "EXCELLENT" | "GOOD" | "NEEDS_IMPROVEMENT"
     private String grammarCheck;
