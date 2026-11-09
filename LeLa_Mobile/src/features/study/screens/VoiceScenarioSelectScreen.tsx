@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   StyleSheet,
   Text,
@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../../navigation/RootNavigator';
 import { voiceService } from '../services/voiceService';
@@ -47,9 +47,12 @@ export const VoiceScenarioSelectScreen: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  // Tự động tải lại dữ liệu khi màn hình được active/focus
+  useFocusEffect(
+    useCallback(() => {
+      fetchData();
+    }, [])
+  );
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -180,7 +183,11 @@ export const VoiceScenarioSelectScreen: React.FC = () => {
             Hạn mức đàm thoại hôm nay
           </Text>
           <Text style={styles.quotaSub}>
-            Còn lại: <Text style={styles.quotaHighlight}>{status?.remainingQuota ?? 5}</Text> / {status?.maxSessionsPerDay ?? 5} lượt đàm thoại
+            Còn lại:{' '}
+            <Text style={styles.quotaHighlight}>
+              {status?.remainingTurns ?? status?.remainingQuota ?? 3}
+            </Text>{' '}
+            / {status?.maxDailyTurns ?? status?.maxSessionsPerDay ?? 3} lượt đàm thoại
           </Text>
         </View>
       </View>

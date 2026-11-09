@@ -29,16 +29,22 @@ export const VoiceCallRoom: React.FC<VoiceCallRoomProps> = ({
 
   const { speak, isSpeaking, stop: stopTts } = useSpeechSynthesis();
 
-  // TTS đọc lời mở đầu khi vào phòng, đọc xong tự động mở mic nghe
+  // TTS đọc lời mở đầu khi vào phòng, đọc xong chờ đệm 250ms rồi tự động mở mic nghe
   useEffect(() => {
+    let timer: number | null = null;
     if (sessionData.openingLine) {
       speak(sessionData.openingLine, sessionData.uiConfig.ttsRate, () => {
-        startListening();
+        timer = window.setTimeout(() => {
+          startListening();
+        }, 250);
       });
     } else {
-      startListening();
+      timer = window.setTimeout(() => {
+        startListening();
+      }, 250);
     }
     return () => {
+      if (timer !== null) window.clearTimeout(timer);
       stopTts();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -103,7 +109,11 @@ export const VoiceCallRoom: React.FC<VoiceCallRoomProps> = ({
   });
 
   const handleSendTurn = async (transcriptText: string, confidence: number, isRetry: boolean) => {
-    if (!transcriptText || isAiThinking) return;
+    const cleanText = (transcriptText || '').trim();
+    if (!cleanText || isAiThinking) {
+      console.warn('[VoiceCallRoom] Bỏ qua lượt gửi vì transcript rỗng hoặc AI đang xử lý');
+      return;
+    }
 
     setIsAiThinking(true);
     setSilenceCounter(0);
@@ -112,7 +122,7 @@ export const VoiceCallRoom: React.FC<VoiceCallRoomProps> = ({
       const elapsed = (sessionData.durationSecondsLimit || 300) - secondsLeft;
       const res = await voiceConversationApi.processTurn(
         sessionData.publicId,
-        transcriptText,
+        cleanText,
         confidence,
         elapsed,
         isRetry
@@ -128,10 +138,12 @@ export const VoiceCallRoom: React.FC<VoiceCallRoomProps> = ({
 
       setIdle();
 
-      // Đọc phản hồi bằng TTS, xong tự động mở mic cho lượt kế tiếp
+      // Đọc phản hồi bằng TTS, xong chờ đệm 250ms tự động mở mic cho lượt kế tiếp
       speak(turn.aiReply, sessionData.uiConfig.ttsRate, () => {
         if (!turn.sessionEnded) {
-          startListening();
+          window.setTimeout(() => {
+            startListening();
+          }, 250);
         }
       });
 

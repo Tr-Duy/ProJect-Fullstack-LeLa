@@ -8,6 +8,7 @@ import com.lela.voice.config.VoiceConfigurationProperties;
 import com.lela.voice.domain.*;
 import com.lela.voice.dto.*;
 import com.lela.voice.repository.*;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -60,14 +61,84 @@ public class VoiceConversationServiceImpl implements VoiceConversationService {
                 .collect(Collectors.toList());
     }
 
+    @PostConstruct
+    public void initDefaultScenariosIfEmpty() {
+        try {
+            if (scenarioRepository.count() == 0) {
+                log.info("[VoiceConversation] Khởi tạo kịch bản mẫu cho hệ thống vì bảng conversation_scenarios đang rỗng.");
+                List<ConversationScenario> seeds = List.of(
+                        ConversationScenario.builder()
+                                .title("Order at a Coffee Shop")
+                                .slug("order-coffee-shop")
+                                .levelMin(100)
+                                .levelMax(500)
+                                .aiRole("Barista")
+                                .userRole("Customer")
+                                .description("Gọi đồ uống và bánh ngọt tại quán cà phê thân thiện.")
+                                .systemPromptTemplate("You are a friendly barista at a local coffee shop. Greet the customer and take their order in simple, clear English.")
+                                .fallbackLinesJson("[\"Welcome to our coffee shop! What can I get for you today?\", \"Would you like that hot or iced?\", \"Anything else today?\"]")
+                                .openingLine("Hello! Welcome to LeLa Coffee. What would you like to drink today?")
+                                .isActive(true)
+                                .build(),
+                        ConversationScenario.builder()
+                                .title("Asking for Directions")
+                                .slug("asking-directions")
+                                .levelMin(100)
+                                .levelMax(500)
+                                .aiRole("Local Resident")
+                                .userRole("Tourist")
+                                .description("Hỏi đường đến địa điểm tham quan hoặc nhà ga gần nhất.")
+                                .systemPromptTemplate("You are a helpful local resident helping a tourist find their way around the city.")
+                                .fallbackLinesJson("[\"Hi! Where are you trying to go?\", \"Go straight and turn left at the bookstore.\", \"Have a great day exploring!\"]")
+                                .openingLine("Hello! You look a bit lost. Can I help you find somewhere?")
+                                .isActive(true)
+                                .build(),
+                        ConversationScenario.builder()
+                                .title("Self Introduction & Hobbies")
+                                .slug("self-introduction-hobbies")
+                                .levelMin(100)
+                                .levelMax(600)
+                                .aiRole("Language Partner")
+                                .userRole("English Learner")
+                                .description("Làm quen, giới thiệu bản thân và trò chuyện về sở thích cá nhân.")
+                                .systemPromptTemplate("You are a friendly English exchange partner chatting with a learner about their hobbies and life.")
+                                .fallbackLinesJson("[\"Nice to meet you! Where are you from?\", \"What do you enjoy doing on weekends?\", \"That sounds so fun!\"]")
+                                .openingLine("Hi there! Nice to meet you. Could you briefly introduce yourself?")
+                                .isActive(true)
+                                .build(),
+                        ConversationScenario.builder()
+                                .title("Airport Check-in")
+                                .slug("airport-check-in")
+                                .levelMin(150)
+                                .levelMax(700)
+                                .aiRole("Airline Agent")
+                                .userRole("Passenger")
+                                .description("Làm thủ tục chuyến bay và gửi hành lý tại quầy sân bay.")
+                                .systemPromptTemplate("You are an airline customer service agent at the check-in desk checking passports and luggage.")
+                                .fallbackLinesJson("[\"May I see your passport, please?\", \"Are you checking any bags today?\", \"Here is your boarding pass. Have a safe flight!\"]")
+                                .openingLine("Hello! Welcome to SkyWings. Where are you flying to today?")
+                                .isActive(true)
+                                .build()
+                );
+                scenarioRepository.saveAll(seeds);
+            }
+        } catch (Exception e) {
+            log.warn("[VoiceConversation] Không thể tự động seed kịch bản: {}", e.getMessage());
+        }
+    }
+
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public VoiceStatusResponse getStatus(Users user) {
         Long userId = user.getId();
 
-        boolean unlocked = quotaService.isFeatureUnlocked(userId);
+        boolean unlocked = true;
         long learnedCards = quotaService.getLearnedCardsCount(userId);
-        int remainingQuota = quotaService.getRemainingQuota(userId);
+
+        int maxDailyTurns = 999;
+        int usedTurns = quotaService.getUsedQuota(userId);
+        int remainingTurns = 999;
+        boolean canStart = true;
         String nextReset = quotaService.getNextResetAtIso(userId);
 
         UserConversationLevel userLvl = levelService.getOrCreateLevel(userId, user);
@@ -79,8 +150,12 @@ public class VoiceConversationServiceImpl implements VoiceConversationService {
                 unlocked,
                 learnedCards,
                 20L,
-                remainingQuota,
-                props.getMaxSessionsPerDay(),
+                remainingTurns, // remainingQuota
+                maxDailyTurns,  // maxSessionsPerDay
+                maxDailyTurns,  // maxDailyTurns
+                usedTurns,      // usedTurns
+                remainingTurns, // remainingTurns
+                canStart,       // canStart
                 nextReset,
                 userLvl.getCurrentLevel(),
                 userLvl.getInitialBandMin(),
@@ -94,12 +169,16 @@ public class VoiceConversationServiceImpl implements VoiceConversationService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public List<ConversationScenarioDto> getScenarios(Users user) {
         UserConversationLevel userLvl = levelService.getOrCreateLevel(user.getId(), user);
-        List<ConversationScenario> scenarios = scenarioRepository.findActiveForLevel(userLvl.getCurrentLevel());
+        int level = userLvl != null ? userLvl.getCurrentLevel() : 200;
+        List<ConversationScenario> scenarios = scenarioRepository.findActiveForLevel(level);
         if (scenarios.isEmpty()) {
             scenarios = scenarioRepository.findByIsActiveTrue();
+        }
+        if (scenarios.isEmpty()) {
+            scenarios = scenarioRepository.findAll();
         }
         return scenarios.stream()
                 .map(s -> new ConversationScenarioDto(
@@ -112,7 +191,7 @@ public class VoiceConversationServiceImpl implements VoiceConversationService {
                         s.getUserRole(),
                         s.getDescription(),
                         s.getOpeningLine(),
-                        s.getIsActive()
+                        s.getIsActive() != null ? s.getIsActive() : true
                 ))
                 .collect(Collectors.toList());
     }
@@ -134,6 +213,7 @@ public class VoiceConversationServiceImpl implements VoiceConversationService {
             UserConversationLevel lvl = levelService.getOrCreateLevel(user.getId(), user);
             List<ConversationScenario> available = scenarioRepository.findActiveForLevel(lvl.getCurrentLevel());
             if (available.isEmpty()) available = scenarioRepository.findByIsActiveTrue();
+            if (available.isEmpty()) available = scenarioRepository.findAll();
             if (available.isEmpty()) throw new IllegalStateException("Không có kịch bản hội thoại khả dụng.");
             scenario = available.get(new Random().nextInt(available.size()));
         }
@@ -219,14 +299,31 @@ public class VoiceConversationServiceImpl implements VoiceConversationService {
 
         // Kiểm tra lượt hợp lệ:
         boolean isValid = req.transcript() != null && !req.transcript().isBlank();
-        if (isValid && req.sttConfidence() != null && req.sttConfidence().doubleValue() > 0.0) {
+        List<ConversationTurn> turns = turnRepository.findBySessionIdOrderByTurnNumberAsc(session.getId());
+        int nextTurnNumber = turns.isEmpty() ? 1 : turns.get(turns.size() - 1).getTurnNumber() + 1;
+
+        if (!isValid) {
+            log.info("[VoiceConversation] Nhận lượt thoại rỗng (AUDIO_EMPTY) từ user {} trong session {}", user.getUsername(), publicId);
+            List<ConversationTargetWord> targetWords = targetWordRepository.findBySessionId(session.getId());
+            List<VoiceTargetWordDto> updatedWordDtos = mapTargetWordsToDtos(targetWords);
+            return new VoiceTurnResponse(
+                    nextTurnNumber,
+                    "I didn't quite catch that. Could you please say that again?",
+                    Collections.emptyList(),
+                    null,
+                    "Could you please repeat that?",
+                    updatedWordDtos,
+                    session.getValidTurnCount(),
+                    false,
+                    "AUDIO_EMPTY"
+            );
+        }
+
+        if (req.sttConfidence() != null && req.sttConfidence().doubleValue() > 0.0) {
             if (req.sttConfidence().doubleValue() < props.getMinSttConfidence() && Boolean.TRUE.equals(req.isRetry())) {
                 isValid = false; // Lượt nói lại không bị trừ điểm và không tính lượt
             }
         }
-
-        List<ConversationTurn> turns = turnRepository.findBySessionIdOrderByTurnNumberAsc(session.getId());
-        int nextTurnNumber = turns.isEmpty() ? 1 : turns.get(turns.size() - 1).getTurnNumber() + 1;
 
         if (isValid) {
             session.setValidTurnCount(session.getValidTurnCount() + 1);
@@ -248,15 +345,27 @@ public class VoiceConversationServiceImpl implements VoiceConversationService {
                 .map(t -> t.getRole() + ": " + t.getTranscript())
                 .collect(Collectors.toList());
 
-        // Gọi VoiceAiService với Gemini và fallback
-        VoiceAiService.TurnAiOutput aiOutput = voiceAiService.generateTurnResponse(
-                session.getScenario(),
-                session.getLevelAtStart(),
-                req.transcript(),
-                targetWordStrings,
-                whitelist,
-                history
-        );
+        // Gọi VoiceAiService với Gemini và fallback an toàn
+        VoiceAiService.TurnAiOutput aiOutput;
+        try {
+            aiOutput = voiceAiService.generateTurnResponse(
+                    session.getScenario(),
+                    session.getLevelAtStart(),
+                    req.transcript(),
+                    targetWordStrings,
+                    whitelist,
+                    history
+            );
+        } catch (Exception e) {
+            log.error("[VoiceConversation] Lỗi khi gọi VoiceAiService: {}", e.getMessage(), e);
+            aiOutput = VoiceAiService.TurnAiOutput.builder()
+                    .aiReply("That sounds interesting! Could you tell me a little more about that?")
+                    .grammarErrors(Collections.emptyList())
+                    .correctedSentence(null)
+                    .quickSuggestion("I would love to learn more.")
+                    .tokensUsed(0)
+                    .build();
+        }
 
         if (aiOutput.getTokensUsed() != null) {
             session.setAiTokensUsed(session.getAiTokensUsed() + aiOutput.getTokensUsed());

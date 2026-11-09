@@ -27,9 +27,13 @@ export const VoiceConversationPage: React.FC = () => {
     queryFn: voiceConversationApi.getScenarios,
   });
 
-  const status = statusResp?.data;
-  const scenarios = useMemo(() => scenariosResp?.data || [], [scenariosResp?.data]);
+  const status = (statusResp?.data as any)?.data || statusResp?.data;
+  const scenarios = useMemo(() => {
+    const raw = (scenariosResp?.data as any)?.data || scenariosResp?.data;
+    return Array.isArray(raw) ? raw : [];
+  }, [scenariosResp?.data]);
 
+  // Tự động chọn kịch bản đầu tiên khi tải xong
   useEffect(() => {
     if (scenarios.length > 0 && !selectedScenarioSlug) {
       setSelectedScenarioSlug(scenarios[0].slug);
@@ -42,6 +46,7 @@ export const VoiceConversationPage: React.FC = () => {
     onSuccess: (res: { data: VoiceStartResponse }) => {
       setActiveSession(res.data);
       message.success('Đã kết nối cuộc gọi với AI thành công!');
+      queryClient.invalidateQueries({ queryKey: ['voice-conversation', 'status'] });
     },
     onError: (err: any) => {
       message.error(err.response?.data?.message || 'Không thể bắt đầu phiên thoại.');
@@ -79,6 +84,10 @@ export const VoiceConversationPage: React.FC = () => {
   });
 
   const handleStart = () => {
+    if (!selectedScenarioSlug) {
+      message.warning('Vui lòng chọn một tình huống giao tiếp trước khi bắt đầu.');
+      return;
+    }
     if (!micConsentAccepted) {
       message.warning('Vui lòng xác nhận đồng ý điều khoản Micro trước khi bắt đầu.');
       return;
@@ -174,7 +183,7 @@ export const VoiceConversationPage: React.FC = () => {
               <div>
                 <span className="text-xs font-bold text-slate-400 ">Lượt Còn Lại Hôm Nay</span>
                 <div className="text-2xl font-black text-slate-800">
-                  {status?.remainingQuota ?? 3}/{status?.maxSessionsPerDay ?? 3} lượt
+                  {status?.remainingTurns ?? status?.remainingQuota ?? 999} lượt
                 </div>
               </div>
             </div>
@@ -265,7 +274,7 @@ export const VoiceConversationPage: React.FC = () => {
               type="primary"
               size="large"
               loading={startMutation.isPending}
-              disabled={(status?.remainingQuota ?? 0) <= 0 || !micConsentAccepted}
+              disabled={!selectedScenarioSlug || !micConsentAccepted}
               onClick={handleStart}
               className="rounded-2xl font-black bg-teal-600 hover:bg-teal-700 h-14 px-10 text-lg shadow-lg shadow-teal-600/30 flex items-center gap-3 mx-auto"
             >
@@ -273,11 +282,6 @@ export const VoiceConversationPage: React.FC = () => {
               Bắt Đầu Cuộc Gọi Với AI
               <ArrowRight className="w-5 h-5" />
             </Button>
-            {(status?.remainingQuota ?? 0) <= 0 && (
-              <p className="text-xs text-rose-500 font-semibold mt-2">
-                Bạn đã sử dụng hết 3 lượt của hôm nay. Lượt mới sẽ được làm mới vào 00:00!
-              </p>
-            )}
           </div>
         </div>
       )}

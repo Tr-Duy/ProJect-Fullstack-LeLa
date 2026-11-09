@@ -15,7 +15,12 @@ public interface ConversationScenarioRepository extends JpaRepository<Conversati
 
     List<ConversationScenario> findByIsActiveTrue();
 
-    @Query("SELECT s FROM ConversationScenario s WHERE s.isActive = true AND s.levelMin <= :level AND s.levelMax >= :level")
+    @Query("""
+        SELECT s FROM ConversationScenario s 
+        WHERE (s.isActive IS NULL OR s.isActive = true) 
+          AND (s.levelMin IS NULL OR s.levelMin <= :level) 
+          AND (s.levelMax IS NULL OR s.levelMax >= :level)
+    """)
     List<ConversationScenario> findActiveForLevel(@Param("level") Integer level);
 
     @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"topic"})

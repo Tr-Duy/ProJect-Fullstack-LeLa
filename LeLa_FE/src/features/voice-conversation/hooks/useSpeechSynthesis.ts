@@ -30,10 +30,20 @@ export function useSpeechSynthesis() {
       utterance.onstart = () => setIsSpeaking(true);
       utterance.onend = () => {
         setIsSpeaking(false);
+        try {
+          window.speechSynthesis.cancel();
+        } catch {
+          // ignore
+        }
         onEnd?.();
       };
       utterance.onerror = () => {
         setIsSpeaking(false);
+        try {
+          window.speechSynthesis.cancel();
+        } catch {
+          // ignore
+        }
         onEnd?.();
       };
 

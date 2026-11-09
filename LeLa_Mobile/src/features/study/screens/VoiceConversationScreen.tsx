@@ -14,11 +14,13 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { Audio } from 'expo-av';
 import * as Speech from 'expo-speech';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../../navigation/RootNavigator';
 import { voiceService } from '../services/voiceService';
+import { useTheme } from '../../../context/ThemeContext';
 import {
   VoiceStartResponse,
   VoiceTurnResponse,
@@ -27,6 +29,13 @@ import {
 
 type NavProp = NativeStackNavigationProp<RootStackParamList, 'VoiceConversation'>;
 type RouteProps = RouteProp<RootStackParamList, 'VoiceConversation'>;
+
+export type TurnTakingState =
+  | 'IDLE'
+  | 'AI_SPEAKING'
+  | 'WAITING_BUFFER'
+  | 'USER_LISTENING'
+  | 'PROCESSING';
 
 interface MessageItem {
   id: string;
@@ -39,6 +48,7 @@ interface MessageItem {
 }
 
 export const VoiceConversationScreen: React.FC = () => {
+  const { colors, isDark } = useTheme();
   const navigation = useNavigation<NavProp>();
   const route = useRoute<RouteProps>();
   const { initialSession, scenarioTitle } = route.params || {};
@@ -52,22 +62,48 @@ export const VoiceConversationScreen: React.FC = () => {
   const [isAiResponding, setIsAiResponding] = useState<boolean>(false);
   const [isFinishing, setIsFinishing] = useState<boolean>(false);
 
+  // FSM State quản lý luồng âm thanh đàm thoại 2 chiều
+  const [turnState, setTurnState] = useState<TurnTakingState>('IDLE');
+  const [recordingSeconds, setRecordingSeconds] = useState<number>(0);
+
   // Trạng thái nhập liệu và giọng nói
   const [inputText, setInputText] = useState<string>('');
   const [isKeyboardMode, setIsKeyboardMode] = useState<boolean>(false);
-  const [isRecording, setIsRecording] = useState<boolean>(false);
   const [isSpeakingAi, setIsSpeakingAi] = useState<boolean>(false);
+
+  // Refs quản lý Audio Session & Hardware
+  const recordingRef = useRef<Audio.Recording | null>(null);
+  const recordingStartTimeRef = useRef<number>(0);
+  const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const waitingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const turnStartTimeRef = useRef<number>(Date.now());
+  const scrollViewRef = useRef<any>(null);
 
   // Animation hiệu ứng xung nhịp nút Micro
   const pulseAnim = useRef(new Animated.Value(1)).current;
-  const scrollViewRef = useRef<any>(null);
-  const turnStartTimeRef = useRef<number>(Date.now());
 
-  // 1. Khởi tạo phiên đàm thoại và phát lời chào AI
+  // 1. Cấu hình Audio Mode chuẩn cho đàm thoại 2 chiều (Không chiếm quyền độc chiếm)
+  const configureAudioSession = async () => {
+    try {
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+        staysActiveInBackground: false,
+        shouldDuckAndroid: true,
+        playThroughEarpieceAndroid: false,
+      });
+    } catch (error) {
+      console.warn('[VoiceConversation] Audio.setAudioModeAsync error:', error);
+    }
+  };
+
+  // 2. Khởi tạo phiên đàm thoại và phát lời chào AI
   useEffect(() => {
     let isMounted = true;
 
     const initConversation = async () => {
+      await configureAudioSession();
+
       let currentSession = initialSession;
       if (!currentSession) {
         try {
@@ -108,56 +144,253 @@ export const VoiceConversationScreen: React.FC = () => {
 
     return () => {
       isMounted = false;
-      Speech.stop();
+      if (waitingTimerRef.current) clearTimeout(waitingTimerRef.current);
+      if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+      if (recordingRef.current) {
+        recordingRef.current.stopAndUnloadAsync().catch(() => {});
+        recordingRef.current = null;
+      }
+      Speech.stop().catch(() => {});
     };
   }, [initialSession]);
 
-  // 2. Quản lý hiệu ứng xung nhịp (Pulsing Animation) của Micro
+  // 3. Quản lý hiệu ứng xung nhịp (Pulsing Animation) & Bộ đếm giây của Micro
   useEffect(() => {
     let loopAnim: Animated.CompositeAnimation | null = null;
-    if (isRecording) {
+    if (turnState === 'USER_LISTENING') {
       loopAnim = Animated.loop(
         Animated.sequence([
           Animated.timing(pulseAnim, {
-            toValue: 1.25,
-            duration: 500,
+            toValue: 1.28,
+            duration: 600,
             useNativeDriver: true,
           }),
           Animated.timing(pulseAnim, {
             toValue: 1,
-            duration: 500,
+            duration: 600,
             useNativeDriver: true,
           }),
         ])
       );
       loopAnim.start();
+
+      setRecordingSeconds(0);
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingSeconds((prev) => prev + 1);
+      }, 1000);
     } else {
       pulseAnim.setValue(1);
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+        recordingTimerRef.current = null;
+      }
     }
 
     return () => {
       if (loopAnim) loopAnim.stop();
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+        recordingTimerRef.current = null;
+      }
     };
-  }, [isRecording]);
+  }, [turnState]);
 
-  // 3. Hàm phát âm bản xứ câu thoại AI
-  const playSpeech = (text: string) => {
+  // 4. Phát âm thanh bản xứ câu thoại AI với Turn-Taking State Machine và khoảng đệm 300ms
+  const playSpeech = async (text: string) => {
+    if (!text) return;
+
     try {
-      Speech.stop();
+      // Dọn dẹp recording cũ nếu có trước khi phát âm thanh AI
+      if (recordingRef.current) {
+        try {
+          await recordingRef.current.stopAndUnloadAsync();
+        } catch {}
+        recordingRef.current = null;
+      }
+
+      await configureAudioSession();
+      await Speech.stop();
+
+      setTurnState('AI_SPEAKING');
       setIsSpeakingAi(true);
+
       Speech.speak(text, {
         language: 'en-US',
         rate: 0.95,
-        onDone: () => setIsSpeakingAi(false),
-        onStopped: () => setIsSpeakingAi(false),
-        onError: () => setIsSpeakingAi(false),
+        onDone: () => {
+          setIsSpeakingAi(false);
+          setTurnState('WAITING_BUFFER');
+          if (waitingTimerRef.current) clearTimeout(waitingTimerRef.current);
+          // Khoảng đệm an toàn 300ms để Android giải phóng hoàn toàn Audio Track
+          waitingTimerRef.current = setTimeout(() => {
+            setTurnState('IDLE');
+          }, 300);
+        },
+        onStopped: () => {
+          setIsSpeakingAi(false);
+          setTurnState('IDLE');
+        },
+        onError: (err) => {
+          console.warn('[VoiceConversation] Speech.speak onError:', err);
+          setIsSpeakingAi(false);
+          setTurnState('IDLE');
+        },
       });
     } catch (e) {
+      console.warn('[VoiceConversation] playSpeech error:', e);
       setIsSpeakingAi(false);
+      setTurnState('IDLE');
     }
   };
 
-  // 4. Xử lý gửi lượt thoại
+  // 5. Bắt đầu ghi nhận giọng nói người dùng với expo-av
+  const startRecording = async () => {
+    if (turnState === 'AI_SPEAKING') {
+      await Speech.stop();
+      setIsSpeakingAi(false);
+    }
+
+    try {
+      // Dọn dẹp instance cũ hoàn toàn để tránh rò rỉ bộ nhớ
+      if (recordingRef.current) {
+        try {
+          await recordingRef.current.stopAndUnloadAsync();
+        } catch {}
+        recordingRef.current = null;
+      }
+
+      const { status } = await Audio.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Cần quyền Micro', 'Vui lòng cấp quyền micro để sử dụng tính năng luyện nói.');
+        return;
+      }
+
+      await configureAudioSession();
+
+      const recording = new Audio.Recording();
+      await recording.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
+      await recording.startAsync();
+
+      recordingRef.current = recording;
+      recordingStartTimeRef.current = Date.now();
+      setTurnState('USER_LISTENING');
+    } catch (error) {
+      console.error('[VoiceConversation] startRecording error:', error);
+      setTurnState('IDLE');
+      Alert.alert('Lỗi micro', 'Không thể khởi động micro. Vui lòng thử lại.');
+    }
+  };
+
+  // 6. Dừng ghi âm và kiểm tra điều kiện tối thiểu 0.6 giây
+  const stopRecording = async () => {
+    if (!recordingRef.current) {
+      setTurnState('IDLE');
+      return;
+    }
+
+    const durationMs = Date.now() - recordingStartTimeRef.current;
+
+    // Bộ đếm thời gian tối thiểu: nếu bản thu âm < 0.6 giây, coi như tiếng động phụ
+    if (durationMs < 600) {
+      try {
+        await recordingRef.current.stopAndUnloadAsync();
+      } catch {}
+      recordingRef.current = null;
+      setTurnState('IDLE');
+      Alert.alert(
+        'Bản ghi quá ngắn',
+        'Bản thu âm của bạn dưới 0.6 giây. Hãy giữ nút Micro và nói câu hoàn chỉnh nhé!'
+      );
+      return;
+    }
+
+    try {
+      setTurnState('PROCESSING');
+      await recordingRef.current.stopAndUnloadAsync();
+      const uri = recordingRef.current.getURI();
+      recordingRef.current = null;
+
+      console.log('[VoiceConversation] Ghi âm thành công, URI:', uri, 'Thời lượng:', durationMs);
+
+      // Nếu người dùng đã gõ sẵn văn bản:
+      if (inputText.trim().length > 0) {
+        await handleSendMessage(inputText.trim());
+      } else {
+        // Kiểm tra câu gợi ý gần nhất từ AI hoặc từ mục tiêu
+        const lastAiMsg = [...messages].reverse().find((m) => m.sender === 'AI');
+        const fallbackText =
+          lastAiMsg?.quickSuggestion ||
+          targetWords.find((tw) => !tw.usedCorrectly)?.word;
+
+        if (fallbackText) {
+          Alert.alert(
+            'Xác nhận câu đàm thoại',
+            `Bạn có muốn gửi câu trả lời: "${fallbackText}" lên AI Tutor không?`,
+            [
+              {
+                text: 'Nhập tay',
+                style: 'cancel',
+                onPress: () => {
+                  setTurnState('IDLE');
+                  setIsKeyboardMode(true);
+                },
+              },
+              {
+                text: 'Gửi câu này',
+                style: 'default',
+                onPress: () => handleSendMessage(fallbackText),
+              },
+            ]
+          );
+        } else {
+          Alert.prompt
+            ? Alert.prompt(
+                'Nội dung đàm thoại',
+                'Nhập câu tiếng Anh bạn vừa nói để AI đánh giá:',
+                (text) => {
+                  if (text && text.trim()) {
+                    handleSendMessage(text.trim());
+                  } else {
+                    setTurnState('IDLE');
+                  }
+                }
+              )
+            : (() => {
+                setTurnState('IDLE');
+                setIsKeyboardMode(true);
+              })();
+        }
+      }
+    } catch (error) {
+      console.error('[VoiceConversation] stopRecording error:', error);
+      setTurnState('IDLE');
+      recordingRef.current = null;
+    }
+  };
+
+  // 7. Xử lý chạm nút Micro chính
+  const handleToggleRecord = () => {
+    if (turnState === 'PROCESSING' || isAiResponding) return;
+
+    if (turnState === 'AI_SPEAKING') {
+      // AI đang nói: ngắt lời AI, tạo khoảng đệm 250ms rồi bắt đầu thu âm
+      Speech.stop();
+      setIsSpeakingAi(false);
+      setTurnState('WAITING_BUFFER');
+      setTimeout(() => {
+        startRecording();
+      }, 250);
+      return;
+    }
+
+    if (turnState === 'USER_LISTENING') {
+      stopRecording();
+    } else {
+      startRecording();
+    }
+  };
+
+  // 8. Xử lý gửi lượt thoại lên Backend Spring Boot
   const handleSendMessage = async (textToSend?: string) => {
     const content = (textToSend || inputText).trim();
     if (!content || !session || isAiResponding) return;
@@ -166,7 +399,7 @@ export const VoiceConversationScreen: React.FC = () => {
     Speech.stop();
     setIsSpeakingAi(false);
 
-    // 1. Thêm tin nhắn của User vào khung chat
+    // Thêm tin nhắn của User vào khung chat
     const userMsgId = `user_${Date.now()}`;
     const userMessage: MessageItem = {
       id: userMsgId,
@@ -178,6 +411,7 @@ export const VoiceConversationScreen: React.FC = () => {
     setMessages((prev) => [...prev, userMessage]);
     setInputText('');
     setIsAiResponding(true);
+    setTurnState('PROCESSING');
 
     const elapsedSeconds = Math.max(1, Math.round((Date.now() - turnStartTimeRef.current) / 1000));
     turnStartTimeRef.current = Date.now();
@@ -188,7 +422,6 @@ export const VoiceConversationScreen: React.FC = () => {
     }, 100);
 
     try {
-      // 2. Gửi lên Backend Spring Boot
       const turnResponse: VoiceTurnResponse = await voiceService.sendTurn(
         session.publicId,
         content,
@@ -214,7 +447,7 @@ export const VoiceConversationScreen: React.FC = () => {
         )
       );
 
-      // 3. Thêm phản hồi của AI vào khung chat
+      // Thêm phản hồi của AI vào khung chat
       const aiMessage: MessageItem = {
         id: `ai_${Date.now()}`,
         sender: 'AI',
@@ -224,7 +457,7 @@ export const VoiceConversationScreen: React.FC = () => {
       setMessages((prev) => [...prev, aiMessage]);
       setCurrentTurn(turnResponse.turnNumber || currentTurn + 1);
 
-      // 4. Phát âm thanh đọc phản hồi AI
+      // Phát âm thanh đọc phản hồi AI qua turn-taking
       playSpeech(turnResponse.aiReply);
 
       // Cuộn xuống tin nhắn mới
@@ -246,27 +479,13 @@ export const VoiceConversationScreen: React.FC = () => {
         'Lỗi gửi tin nhắn',
         error?.response?.data?.message || 'AI Tutor đang bận. Vui lòng thử gửi lại câu nói của bạn.'
       );
+      setTurnState('IDLE');
     } finally {
       setIsAiResponding(false);
     }
   };
 
-  // 5. Xử lý mô phỏng thu âm giọng nói (Speech-to-Text)
-  const handleToggleRecord = () => {
-    if (isRecording) {
-      setIsRecording(false);
-      // Kết thúc thu âm -> tự động gửi tin nhắn nếu có nội dung
-      if (inputText.trim().length > 0) {
-        handleSendMessage();
-      }
-    } else {
-      // Bắt đầu ghi nhận giọng nói
-      Speech.stop();
-      setIsRecording(true);
-    }
-  };
-
-  // 6. Kết thúc cuộc gọi và chuyển sang màn hình Báo cáo
+  // 9. Kết thúc cuộc gọi và chuyển sang màn hình Báo cáo
   const handleFinishSession = () => {
     Alert.alert(
       'Kết thúc đàm thoại',
@@ -281,7 +500,14 @@ export const VoiceConversationScreen: React.FC = () => {
             try {
               setIsFinishing(true);
               Speech.stop();
+              if (recordingRef.current) {
+                try {
+                  await recordingRef.current.stopAndUnloadAsync();
+                } catch {}
+                recordingRef.current = null;
+              }
               const report = await voiceService.finishSession(session.publicId, 'COMFORTABLE');
+              voiceService.getVoiceStatus().catch(() => {});
 
               navigation.replace('VoiceReport', {
                 report,
@@ -302,7 +528,7 @@ export const VoiceConversationScreen: React.FC = () => {
     );
   };
 
-  // 7. Thoát giữa chừng
+  // 10. Thoát giữa chừng
   const handleExit = () => {
     Alert.alert(
       'Thoát phòng luyện nói?',
@@ -314,6 +540,12 @@ export const VoiceConversationScreen: React.FC = () => {
           style: 'destructive',
           onPress: async () => {
             Speech.stop();
+            if (recordingRef.current) {
+              try {
+                await recordingRef.current.stopAndUnloadAsync();
+              } catch {}
+              recordingRef.current = null;
+            }
             if (session) {
               await voiceService.abandonSession(session.publicId);
             }
@@ -324,30 +556,91 @@ export const VoiceConversationScreen: React.FC = () => {
     );
   };
 
+  // Gợi ý nhanh từ câu gần nhất của AI
+  const lastAiSuggestion = [...messages].reverse().find((m) => m.sender === 'AI')?.quickSuggestion;
+
+  // Lấy nội dung hiển thị nút Micro theo FSM State
+  const getMicButtonUi = () => {
+    if (turnState === 'PROCESSING' || isAiResponding) {
+      return {
+        bgColor: '#64748b',
+        icon: <ActivityIndicator size="small" color="#ffffff" />,
+        text: 'AI đang phân tích câu nói của bạn...',
+        ringColor: 'rgba(100, 116, 139, 0.2)',
+      };
+    }
+    if (turnState === 'AI_SPEAKING') {
+      return {
+        bgColor: '#8B5CF6',
+        icon: <Ionicons name="volume-high" size={28} color="#ffffff" />,
+        text: 'AI Tutor đang nói... (Chạm để ngắt lời)',
+        ringColor: 'rgba(139, 92, 246, 0.3)',
+      };
+    }
+    if (turnState === 'WAITING_BUFFER') {
+      return {
+        bgColor: '#D97706',
+        icon: <Ionicons name="mic-outline" size={28} color="#ffffff" />,
+        text: 'Đang kết nối âm thanh...',
+        ringColor: 'rgba(217, 119, 6, 0.25)',
+      };
+    }
+    if (turnState === 'USER_LISTENING') {
+      return {
+        bgColor: '#dc2626',
+        icon: <Ionicons name="stop" size={28} color="#ffffff" />,
+        text: `Đang nghe bạn nói (${recordingSeconds}s)... Chạm để dừng & gửi`,
+        ringColor: 'rgba(220, 38, 38, 0.35)',
+      };
+    }
+    return {
+      bgColor: '#16a34a',
+      icon: <Ionicons name="mic" size={30} color="#ffffff" />,
+      text: 'Nhấn vào Micro để bắt đầu nói',
+      ringColor: 'rgba(22, 163, 74, 0.25)',
+    };
+  };
+
+  const micUi = getMicButtonUi();
+
   if (loading) {
     return (
-      <SafeAreaView style={styles.centerContainer}>
+      <SafeAreaView style={[styles.centerContainer, { backgroundColor: colors.background }]}>
         <ActivityIndicator size="large" color="#16a34a" />
-        <Text style={styles.loadingText}>Đang kết nối phòng đàm thoại AI Tutor...</Text>
+        <Text style={[styles.loadingText, { color: colors.subtext }]}>
+          Đang kết nối phòng đàm thoại AI Tutor...
+        </Text>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]} edges={['top']}>
       {/* 1. Header cuộc gọi đàm thoại */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.headerBackBtn} onPress={handleExit} activeOpacity={0.7}>
-          <Ionicons name="close" size={22} color="#334155" />
+      <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+        <TouchableOpacity
+          style={[styles.headerBackBtn, { backgroundColor: isDark ? '#334155' : '#f1f5f9' }]}
+          onPress={handleExit}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="close" size={22} color={colors.text} />
         </TouchableOpacity>
 
         <View style={styles.headerTitleBox}>
-          <Text style={styles.headerTitle} numberOfLines={1}>
+          <Text style={[styles.headerTitle, { color: colors.text }]} numberOfLines={1}>
             {session?.scenarioTitle || scenarioTitle || 'Luyện nói AI Tutor'}
           </Text>
           <View style={styles.liveIndicatorRow}>
-            <View style={styles.liveDot} />
-            <Text style={styles.liveText}>AI Online • Lượt {currentTurn}/{session?.maxTurns || 8}</Text>
+            <View
+              style={[
+                styles.liveDot,
+                { backgroundColor: turnState === 'USER_LISTENING' ? '#dc2626' : '#16a34a' },
+              ]}
+            />
+            <Text style={[styles.liveText, { color: colors.subtext }]}>
+              {turnState === 'USER_LISTENING' ? 'Đang thu âm • ' : 'AI Online • '}
+              Lượt {currentTurn}/{session?.maxTurns || 8}
+            </Text>
           </View>
         </View>
 
@@ -370,20 +663,22 @@ export const VoiceConversationScreen: React.FC = () => {
 
       {/* 2. Dải từ vựng mục tiêu (Target Words Bar) */}
       {targetWords.length > 0 && (
-        <View style={styles.targetWordsBar}>
-          <Text style={styles.targetWordsLabel}>Từ mục tiêu:</Text>
+        <View style={[styles.targetWordsBar, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+          <Text style={[styles.targetWordsLabel, { color: colors.subtext }]}>Từ mục tiêu:</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.targetWordsScroll}>
             {targetWords.map((tw, idx) => (
               <View
                 key={tw.flashcardId || idx}
                 style={[
                   styles.targetWordPill,
-                  tw.usedCorrectly && styles.targetWordPillUsed,
+                  { backgroundColor: isDark ? '#1E293B' : '#f1f5f9', borderColor: colors.border },
+                  tw.usedCorrectly && (isDark ? styles.targetWordPillUsedDark : styles.targetWordPillUsed),
                 ]}
               >
                 <Text
                   style={[
                     styles.targetWordPillText,
+                    { color: colors.text },
                     tw.usedCorrectly && styles.targetWordPillTextUsed,
                   ]}
                 >
@@ -416,7 +711,7 @@ export const VoiceConversationScreen: React.FC = () => {
               ]}
             >
               {isAI && (
-                <View style={styles.aiAvatar}>
+                <View style={[styles.aiAvatar, { backgroundColor: isDark ? '#3B0764' : '#F3E8FF', borderColor: isDark ? '#7C3AED' : '#D8B4FE' }]}>
                   <Ionicons name="sparkles" size={18} color="#8B5CF6" />
                 </View>
               )}
@@ -425,10 +720,12 @@ export const VoiceConversationScreen: React.FC = () => {
                 <View
                   style={[
                     styles.bubble,
-                    isAI ? styles.bubbleAi : styles.bubbleUser,
+                    isAI
+                      ? [styles.bubbleAi, { backgroundColor: colors.card, borderColor: colors.border }]
+                      : styles.bubbleUser,
                   ]}
                 >
-                  <Text style={[styles.bubbleText, isAI ? styles.bubbleTextAi : styles.bubbleTextUser]}>
+                  <Text style={[styles.bubbleText, isAI ? [styles.bubbleTextAi, { color: colors.text }] : styles.bubbleTextUser]}>
                     {msg.text}
                   </Text>
 
@@ -442,7 +739,7 @@ export const VoiceConversationScreen: React.FC = () => {
                       <Ionicons
                         name={isSpeakingAi ? 'volume-high' : 'volume-medium-outline'}
                         size={18}
-                        color="#16a34a"
+                        color={isDark ? '#A78BFA' : '#16a34a'}
                       />
                     </TouchableOpacity>
                   )}
@@ -450,14 +747,26 @@ export const VoiceConversationScreen: React.FC = () => {
 
                 {/* Thẻ gợi ý / Sửa lỗi ngữ pháp của AI bên dưới câu nói của user */}
                 {!isAI && (msg.correctedSentence || (msg.grammarErrors && msg.grammarErrors.length > 0)) && (
-                  <View style={styles.correctionCard}>
+                  <View
+                    style={[
+                      styles.correctionCard,
+                      {
+                        backgroundColor: isDark ? '#2E1065' : '#FAF5FF',
+                        borderColor: isDark ? '#6B21A8' : '#E9D5FF',
+                      },
+                    ]}
+                  >
                     <View style={styles.correctionHeader}>
                       <Ionicons name="sparkles" size={14} color="#8B5CF6" />
-                      <Text style={styles.correctionTitle}>Góp ý ngữ pháp từ AI:</Text>
+                      <Text style={[styles.correctionTitle, { color: isDark ? '#C084FC' : '#7C3AED' }]}>
+                        Góp ý ngữ pháp từ AI:
+                      </Text>
                     </View>
 
                     {msg.correctedSentence ? (
-                      <Text style={styles.correctedText}>"{msg.correctedSentence}"</Text>
+                      <Text style={[styles.correctedText, { color: isDark ? '#E9D5FF' : '#4C1D95' }]}>
+                        "{msg.correctedSentence}"
+                      </Text>
                     ) : null}
 
                     {msg.grammarErrors && msg.grammarErrors.length > 0 ? (
@@ -490,12 +799,14 @@ export const VoiceConversationScreen: React.FC = () => {
         {/* Trạng thái AI đang suy nghĩ */}
         {isAiResponding && (
           <View style={[styles.messageRow, styles.messageRowAi]}>
-            <View style={styles.aiAvatar}>
-              <Ionicons name="sparkles" size={16} color="#16a34a" />
+            <View style={[styles.aiAvatar, { backgroundColor: isDark ? '#3B0764' : '#F3E8FF', borderColor: isDark ? '#7C3AED' : '#D8B4FE' }]}>
+              <Ionicons name="sparkles" size={16} color="#8B5CF6" />
             </View>
-            <View style={[styles.bubble, styles.bubbleAi, styles.aiThinkingBubble]}>
-              <ActivityIndicator size="small" color="#16a34a" />
-              <Text style={styles.aiThinkingText}>AI Tutor đang lắng nghe và suy nghĩ...</Text>
+            <View style={[styles.bubble, styles.bubbleAi, styles.aiThinkingBubble, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <ActivityIndicator size="small" color="#8B5CF6" />
+              <Text style={[styles.aiThinkingText, { color: colors.subtext }]}>
+                AI Tutor đang lắng nghe và phân tích...
+              </Text>
             </View>
           </View>
         )}
@@ -504,13 +815,40 @@ export const VoiceConversationScreen: React.FC = () => {
       {/* 4. Thanh tương tác giọng nói ở chân màn hình (KeyboardAvoidingView) */}
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.footerContainer}
+        style={[styles.footerContainer, { backgroundColor: colors.card, borderTopColor: colors.border }]}
       >
+        {/* Gợi ý trả lời nhanh dạng pill nếu có */}
+        {!isKeyboardMode && lastAiSuggestion && turnState !== 'USER_LISTENING' && (
+          <TouchableOpacity
+            style={[
+              styles.quickSuggestionBar,
+              {
+                backgroundColor: isDark ? '#3B0764' : '#F5F3FF',
+                borderColor: isDark ? '#7C3AED' : '#DDD6FE',
+              },
+            ]}
+            onPress={() => handleSendMessage(lastAiSuggestion)}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="sparkles" size={14} color="#8B5CF6" />
+            <Text
+              style={[
+                styles.quickSuggestionBarText,
+                { color: isDark ? '#E9D5FF' : '#6D28D9' },
+              ]}
+              numberOfLines={1}
+            >
+              Gợi ý đáp lại: "{lastAiSuggestion}"
+            </Text>
+            <Ionicons name="arrow-up-circle" size={18} color="#8B5CF6" />
+          </TouchableOpacity>
+        )}
+
         {isKeyboardMode ? (
           // Chế độ gõ phím nếu môi trường xung quanh ồn ào
           <View style={styles.keyboardInputRow}>
             <TouchableOpacity
-              style={styles.modeSwitchBtn}
+              style={[styles.modeSwitchBtn, { backgroundColor: isDark ? '#334155' : '#f1f5f9' }]}
               onPress={() => setIsKeyboardMode(false)}
               activeOpacity={0.7}
             >
@@ -518,11 +856,17 @@ export const VoiceConversationScreen: React.FC = () => {
             </TouchableOpacity>
 
             <TextInput
-              style={styles.keyboardTextInput}
+              style={[
+                styles.keyboardTextInput,
+                {
+                  backgroundColor: isDark ? '#1E293B' : '#f1f5f9',
+                  color: colors.text,
+                },
+              ]}
               value={inputText}
               onChangeText={setInputText}
               placeholder="Nhập câu trả lời bằng tiếng Anh..."
-              placeholderTextColor="#94a3b8"
+              placeholderTextColor={colors.placeholder}
               autoFocus={true}
               multiline={false}
               onSubmitEditing={() => handleSendMessage()}
@@ -539,45 +883,45 @@ export const VoiceConversationScreen: React.FC = () => {
             </TouchableOpacity>
           </View>
         ) : (
-          // Chế độ nút Micro lớn với hiệu ứng xung nhịp (Pulsing Animation)
+          // Chế độ nút Micro lớn với máy trạng thái FSM rõ ràng
           <View style={styles.voiceControlBar}>
             <TouchableOpacity
-              style={styles.modeSwitchBtn}
+              style={[styles.modeSwitchBtn, { backgroundColor: isDark ? '#334155' : '#f1f5f9' }]}
               onPress={() => setIsKeyboardMode(true)}
               activeOpacity={0.7}
             >
-              <Ionicons name="keypad-outline" size={22} color="#64748b" />
+              <Ionicons name="keypad-outline" size={22} color={colors.subtext} />
             </TouchableOpacity>
 
-            {/* Nút Micro lớn ở giữa */}
+            {/* Nút Micro lớn ở giữa với Waveform / Pulse Ring */}
             <View style={styles.micWrapper}>
               <Animated.View
                 style={[
                   styles.micPulseRing,
-                  isRecording && styles.micPulseRingActive,
-                  { transform: [{ scale: pulseAnim }] },
+                  {
+                    backgroundColor: micUi.ringColor,
+                    transform: [{ scale: pulseAnim }],
+                  },
                 ]}
               />
 
               <TouchableOpacity
-                style={[styles.micBigBtn, isRecording && styles.micBigBtnActive]}
+                style={[
+                  styles.micBigBtn,
+                  { backgroundColor: micUi.bgColor },
+                ]}
                 onPress={handleToggleRecord}
                 activeOpacity={0.8}
-                disabled={isAiResponding}
+                disabled={turnState === 'PROCESSING' || isAiResponding}
               >
-                <Ionicons
-                  name={isRecording ? 'stop' : 'mic'}
-                  size={32}
-                  color="#ffffff"
-                />
+                {micUi.icon}
               </TouchableOpacity>
             </View>
 
-            {/* Gợi ý nhập nhanh hoặc gửi */}
+            {/* Gợi ý nhập nhanh hoặc chọn câu mẫu */}
             <TouchableOpacity
-              style={styles.quickVoiceSendBtn}
+              style={[styles.quickVoiceSendBtn, { backgroundColor: isDark ? '#334155' : '#f1f5f9' }]}
               onPress={() => {
-                // Nhấn nút để gửi câu mẫu hoặc nhập nhanh
                 Alert.prompt
                   ? Alert.prompt(
                       'Nhập câu đàm thoại',
@@ -588,14 +932,14 @@ export const VoiceConversationScreen: React.FC = () => {
               }}
               activeOpacity={0.7}
             >
-              <Ionicons name="text-outline" size={22} color="#64748b" />
+              <Ionicons name="text-outline" size={22} color={colors.subtext} />
             </TouchableOpacity>
           </View>
         )}
 
         {!isKeyboardMode && (
-          <Text style={styles.voiceInstructionText}>
-            {isRecording ? 'Đang lắng nghe... Nhấn dừng để gửi' : 'Nhấn vào Micro để bắt đầu nói'}
+          <Text style={[styles.voiceInstructionText, { color: colors.subtext }]}>
+            {micUi.text}
           </Text>
         )}
       </KeyboardAvoidingView>
@@ -712,6 +1056,10 @@ const styles = StyleSheet.create({
   targetWordPillUsed: {
     backgroundColor: '#dcfce7',
     borderColor: '#86efac',
+  },
+  targetWordPillUsedDark: {
+    backgroundColor: '#064E3B',
+    borderColor: '#059669',
   },
   targetWordPillText: {
     fontSize: 12,
@@ -859,6 +1207,22 @@ const styles = StyleSheet.create({
     color: '#16a34a',
     fontWeight: '600',
   },
+  quickSuggestionBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginBottom: 10,
+    gap: 6,
+  },
+  quickSuggestionBarText: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '600',
+  },
   footerContainer: {
     backgroundColor: '#ffffff',
     borderTopWidth: 1,
@@ -912,35 +1276,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
-    width: 80,
-    height: 80,
+    width: 84,
+    height: 84,
   },
   micPulseRing: {
     position: 'absolute',
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: 'rgba(22, 163, 74, 0.25)',
-  },
-  micPulseRingActive: {
-    backgroundColor: 'rgba(220, 38, 38, 0.25)',
+    width: 78,
+    height: 78,
+    borderRadius: 39,
   },
   micBigBtn: {
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: '#16a34a',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#16a34a',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
+    shadowOpacity: 0.25,
     shadowRadius: 8,
     elevation: 4,
-  },
-  micBigBtnActive: {
-    backgroundColor: '#dc2626',
-    shadowColor: '#dc2626',
   },
   quickVoiceSendBtn: {
     width: 44,
@@ -953,7 +1308,6 @@ const styles = StyleSheet.create({
   voiceInstructionText: {
     textAlign: 'center',
     fontSize: 12,
-    color: '#94a3b8',
     fontWeight: '500',
     marginTop: 6,
   },

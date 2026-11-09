@@ -475,6 +475,10 @@ export interface VoiceStatusResponse {
   requiredCardsCount?: number;
   remainingQuota: number;
   maxSessionsPerDay: number;
+  maxDailyTurns?: number;
+  usedTurns?: number;
+  remainingTurns?: number;
+  canStart?: boolean;
   nextResetAt?: string;
   currentLevel: number;
   initialBandMin?: number;

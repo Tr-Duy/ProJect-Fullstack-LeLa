@@ -29,14 +29,10 @@ public class ConversationQuotaService {
     private final VoiceConfigurationProperties props;
 
     /**
-     * Kiểm tra điều kiện mở khóa:
-     * totalMasteredCards (REVIEW) + totalLearningCards (LEARNING/RELEARNING) >= 20
+     * Kiểm tra điều kiện mở khóa: Cho phép người học sử dụng tự do mọi lúc
      */
     public boolean isFeatureUnlocked(Long userId) {
-        long masteredCount = cardProgressRepository.countByUserIdAndState(userId, CardProgressState.REVIEW);
-        long learningCount = cardProgressRepository.countByUserIdAndState(userId, CardProgressState.LEARNING);
-        long relearningCount = cardProgressRepository.countByUserIdAndState(userId, CardProgressState.RELEARNING);
-        return (masteredCount + learningCount + relearningCount) >= 20;
+        return true;
     }
 
     public long getLearnedCardsCount(Long userId) {
@@ -81,20 +77,27 @@ public class ConversationQuotaService {
     }
 
     /**
-     * Lấy số lượt còn lại trong ngày (tối đa 3 lượt HOÀN THÀNH)
-     * CHỈ ĐẾM CÁC BUỔI ĐÃ HOÀN THÀNH (status = 'COMPLETED')
+     * Lấy số lượt đã hoàn thành trong ngày theo múi giờ Asia/Ho_Chi_Minh
      */
-    public int getRemainingQuota(Long userId) {
+    public int getUsedQuota(Long userId) {
         ZoneId zone = getUserZone(userId);
         LocalDate today = LocalDate.now(zone);
         LocalDateTime startOfDay = today.atStartOfDay();
         LocalDateTime endOfDay = today.plusDays(1).atStartOfDay();
         long completed = sessionRepository.countCompletedSessionsToday(userId, startOfDay, endOfDay);
-        return Math.max(0, props.getMaxSessionsPerDay() - (int) completed);
+        long consumed = sessionRepository.countConsumedSessionsOnDate(userId, today);
+        return (int) Math.max(completed, consumed);
     }
 
     /**
-     * Kiểm tra và giữ chỗ lượt với khóa PESSIMISTIC_WRITE trên hàng user_conversation_levels
+     * Lấy số lượt còn lại trong ngày: Không giới hạn (999 lượt)
+     */
+    public int getRemainingQuota(Long userId) {
+        return 999;
+    }
+
+    /**
+     * Khởi tạo phiên hội thoại không bị ràng buộc lượt hay điều kiện mở khóa
      */
     @Transactional
     public ConversationSession startSessionWithLock(
@@ -104,16 +107,11 @@ public class ConversationQuotaService {
     ) {
         Long userId = user.getId();
 
-        // 1. Kiểm tra mở khóa
-        if (!isFeatureUnlocked(userId)) {
-            throw new IllegalStateException("Tính năng chưa được mở khóa. Bạn cần học ít nhất 20 thẻ từ vựng.");
-        }
-
-        // 2. Khóa PESSIMISTIC_WRITE (SELECT ... FOR UPDATE) trên bản ghi Users để tuần tự hóa các yêu cầu song song
+        // 1. Khóa PESSIMISTIC_WRITE (SELECT ... FOR UPDATE) trên bản ghi Users để tuần tự hóa các yêu cầu song song
         usersRepository.findByIdForUpdate(userId);
         UserConversationLevel userLvl = levelService.getOrCreateLevel(userId, user);
 
-        // 3. Kiểm tra xem có phiên IN_PROGRESS nào chưa hoàn thành không (khóa FOR UPDATE đọc committed mới nhất)
+        // 2. Kiểm tra xem có phiên IN_PROGRESS nào chưa hoàn thành không (khóa FOR UPDATE đọc committed mới nhất)
         List<ConversationSession> inProgressList = sessionRepository.findInProgressSessionsForUpdate(userId);
         if (!inProgressList.isEmpty()) {
             ConversationSession session = inProgressList.get(0);
@@ -128,17 +126,9 @@ public class ConversationQuotaService {
             }
         }
 
-        // 4. Kiểm tra hạn mức 3 lượt / ngày (CHỈ ĐẾM CÁC BUỔI ĐÃ HOÀN THÀNH 'COMPLETED')
+        // 3. Khởi tạo phiên mới không giới hạn
         ZoneId zone = getUserZone(userId);
         LocalDate today = LocalDate.now(zone);
-        LocalDateTime startOfDay = today.atStartOfDay();
-        LocalDateTime endOfDay = today.plusDays(1).atStartOfDay();
-        long completed = sessionRepository.countCompletedSessionsToday(userId, startOfDay, endOfDay);
-        if (completed >= props.getMaxSessionsPerDay()) {
-            throw new IllegalStateException("Bạn đã hết lượt hội thoại hôm nay (tối đa 3 lượt/ngày). Lượt mới sẽ mở vào 00:00.");
-        }
-
-        // 5. Khởi tạo phiên mới
         ConversationSession newSession = ConversationSession.builder()
                 .publicId(UUID.randomUUID().toString())
                 .user(user)

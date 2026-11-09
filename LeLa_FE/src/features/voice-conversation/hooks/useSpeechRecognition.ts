@@ -33,6 +33,8 @@ export function useSpeechRecognition({
   const finalRef = useRef<string>('');
   const interimRef = useRef<string>('');
   const timerRef = useRef<number | null>(null);
+  const restartTimerRef = useRef<number | null>(null);
+  const speechStartTimeRef = useRef<number>(0);
   const wantListeningRef = useRef<boolean>(false);
   const submittedRef = useRef<boolean>(false);
   const onEndRef = useRef(onUtteranceEnd);
@@ -51,12 +53,22 @@ export function useSpeechRecognition({
       window.clearTimeout(timerRef.current);
       timerRef.current = null;
     }
+    if (restartTimerRef.current !== null) {
+      window.clearTimeout(restartTimerRef.current);
+      restartTimerRef.current = null;
+    }
   }, []);
 
   const commit = useCallback(
     (requiredWords: number) => {
       if (submittedRef.current) return;
       const text = `${finalRef.current} ${interimRef.current}`.replace(/\s+/g, ' ').trim();
+      const durationMs = Date.now() - speechStartTimeRef.current;
+      
+      // Lọc bỏ tiếng ồn ngắn dưới 0.6s hoặc không có từ hợp lệ
+      if (durationMs < 600 && countWords(text) < 1) {
+        return;
+      }
       if (countWords(text) < requiredWords) return;
 
       submittedRef.current = true;
@@ -119,6 +131,7 @@ export function useSpeechRecognition({
 
     reset();
     wantListeningRef.current = true;
+    speechStartTimeRef.current = Date.now();
 
     const recognition = new SpeechRecognitionImpl();
     recognition.lang = lang;
@@ -165,13 +178,20 @@ export function useSpeechRecognition({
 
     recognition.onend = () => {
       if (wantListeningRef.current && !submittedRef.current) {
-        try {
-          recognition.start();
-        } catch (e: any) {
-          if (e?.name !== 'InvalidStateError') {
-            console.warn('SpeechRecognition restart failed', e);
-          }
+        if (restartTimerRef.current !== null) {
+          window.clearTimeout(restartTimerRef.current);
         }
+        restartTimerRef.current = window.setTimeout(() => {
+          try {
+            if (wantListeningRef.current && !submittedRef.current) {
+              recognition.start();
+            }
+          } catch (e: any) {
+            if (e?.name !== 'InvalidStateError') {
+              console.warn('SpeechRecognition restart failed', e);
+            }
+          }
+        }, 150);
       }
     };
 

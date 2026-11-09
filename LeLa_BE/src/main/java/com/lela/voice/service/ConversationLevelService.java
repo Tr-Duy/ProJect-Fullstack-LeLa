@@ -58,7 +58,7 @@ public class ConversationLevelService {
     /**
      * Đảm bảo hàng user_conversation_levels tồn tại trước khi khóa FOR UPDATE
      */
-    @Transactional
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
     public UserConversationLevel getOrCreateLevel(Long userId, com.lela.users.domain.Users user) {
         return levelRepository.findById(userId).orElseGet(() -> {
             com.lela.users.domain.Users managedUser = (user != null && user.getId() != null)
