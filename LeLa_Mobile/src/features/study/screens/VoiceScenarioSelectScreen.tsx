@@ -183,11 +183,7 @@ export const VoiceScenarioSelectScreen: React.FC = () => {
             Hạn mức đàm thoại hôm nay
           </Text>
           <Text style={styles.quotaSub}>
-            Còn lại:{' '}
-            <Text style={styles.quotaHighlight}>
-              {status?.remainingTurns ?? status?.remainingQuota ?? 3}
-            </Text>{' '}
-            / {status?.maxDailyTurns ?? status?.maxSessionsPerDay ?? 3} lượt đàm thoại
+            <Text style={styles.quotaHighlight}>Không giới hạn</Text> lượt đàm thoại
           </Text>
         </View>
       </View>

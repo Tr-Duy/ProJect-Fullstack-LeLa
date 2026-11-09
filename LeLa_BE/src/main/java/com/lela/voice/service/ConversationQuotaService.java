@@ -90,10 +90,10 @@ public class ConversationQuotaService {
     }
 
     /**
-     * Lấy số lượt còn lại trong ngày: Không giới hạn (999 lượt)
+     * Lấy số lượt còn lại trong ngày: Không giới hạn (-1)
      */
     public int getRemainingQuota(Long userId) {
-        return 999;
+        return -1;
     }
 
     /**

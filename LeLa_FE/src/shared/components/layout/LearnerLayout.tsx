@@ -421,9 +421,9 @@ export function LearnerLayout() {
               {/* Dynamic free limit or Pro minutes */}
               {!isPro && (
                 <p className="text-[11px] text-[var(--text-2)] font-medium leading-tight">
-                  Hội thoại AI: dùng thử còn{' '}
+                  Hội thoại AI:{' '}
                   <strong className="text-[var(--brand-700)] font-bold">
-                    {voiceStatus ? `${voiceStatus.remainingQuota}/${voiceStatus.maxSessionsPerDay}` : '3/3'} buổi
+                    Không giới hạn
                   </strong>
                 </p>
               )}

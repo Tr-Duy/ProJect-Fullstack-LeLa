@@ -135,9 +135,9 @@ public class VoiceConversationServiceImpl implements VoiceConversationService {
         boolean unlocked = true;
         long learnedCards = quotaService.getLearnedCardsCount(userId);
 
-        int maxDailyTurns = 999;
+        int maxDailyTurns = -1;
         int usedTurns = quotaService.getUsedQuota(userId);
-        int remainingTurns = 999;
+        int remainingTurns = -1;
         boolean canStart = true;
         String nextReset = quotaService.getNextResetAtIso(userId);
 
