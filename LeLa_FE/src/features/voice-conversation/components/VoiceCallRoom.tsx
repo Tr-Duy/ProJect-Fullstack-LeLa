@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Button, message } from 'antd';
-import { Mic, PhoneOff, Volume2, Sparkles, RefreshCw, Clock, CheckCircle } from 'lucide-react';
+import { Mic, PhoneOff, Volume2, Sparkles, RefreshCw, Clock, CheckCircle, Award, Check } from 'lucide-react';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 import { useSpeechSynthesis } from '../hooks/useSpeechSynthesis';
 import { voiceConversationApi } from '../api/voice-conversation.api';
-import type { VoiceStartResponse, VoiceTargetWordDto } from '../api/voice-conversation.api';
+import type { VoiceStartResponse, VoiceTargetWordDto, UserEvaluationDto } from '../api/voice-conversation.api';
 
 interface VoiceCallRoomProps {
   sessionData: VoiceStartResponse;
@@ -24,6 +24,7 @@ export const VoiceCallRoom: React.FC<VoiceCallRoomProps> = ({
   const [isAiSpeaking, setIsAiSpeaking] = useState(false);
   const [currentAiSpeech, setCurrentAiSpeech] = useState(sessionData.openingLine || '');
   const [currentSuggestion, setCurrentSuggestion] = useState<string>('');
+  const [latestEvaluation, setLatestEvaluation] = useState<UserEvaluationDto | null>(null);
   const [silenceCounter, setSilenceCounter] = useState(0);
   const [textInputFallback, setTextInputFallback] = useState('');
   const [manualTextMode, setManualTextMode] = useState(false);
@@ -43,6 +44,7 @@ export const VoiceCallRoom: React.FC<VoiceCallRoomProps> = ({
     retry: retrySpeech,
     stop: stopListening,
     abortAndReset,
+    resetTranscript,
     setIdle,
   } = useSpeechRecognition({
     lang: 'en-US',
@@ -151,9 +153,10 @@ export const VoiceCallRoom: React.FC<VoiceCallRoomProps> = ({
 
     setIsAiThinking(true);
     setSilenceCounter(0);
-    // Tắt mic ngay khi gửi lên server
+    // Tắt mic ngay khi gửi lên server và xóa sạch transcript của lượt nói cũ
     stopListening();
     abortAndReset();
+    resetTranscript();
 
     try {
       const elapsed = (sessionData.durationSecondsLimit || 300) - secondsLeft;
@@ -172,11 +175,15 @@ export const VoiceCallRoom: React.FC<VoiceCallRoomProps> = ({
       if (turn.quickSuggestion) {
         setCurrentSuggestion(turn.quickSuggestion);
       }
+      if (turn.userEvaluation) {
+        setLatestEvaluation(turn.userEvaluation);
+      }
 
       setIdle();
 
       // Đọc phản hồi bằng TTS, dứt lời và chờ đệm 400ms an toàn trước khi tự động mở mic
-      playAiSpeech(turn.aiReply, sessionData.uiConfig.ttsRate, () => {
+      const ttsRate = sessionData.uiConfig?.ttsRate || 0.95;
+      playAiSpeech(turn.aiReply, ttsRate, () => {
         if (!turn.sessionEnded) {
           startListening();
         }
@@ -360,10 +367,20 @@ export const VoiceCallRoom: React.FC<VoiceCallRoomProps> = ({
             )}
           </div>
 
-          <div className="space-y-2">
-            <p className="text-xl md:text-2xl font-bold text-slate-900 leading-relaxed transition-all">
-              "{currentAiSpeech}"
-            </p>
+          <div className="space-y-3">
+            <div className="flex items-center justify-center gap-2">
+              <p className="text-xl md:text-2xl font-bold text-slate-900 leading-relaxed transition-all">
+                "{currentAiSpeech}"
+              </p>
+              <button
+                type="button"
+                onClick={() => playAiSpeech(currentAiSpeech, sessionData.uiConfig?.ttsRate || 0.95)}
+                className="p-2 rounded-full hover:bg-orange-100 text-orange-600 transition-colors flex-shrink-0 cursor-pointer"
+                title="Nghe lại câu này"
+              >
+                <Volume2 className="w-5 h-5" />
+              </button>
+            </div>
             {isAiThinking && (
               <div className="inline-flex items-center gap-2 text-orange-600 text-sm font-semibold animate-pulse">
                 <Sparkles className="w-4 h-4 animate-spin" />
@@ -371,6 +388,44 @@ export const VoiceCallRoom: React.FC<VoiceCallRoomProps> = ({
               </div>
             )}
           </div>
+
+          {/* Quick Feedback Loop Card */}
+          {latestEvaluation && (
+            <div className="w-full max-w-lg mx-auto bg-gradient-to-br from-amber-50 to-orange-50 border border-orange-200/90 rounded-2xl p-3.5 text-left shadow-sm animate-fade-in space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <Award className="w-4 h-4 text-orange-600" />
+                  <span className="text-xs font-bold text-slate-800">Đánh giá lượt nói vừa rồi:</span>
+                </div>
+                <div className="flex items-center gap-1 bg-white px-2 py-0.5 rounded-full border border-orange-200 text-xs font-black text-orange-600 shadow-xs">
+                  <span>{latestEvaluation.score ?? 85}</span>
+                  <span className="text-[10px] text-slate-400 font-normal">/100</span>
+                </div>
+              </div>
+
+              {latestEvaluation.feedback && (
+                <p className="text-xs text-slate-700 leading-snug">
+                  {latestEvaluation.feedback}
+                </p>
+              )}
+
+              <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-orange-100">
+                {latestEvaluation.grammarCheck && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-[11px] font-semibold">
+                    <Check className="w-3 h-3 text-emerald-600" />
+                    {latestEvaluation.grammarCheck}
+                  </span>
+                )}
+
+                {latestEvaluation.suggestedImprovement && (
+                  <div className="text-[11px] text-slate-600 flex items-center gap-1">
+                    <span className="font-semibold text-orange-700">Gợi ý cách nói hay hơn:</span>
+                    <span className="italic font-medium text-slate-800">"{latestEvaluation.suggestedImprovement}"</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Silence Prompt & Gợi ý mẫu khi im lặng >= 8s */}
@@ -403,8 +458,8 @@ export const VoiceCallRoom: React.FC<VoiceCallRoomProps> = ({
           </div>
         )}
 
-        {/* User Speech Real-time Transcript qua interimResults */}
-        {transcript && (
+        {/* User Speech Real-time Transcript qua interimResults - Chỉ hiển thị khi đang nghe và có nội dung của lượt này */}
+        {isListening && transcript.trim().length > 0 && (
           <div className="text-sm font-medium text-orange-800 italic max-w-lg bg-orange-50 border border-orange-200 px-5 py-2.5 rounded-2xl mb-2 shadow-inner animate-fade-in flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-orange-500 flex-shrink-0" />
             <span>

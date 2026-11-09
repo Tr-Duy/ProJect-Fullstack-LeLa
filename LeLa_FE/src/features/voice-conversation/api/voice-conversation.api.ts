@@ -66,6 +66,13 @@ export interface VoiceStartResponse {
   };
 }
 
+export interface UserEvaluationDto {
+  score: number;
+  feedback: string;
+  grammarCheck: string;
+  suggestedImprovement: string;
+}
+
 export interface VoiceTurnResponse {
   turnNumber: number;
   aiReply: string;
@@ -76,6 +83,7 @@ export interface VoiceTurnResponse {
   validTurnCount: number;
   sessionEnded: boolean;
   endReason?: string;
+  userEvaluation?: UserEvaluationDto;
 }
 
 export interface VoiceReportResponse {

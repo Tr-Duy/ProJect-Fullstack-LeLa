@@ -71,6 +71,13 @@ export function useSpeechSynthesis() {
 
       console.log('TTS Speaking:', text);
 
+      // Hủy bỏ phát âm dở dang nếu có để làm sạch hàng đợi của trình duyệt (tránh bị kẹt queue trong Chrome)
+      try {
+        window.speechSynthesis.cancel();
+      } catch {
+        // ignore
+      }
+
       // Đảm bảo trình duyệt không ở trạng thái paused
       try {
         if (window.speechSynthesis.paused) {
@@ -112,14 +119,17 @@ export function useSpeechSynthesis() {
         onEnd?.();
       };
 
-      try {
-        window.speechSynthesis.speak(utterance);
-      } catch (err) {
-        console.error('[useSpeechSynthesis] speak error:', err);
-        setIsSpeaking(false);
-        activeUtterance = null;
-        onEnd?.();
-      }
+      // Đệm 50ms sau khi cancel() để Chrome engine giải phóng buffer hoàn toàn trước khi phát câu mới
+      setTimeout(() => {
+        try {
+          window.speechSynthesis.speak(utterance);
+        } catch (err) {
+          console.error('[useSpeechSynthesis] speak error:', err);
+          setIsSpeaking(false);
+          activeUtterance = null;
+          onEnd?.();
+        }
+      }, 50);
     },
     [isSupported, voices, selectEnglishVoice]
   );

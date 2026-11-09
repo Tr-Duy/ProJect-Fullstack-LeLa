@@ -11,5 +11,6 @@ public record VoiceTurnResponse(
         List<VoiceTargetWordDto> updatedTargetWords,
         int validTurnCount,
         boolean sessionEnded,
-        String endReason
+        String endReason,
+        UserEvaluationDto userEvaluation
 ) {}

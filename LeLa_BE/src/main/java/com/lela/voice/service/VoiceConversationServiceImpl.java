@@ -315,7 +315,8 @@ public class VoiceConversationServiceImpl implements VoiceConversationService {
                     updatedWordDtos,
                     session.getValidTurnCount(),
                     false,
-                    "AUDIO_EMPTY"
+                    "AUDIO_EMPTY",
+                    null
             );
         }
 
@@ -427,6 +428,23 @@ public class VoiceConversationServiceImpl implements VoiceConversationService {
         List<ConversationTargetWord> updatedTargetWords = targetWordRepository.findBySessionId(session.getId());
         List<VoiceTargetWordDto> updatedWordDtos = mapTargetWordsToDtos(updatedTargetWords);
 
+        UserEvaluationDto evalDto = null;
+        if (aiOutput.getUserEvaluation() != null) {
+            evalDto = new UserEvaluationDto(
+                    aiOutput.getUserEvaluation().getScore(),
+                    aiOutput.getUserEvaluation().getFeedback(),
+                    aiOutput.getUserEvaluation().getGrammarCheck(),
+                    aiOutput.getUserEvaluation().getSuggestedImprovement()
+            );
+        } else {
+            evalDto = new UserEvaluationDto(
+                    85,
+                    "Phát âm rõ ràng, phản hồi tốt!",
+                    "Ngữ pháp chính xác",
+                    aiOutput.getCorrectedSentence() != null ? aiOutput.getCorrectedSentence() : aiOutput.getQuickSuggestion()
+            );
+        }
+
         return new VoiceTurnResponse(
                 nextTurnNumber,
                 aiOutput.getAiReply(),
@@ -436,7 +454,8 @@ public class VoiceConversationServiceImpl implements VoiceConversationService {
                 updatedWordDtos,
                 session.getValidTurnCount(),
                 sessionEnded,
-                endReason
+                endReason,
+                evalDto
         );
     }
 

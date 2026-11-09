@@ -32,6 +32,26 @@ public class VoiceAiService {
     @AllArgsConstructor
     @Builder
     @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class UserEvaluationAiOutput {
+        @JsonProperty("score")
+        private Integer score;
+
+        @JsonProperty("feedback")
+        private String feedback;
+
+        @JsonProperty("grammarCheck")
+        private String grammarCheck;
+
+        @JsonProperty("suggestedImprovement")
+        private String suggestedImprovement;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class TurnAiOutput {
         @JsonProperty("aiReply")
         private String aiReply;
@@ -47,6 +67,9 @@ public class VoiceAiService {
 
         @JsonProperty("targetWordsUsedInTurn")
         private List<String> targetWordsUsedInTurn;
+
+        @JsonProperty("userEvaluation")
+        private UserEvaluationAiOutput userEvaluation;
 
         @JsonProperty("tokensUsed")
         private Integer tokensUsed;
@@ -159,6 +182,12 @@ public class VoiceAiService {
                 .correctedSentence(userTranscript)
                 .quickSuggestion("Yes, definitely! Let me explain.")
                 .targetWordsUsedInTurn(Collections.emptyList())
+                .userEvaluation(UserEvaluationAiOutput.builder()
+                        .score(80)
+                        .feedback("Bạn phát âm tương đối tốt, tiếp tục phát huy nhé!")
+                        .grammarCheck("Ngữ pháp ổn định")
+                        .suggestedImprovement("I would like to order a cup of coffee, please.")
+                        .build())
                 .tokensUsed(50)
                 .build();
     }
@@ -187,7 +216,13 @@ public class VoiceAiService {
                    "grammarErrors": ["brief description of grammatical errors in the user utterance, or empty array if none"],
                    "correctedSentence": "natural correct way the user should have said their sentence",
                    "quickSuggestion": "a short example phrase (1 sentence) the learner could say next",
-                   "targetWordsUsedInTurn": ["target word(s) correctly used by user in this turn"]
+                   "targetWordsUsedInTurn": ["target word(s) correctly used by user in this turn"],
+                   "userEvaluation": {
+                      "score": 85,
+                      "feedback": "Phản hồi ngắn gọn bằng tiếng Việt: khen ngợi hoặc lưu ý lỗi dùng từ/ngữ cảnh",
+                      "grammarCheck": "Đánh giá ngữ pháp ngắn gọn bằng tiếng Việt (ví dụ: Ngữ pháp chính xác hoặc Cần chú ý thì quá khứ)",
+                      "suggestedImprovement": "câu tiếng Anh tự nhiên bản xứ gợi ý người học nói"
+                   }
                 }
                 """.formatted(scenario.getAiRole(), scenario.getUserRole(), level, scenario.getDescription(), String.join(", ", targetWords), level);
     }
