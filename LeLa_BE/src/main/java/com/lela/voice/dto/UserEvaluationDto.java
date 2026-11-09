@@ -6,3 +6,4 @@ public record UserEvaluationDto(
         String grammarCheck,
         String suggestedImprovement
 ) {}
+
