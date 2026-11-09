@@ -93,6 +93,7 @@ export function useSpeechSynthesis() {
       }
 
       activeUtterance = utterance;
+      setIsSpeaking(true);
 
       utterance.onstart = () => {
         setIsSpeaking(true);

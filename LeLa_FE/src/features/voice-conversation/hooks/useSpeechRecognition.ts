@@ -7,6 +7,7 @@ export interface UseSpeechRecognitionOptions {
   silenceMs?: number;
   incompleteExtraMs?: number;
   minWords?: number;
+  isAiSpeaking?: boolean;
   onUtteranceEnd: (text: string) => void;
   onError?: (error: string, isFatal?: boolean) => void;
 }
@@ -22,6 +23,7 @@ export function useSpeechRecognition({
   silenceMs = 2200,
   incompleteExtraMs = 1800,
   minWords = 2,
+  isAiSpeaking = false,
   onUtteranceEnd,
   onError,
 }: UseSpeechRecognitionOptions) {
@@ -39,6 +41,7 @@ export function useSpeechRecognition({
   const submittedRef = useRef<boolean>(false);
   const onEndRef = useRef(onUtteranceEnd);
   const onErrorRef = useRef(onError);
+  const isAiSpeakingRef = useRef<boolean>(isAiSpeaking);
 
   useEffect(() => {
     onEndRef.current = onUtteranceEnd;
@@ -59,9 +62,40 @@ export function useSpeechRecognition({
     }
   }, []);
 
+  const reset = useCallback(() => {
+    finalRef.current = '';
+    interimRef.current = '';
+    submittedRef.current = false;
+    setTranscript('');
+    setError(null);
+    clearTimer();
+  }, [clearTimer]);
+
+  const abortAndReset = useCallback(() => {
+    wantListeningRef.current = false;
+    clearTimer();
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.abort();
+      } catch (e: any) {
+        // ignore
+      }
+    }
+    reset();
+    setStatus('idle');
+  }, [clearTimer, reset]);
+
+  // Khóa cứng micro ngay lập tức khi AI bắt đầu nói
+  useEffect(() => {
+    isAiSpeakingRef.current = isAiSpeaking;
+    if (isAiSpeaking) {
+      abortAndReset();
+    }
+  }, [isAiSpeaking, abortAndReset]);
+
   const commit = useCallback(
     (requiredWords: number) => {
-      if (submittedRef.current) return;
+      if (submittedRef.current || isAiSpeakingRef.current) return;
       const text = `${finalRef.current} ${interimRef.current}`.replace(/\s+/g, ' ').trim();
       const durationMs = Date.now() - speechStartTimeRef.current;
       
@@ -91,6 +125,7 @@ export function useSpeechRecognition({
   );
 
   const scheduleCommit = useCallback(() => {
+    if (isAiSpeakingRef.current) return;
     clearTimer();
     const text = `${finalRef.current} ${interimRef.current}`.replace(/\s+/g, ' ').trim();
     if (!text) return;
@@ -98,16 +133,13 @@ export function useSpeechRecognition({
     timerRef.current = window.setTimeout(() => commit(minWords), wait);
   }, [clearTimer, commit, silenceMs, incompleteExtraMs, minWords]);
 
-  const reset = useCallback(() => {
-    finalRef.current = '';
-    interimRef.current = '';
-    submittedRef.current = false;
-    setTranscript('');
-    setError(null);
-    clearTimer();
-  }, [clearTimer]);
-
   const start = useCallback(() => {
+    // Không bao giờ khởi động nhận diện nếu AI đang dứt lời chưa xong
+    if (isAiSpeakingRef.current) {
+      console.log('[STT] Blocked start() because AI is speaking (echo guard)');
+      return;
+    }
+
     const SpeechRecognitionImpl =
       (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognitionImpl) {
@@ -140,6 +172,12 @@ export function useSpeechRecognition({
     recognition.maxAlternatives = 3;
 
     recognition.onresult = (event: any) => {
+      // Guard chống echo: Hủy bỏ ngay mọi tạp âm thu được nếu AI đang phát âm
+      if (isAiSpeakingRef.current) {
+        console.log('[STT] Echo guard: Discarded speech packet because AI is speaking');
+        return;
+      }
+
       let interim = '';
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const result = event.results[i];
@@ -177,13 +215,18 @@ export function useSpeechRecognition({
     };
 
     recognition.onend = () => {
+      if (isAiSpeakingRef.current) {
+        setStatus('idle');
+        return;
+      }
+
       if (wantListeningRef.current && !submittedRef.current) {
         if (restartTimerRef.current !== null) {
           window.clearTimeout(restartTimerRef.current);
         }
         restartTimerRef.current = window.setTimeout(() => {
           try {
-            if (wantListeningRef.current && !submittedRef.current) {
+            if (wantListeningRef.current && !submittedRef.current && !isAiSpeakingRef.current) {
               recognition.start();
             }
           } catch (e: any) {
@@ -212,10 +255,12 @@ export function useSpeechRecognition({
   }, [lang, reset, scheduleCommit, clearTimer]);
 
   const finishNow = useCallback(() => {
+    if (isAiSpeakingRef.current) return;
     commit(1);
   }, [commit]);
 
   const retry = useCallback(() => {
+    if (isAiSpeakingRef.current) return;
     wantListeningRef.current = false;
     clearTimer();
     try {
@@ -227,7 +272,11 @@ export function useSpeechRecognition({
     }
     reset();
     setStatus('idle');
-    window.setTimeout(start, 150);
+    window.setTimeout(() => {
+      if (!isAiSpeakingRef.current) {
+        start();
+      }
+    }, 150);
   }, [reset, start, clearTimer]);
 
   const stop = useCallback(() => {
@@ -282,6 +331,8 @@ export function useSpeechRecognition({
     retry,
     stop,
     stopListening: stop,
+    abortAndReset,
+    resetTranscript: reset,
     setIdle,
   };
 }

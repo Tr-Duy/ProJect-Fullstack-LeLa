@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Button, message } from 'antd';
-import { Mic, MicOff, PhoneOff, Volume2, Sparkles, RefreshCw, Clock, CheckCircle } from 'lucide-react';
+import { Mic, PhoneOff, Volume2, Sparkles, RefreshCw, Clock, CheckCircle } from 'lucide-react';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 import { useSpeechSynthesis } from '../hooks/useSpeechSynthesis';
 import { voiceConversationApi } from '../api/voice-conversation.api';
@@ -21,31 +21,94 @@ export const VoiceCallRoom: React.FC<VoiceCallRoomProps> = ({
   const [targetWords, setTargetWords] = useState<VoiceTargetWordDto[]>(sessionData.targetWords || []);
   const [validTurns, setValidTurns] = useState(0);
   const [isAiThinking, setIsAiThinking] = useState(false);
+  const [isAiSpeaking, setIsAiSpeaking] = useState(false);
   const [currentAiSpeech, setCurrentAiSpeech] = useState(sessionData.openingLine || '');
   const [currentSuggestion, setCurrentSuggestion] = useState<string>('');
   const [silenceCounter, setSilenceCounter] = useState(0);
   const [textInputFallback, setTextInputFallback] = useState('');
   const [manualTextMode, setManualTextMode] = useState(false);
 
+  const bufferTimerRef = useRef<number | null>(null);
+
   const { speak, isSpeaking, stop: stopTts } = useSpeechSynthesis();
 
-  // TTS đọc lời mở đầu khi vào phòng, đọc xong chờ đệm 250ms rồi tự động mở mic nghe
+  // Web Speech Recognition với guard chống dội âm (Echo Guard)
+  const {
+    status,
+    isListening,
+    transcript,
+    isSupported,
+    start: startListening,
+    finishNow,
+    retry: retrySpeech,
+    stop: stopListening,
+    abortAndReset,
+    setIdle,
+  } = useSpeechRecognition({
+    lang: 'en-US',
+    silenceMs: 2200,
+    incompleteExtraMs: 1800,
+    minWords: 2,
+    isAiSpeaking: isAiSpeaking || isSpeaking,
+    onUtteranceEnd: (text) => {
+      handleSendTurn(text, 0.9, false);
+    },
+    onError: (errMsg, isFatal) => {
+      if (isFatal) {
+        message.error(errMsg);
+        setManualTextMode(true);
+      } else {
+        message.warning(errMsg);
+      }
+    },
+  });
+
+  // Hàm phát giọng nói AI với cơ chế dập tắt micro ngay lập tức và chờ đệm 400ms an toàn
+  const playAiSpeech = useCallback(
+    (text: string, rate: number, onEndBuffer?: () => void) => {
+      if (!text) {
+        onEndBuffer?.();
+        return;
+      }
+
+      // 1. Dập tắt Micro ngay lập tức trước khi loa phát âm thanh
+      stopListening();
+      abortAndReset();
+      setIsAiSpeaking(true);
+
+      if (bufferTimerRef.current !== null) {
+        window.clearTimeout(bufferTimerRef.current);
+        bufferTimerRef.current = null;
+      }
+
+      speak(text, rate, () => {
+        setIsAiSpeaking(false);
+        // 2. Bắt buộc dùng setTimeout chờ đệm 400ms: Cho phép âm vang trong phòng và loa ngoài dứt hẳn
+        bufferTimerRef.current = window.setTimeout(() => {
+          bufferTimerRef.current = null;
+          onEndBuffer?.();
+        }, 400);
+      });
+    },
+    [speak, stopListening, abortAndReset]
+  );
+
+  // TTS đọc lời mở đầu khi vào phòng, đọc xong chờ đệm 400ms rồi tự động mở mic nghe
   useEffect(() => {
-    let timer: number | null = null;
     if (sessionData.openingLine) {
-      speak(sessionData.openingLine, sessionData.uiConfig.ttsRate, () => {
-        timer = window.setTimeout(() => {
-          startListening();
-        }, 250);
+      playAiSpeech(sessionData.openingLine, sessionData.uiConfig.ttsRate, () => {
+        startListening();
       });
     } else {
-      timer = window.setTimeout(() => {
+      bufferTimerRef.current = window.setTimeout(() => {
+        bufferTimerRef.current = null;
         startListening();
-      }, 250);
+      }, 400);
     }
     return () => {
-      if (timer !== null) window.clearTimeout(timer);
+      if (bufferTimerRef.current !== null) window.clearTimeout(bufferTimerRef.current);
       stopTts();
+      abortAndReset();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -69,7 +132,7 @@ export const VoiceCallRoom: React.FC<VoiceCallRoomProps> = ({
   // Đếm im lặng để bật gợi ý mẫu khi im lặng > 8s
   useEffect(() => {
     const silenceTimer = setInterval(() => {
-      if (!isSpeaking && !isAiThinking) {
+      if (!isSpeaking && !isAiSpeaking && !isAiThinking) {
         setSilenceCounter((prev) => prev + 1);
       } else {
         setSilenceCounter(0);
@@ -77,46 +140,20 @@ export const VoiceCallRoom: React.FC<VoiceCallRoomProps> = ({
     }, 1000);
 
     return () => clearInterval(silenceTimer);
-  }, [isSpeaking, isAiThinking]);
-
-  // Web Speech Recognition
-  const {
-    status,
-    isListening,
-    transcript,
-    isSupported,
-    start: startListening,
-    finishNow,
-    retry: retrySpeech,
-    stop: stopListening,
-    setIdle,
-  } = useSpeechRecognition({
-    lang: 'en-US',
-    silenceMs: 2200,
-    incompleteExtraMs: 1800,
-    minWords: 2,
-    onUtteranceEnd: (text) => {
-      handleSendTurn(text, 0.9, false);
-    },
-    onError: (errMsg, isFatal) => {
-      if (isFatal) {
-        message.error(errMsg);
-        setManualTextMode(true);
-      } else {
-        message.warning(errMsg);
-      }
-    },
-  });
+  }, [isSpeaking, isAiSpeaking, isAiThinking]);
 
   const handleSendTurn = async (transcriptText: string, confidence: number, isRetry: boolean) => {
     const cleanText = (transcriptText || '').trim();
-    if (!cleanText || isAiThinking) {
-      console.warn('[VoiceCallRoom] Bỏ qua lượt gửi vì transcript rỗng hoặc AI đang xử lý');
+    if (!cleanText || isAiThinking || isAiSpeaking || isSpeaking) {
+      console.warn('[VoiceCallRoom] Bỏ qua lượt gửi vì transcript rỗng hoặc AI đang nói/xử lý');
       return;
     }
 
     setIsAiThinking(true);
     setSilenceCounter(0);
+    // Tắt mic ngay khi gửi lên server
+    stopListening();
+    abortAndReset();
 
     try {
       const elapsed = (sessionData.durationSecondsLimit || 300) - secondsLeft;
@@ -138,12 +175,10 @@ export const VoiceCallRoom: React.FC<VoiceCallRoomProps> = ({
 
       setIdle();
 
-      // Đọc phản hồi bằng TTS, xong chờ đệm 250ms tự động mở mic cho lượt kế tiếp
-      speak(turn.aiReply, sessionData.uiConfig.ttsRate, () => {
+      // Đọc phản hồi bằng TTS, dứt lời và chờ đệm 400ms an toàn trước khi tự động mở mic
+      playAiSpeech(turn.aiReply, sessionData.uiConfig.ttsRate, () => {
         if (!turn.sessionEnded) {
-          window.setTimeout(() => {
-            startListening();
-          }, 250);
+          startListening();
         }
       });
 
@@ -162,14 +197,8 @@ export const VoiceCallRoom: React.FC<VoiceCallRoomProps> = ({
   };
 
   const handleMicAction = () => {
-    if (isAiThinking || status === 'processing') return;
-
-    if (isSpeaking) {
-      // AI đang nói bằng TTS: ngắt lời AI và mở mic cho người học nói ngay lập tức
-      stopTts();
-      startListening();
-      return;
-    }
+    // Không thao tác mic khi AI đang phân tích hoặc đang nói
+    if (isAiThinking || status === 'processing' || isAiSpeaking || isSpeaking) return;
 
     if (status === 'listening') {
       if (transcript.trim()) {
@@ -188,7 +217,7 @@ export const VoiceCallRoom: React.FC<VoiceCallRoomProps> = ({
     return `${m}:${s < 10 ? '0' : ''}${s}`;
   };
 
-  // Xác định rõ 3 trạng thái của nút Mic
+  // Xác định rõ các trạng thái trực quan của nút Mic
   const getMicButtonUi = () => {
     if (isAiThinking || status === 'processing') {
       return {
@@ -200,35 +229,35 @@ export const VoiceCallRoom: React.FC<VoiceCallRoomProps> = ({
         disabled: true,
       };
     }
-    if (isSpeaking) {
+    if (isAiSpeaking || isSpeaking) {
       return {
         state: 'AI_SPEAKING',
-        tooltip: 'AI đang nói. Bấm để ngắt và nói ngay!',
+        tooltip: 'AI đang nói, vui lòng lắng nghe...',
         buttonClass:
-          'bg-gradient-to-tr from-orange-500 to-amber-500 hover:brightness-110 shadow-[0_0_25px_rgba(234,88,12,0.6)] animate-pulse active:scale-95',
-        icon: <Volume2 className="w-8 h-8 text-white animate-bounce" />,
-        statusText: 'AI đang nói... (Bấm vào nút để ngắt và nói ngay)',
-        disabled: false,
+          'bg-slate-400 border-2 border-slate-300 cursor-not-allowed opacity-80 shadow-md',
+        icon: <Volume2 className="w-8 h-8 text-white animate-pulse" />,
+        statusText: 'AI đang nói, vui lòng lắng nghe...',
+        disabled: true,
       };
     }
     if (status === 'listening') {
       return {
         state: 'LISTENING',
-        tooltip: 'Đang lắng nghe... Bấm để dừng và gửi',
+        tooltip: 'Mời bạn nói... Bấm để dừng và gửi',
         buttonClass:
-          'bg-rose-500 hover:bg-rose-600 shadow-[0_0_30px_rgba(244,63,94,0.7)] animate-pulse active:scale-95',
-        icon: <MicOff className="w-8 h-8 text-white" />,
-        statusText: 'Đang nghe giọng nói của bạn... Hãy nói câu tiếng Anh tự nhiên!',
+          'bg-orange-500 hover:bg-orange-600 shadow-[0_0_30px_rgba(234,88,12,0.7)] animate-pulse active:scale-95 cursor-pointer',
+        icon: <Mic className="w-8 h-8 text-white" />,
+        statusText: 'Mời bạn nói... Hệ thống đang lắng nghe!',
         disabled: false,
       };
     }
     return {
       state: 'READY',
-      tooltip: 'Bấm vào Micro để bắt đầu nói',
+      tooltip: 'Mời bạn nói...',
       buttonClass:
-        'bg-orange-600 hover:bg-orange-700 shadow-[0_0_20px_rgba(234,88,12,0.4)] active:scale-95',
+        'bg-orange-600 hover:bg-orange-700 shadow-[0_0_20px_rgba(234,88,12,0.4)] animate-pulse active:scale-95 cursor-pointer',
       icon: <Mic className="w-8 h-8 text-white" />,
-      statusText: 'Bấm vào Micro để bắt đầu nói.',
+      statusText: 'Mời bạn nói... Bấm vào Micro hoặc nói trực tiếp.',
       disabled: false,
     };
   };
