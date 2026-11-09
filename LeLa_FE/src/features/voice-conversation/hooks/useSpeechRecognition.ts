@@ -8,7 +8,7 @@ export interface UseSpeechRecognitionOptions {
   incompleteExtraMs?: number;
   minWords?: number;
   isAiSpeaking?: boolean;
-  onUtteranceEnd: (text: string) => void;
+  onUtteranceEnd: (text: string, alternatives?: string[]) => void;
   onError?: (error: string, isFatal?: boolean) => void;
 }
 
@@ -34,6 +34,7 @@ export function useSpeechRecognition({
   const recognitionRef = useRef<any>(null);
   const finalRef = useRef<string>('');
   const interimRef = useRef<string>('');
+  const alternativesRef = useRef<string[]>([]);
   const timerRef = useRef<number | null>(null);
   const restartTimerRef = useRef<number | null>(null);
   const speechStartTimeRef = useRef<number>(0);
@@ -65,6 +66,7 @@ export function useSpeechRecognition({
   const reset = useCallback(() => {
     finalRef.current = '';
     interimRef.current = '';
+    alternativesRef.current = [];
     submittedRef.current = false;
     setTranscript('');
     setError(null);
@@ -119,7 +121,8 @@ export function useSpeechRecognition({
 
       setTranscript(text);
       setStatus('processing');
-      onEndRef.current(text);
+      const alts = [...alternativesRef.current];
+      onEndRef.current(text, alts);
     },
     [clearTimer],
   );
@@ -169,7 +172,7 @@ export function useSpeechRecognition({
     recognition.lang = lang || 'en-US';
     recognition.continuous = true;
     recognition.interimResults = true;
-    recognition.maxAlternatives = 3;
+    recognition.maxAlternatives = 5;
 
     recognition.onresult = (event: any) => {
       // Guard chống echo: Hủy bỏ ngay mọi tạp âm thu được nếu AI đang phát âm
@@ -179,14 +182,24 @@ export function useSpeechRecognition({
       }
 
       let interim = '';
+      const capturedAlts: string[] = [];
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const result = event.results[i];
+        for (let a = 0; a < result.length; a++) {
+          const altPiece = result[a]?.transcript?.trim();
+          if (altPiece && !capturedAlts.includes(altPiece)) {
+            capturedAlts.push(altPiece);
+          }
+        }
         const piece: string = result[0]?.transcript || '';
         if (result.isFinal) {
           finalRef.current = `${finalRef.current} ${piece}`.replace(/\s+/g, ' ').trim();
         } else {
           interim += piece;
         }
+      }
+      if (capturedAlts.length > 0) {
+        alternativesRef.current = capturedAlts;
       }
       interimRef.current = interim.trim();
       const combined = `${finalRef.current} ${interimRef.current}`.replace(/\s+/g, ' ').trim();

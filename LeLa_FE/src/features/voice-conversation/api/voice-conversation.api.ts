@@ -67,23 +67,30 @@ export interface VoiceStartResponse {
 }
 
 export interface UserEvaluationDto {
+  isGood?: boolean;
   score: number;
-  feedback: string;
+  status: 'EXCELLENT' | 'GOOD' | 'NEEDS_IMPROVEMENT' | string;
   grammarCheck: string;
+  phoneticTip?: string;
   suggestedImprovement: string;
 }
 
 export interface VoiceTurnResponse {
   turnNumber: number;
   aiReply: string;
-  grammarErrors: string[];
-  correctedSentence: string;
-  quickSuggestion: string;
+  grammarErrors?: string[];
+  correctedSentence?: string;
+  quickSuggestion?: string;
   updatedTargetWords: VoiceTargetWordDto[];
   validTurnCount: number;
   sessionEnded: boolean;
   endReason?: string;
-  userEvaluation?: UserEvaluationDto;
+  evaluation?: UserEvaluationDto | null;
+  userEvaluation?: UserEvaluationDto | null;
+  degraded?: boolean;
+  errorCode?: string;
+  intendedUtterance?: string;
+  isCompleted?: boolean;
 }
 
 export interface VoiceReportResponse {
@@ -118,13 +125,17 @@ export const voiceConversationApi = {
     transcript: string,
     sttConfidence?: number,
     clientElapsedSeconds?: number,
-    isRetry?: boolean
+    isRetry?: boolean,
+    alternatives?: string[],
+    previousAiQuestion?: string
   ) =>
     api.post<VoiceTurnResponse>(`/voice-conversations/sessions/${publicId}/turns`, {
       transcript,
       sttConfidence,
       clientElapsedSeconds,
       isRetry,
+      alternatives,
+      previousAiQuestion,
     }),
   finishSession: (publicId: string, feedback?: string) =>
     api.post<VoiceReportResponse>(`/voice-conversations/sessions/${publicId}/finish`, { feedback }),

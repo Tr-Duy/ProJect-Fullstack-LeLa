@@ -15,6 +15,16 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class GeminiResponse {
     private List<Candidate> candidates;
+    private PromptFeedback promptFeedback;
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class PromptFeedback {
+        private String blockReason;
+    }
 
     @Data
     @Builder

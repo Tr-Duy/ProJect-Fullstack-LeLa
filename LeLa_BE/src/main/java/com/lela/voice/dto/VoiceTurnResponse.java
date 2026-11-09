@@ -1,7 +1,10 @@
 package com.lela.voice.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public record VoiceTurnResponse(
         int turnNumber,
         String aiReply,
@@ -12,5 +15,14 @@ public record VoiceTurnResponse(
         int validTurnCount,
         boolean sessionEnded,
         String endReason,
-        UserEvaluationDto userEvaluation
-) {}
+        UserEvaluationDto evaluation,
+        Boolean degraded,
+        String errorCode,
+        String intendedUtterance,
+        Boolean isCompleted
+) {
+    @JsonProperty("userEvaluation")
+    public UserEvaluationDto getUserEvaluation() {
+        return evaluation;
+    }
+}

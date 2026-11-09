@@ -101,14 +101,27 @@ public class VoiceConversationIntegrationTest {
         }
 
         // Mock VoiceAiService để phản hồi ngay lập tức mà không phụ thuộc network API Gemini bên ngoài
+        VoiceAiService.TurnAiOutput mockOutput = VoiceAiService.TurnAiOutput.builder()
+                .intendedUtterance("I would like to reserve a deluxe room for two nights.")
+                .aiReply("Welcome to Grand LeLa Hotel! How may I assist you with your booking today?")
+                .evaluation(VoiceAiService.EvaluationAiOutput.builder()
+                        .isGood(true)
+                        .score(90)
+                        .status("EXCELLENT")
+                        .grammarCheck("Ngữ pháp chính xác")
+                        .phoneticTip("")
+                        .suggestedImprovement("I'd like to book a deluxe room for two nights.")
+                        .build())
+                .grammarErrors(Collections.emptyList())
+                .correctedSentence("I would like to reserve a hotel room.")
+                .quickSuggestion("Could you tell me the room rate?")
+                .tokensUsed(120)
+                .build();
+
         when(voiceAiService.generateTurnResponse(any(), anyInt(), anyString(), anyList(), anySet(), anyList()))
-                .thenReturn(VoiceAiService.TurnAiOutput.builder()
-                        .aiReply("Welcome to Grand LeLa Hotel! How may I assist you with your booking today?")
-                        .grammarErrors(Collections.emptyList())
-                        .correctedSentence("I would like to reserve a hotel room.")
-                        .quickSuggestion("Could you tell me the room rate?")
-                        .tokensUsed(120)
-                        .build());
+                .thenReturn(mockOutput);
+        when(voiceAiService.generateTurnResponse(any(), anyInt(), anyString(), anyList(), anySet(), anyList(), any(), any()))
+                .thenReturn(mockOutput);
     }
 
     @Test

@@ -316,7 +316,11 @@ public class VoiceConversationServiceImpl implements VoiceConversationService {
                     session.getValidTurnCount(),
                     false,
                     "AUDIO_EMPTY",
-                    null
+                    null,
+                    false,
+                    null,
+                    null,
+                    false
             );
         }
 
@@ -355,17 +359,13 @@ public class VoiceConversationServiceImpl implements VoiceConversationService {
                     req.transcript(),
                     targetWordStrings,
                     whitelist,
-                    history
+                    history,
+                    req.alternatives(),
+                    req.previousAiQuestion()
             );
         } catch (Exception e) {
-            log.error("[VoiceConversation] Lỗi khi gọi VoiceAiService: {}", e.getMessage(), e);
-            aiOutput = VoiceAiService.TurnAiOutput.builder()
-                    .aiReply("That sounds interesting! Could you tell me a little more about that?")
-                    .grammarErrors(Collections.emptyList())
-                    .correctedSentence(null)
-                    .quickSuggestion("I would love to learn more.")
-                    .tokensUsed(0)
-                    .build();
+            log.error("[VoiceConversation] Ngoại lệ không mong muốn khi gọi VoiceAiService: {}", e.getMessage(), e);
+            aiOutput = voiceAiService.createFallbackOutput(session.getScenario(), req.transcript(), "INTERNAL_ERROR");
         }
 
         if (aiOutput.getTokensUsed() != null) {
@@ -417,7 +417,10 @@ public class VoiceConversationServiceImpl implements VoiceConversationService {
         // Kiểm tra điều kiện kết thúc phiên:
         boolean sessionEnded = false;
         String endReason = null;
-        if (session.getDurationSeconds() >= props.getMaxDurationSeconds()) {
+        if (Boolean.TRUE.equals(aiOutput.getIsCompleted())) {
+            sessionEnded = true;
+            endReason = "Mục tiêu tình huống giao tiếp đã hoàn thành xuất sắc!";
+        } else if (session.getDurationSeconds() >= props.getMaxDurationSeconds()) {
             sessionEnded = true;
             endReason = "Hết thời gian 300 giây của phiên hội thoại.";
         } else if (session.getValidTurnCount() >= props.getMaxValidTurns()) {
@@ -429,20 +432,16 @@ public class VoiceConversationServiceImpl implements VoiceConversationService {
         List<VoiceTargetWordDto> updatedWordDtos = mapTargetWordsToDtos(updatedTargetWords);
 
         UserEvaluationDto evalDto = null;
-        if (aiOutput.getUserEvaluation() != null) {
-            evalDto = new UserEvaluationDto(
-                    aiOutput.getUserEvaluation().getScore(),
-                    aiOutput.getUserEvaluation().getFeedback(),
-                    aiOutput.getUserEvaluation().getGrammarCheck(),
-                    aiOutput.getUserEvaluation().getSuggestedImprovement()
-            );
-        } else {
-            evalDto = new UserEvaluationDto(
-                    85,
-                    "Phát âm rõ ràng, phản hồi tốt!",
-                    "Ngữ pháp chính xác",
-                    aiOutput.getCorrectedSentence() != null ? aiOutput.getCorrectedSentence() : aiOutput.getQuickSuggestion()
-            );
+        if (aiOutput.getEvaluation() != null) {
+            VoiceAiService.EvaluationAiOutput ev = aiOutput.getEvaluation();
+            evalDto = UserEvaluationDto.builder()
+                    .isGood(ev.getIsGood())
+                    .score(ev.getScore())
+                    .status(ev.getStatus())
+                    .grammarCheck(ev.getGrammarCheck())
+                    .phoneticTip(ev.getPhoneticTip())
+                    .suggestedImprovement(ev.getSuggestedImprovement())
+                    .build();
         }
 
         return new VoiceTurnResponse(
@@ -455,7 +454,11 @@ public class VoiceConversationServiceImpl implements VoiceConversationService {
                 session.getValidTurnCount(),
                 sessionEnded,
                 endReason,
-                evalDto
+                evalDto,
+                Boolean.TRUE.equals(aiOutput.getDegraded()),
+                aiOutput.getErrorCode(),
+                aiOutput.getIntendedUtterance(),
+                aiOutput.getIsCompleted()
         );
     }
 

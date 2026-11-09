@@ -72,7 +72,9 @@ payment:
 
 gemini:
   api-key: ${GEMINI_API_KEY}
-  api-url: https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:streamGenerateContent
+  primary-model: ${GEMINI_PRIMARY_MODEL:gemini-3.5-flash}
+  fallback-model: ${GEMINI_FALLBACK_MODEL:gemini-flash-lite-latest}
+  base-url: ${GEMINI_BASE_URL:https://generativelanguage.googleapis.com/v1beta/models}
 
 typing-game:
   stale-timeout-minutes: 30

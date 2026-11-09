@@ -93,9 +93,13 @@ public class GlobalException {
     }
 
     @ExceptionHandler(com.lela.ai.exception.AiException.class)
-    public ResponseEntity<ApiResponse<Void>> handleAiException(com.lela.ai.exception.AiException ex) {
+    public ResponseEntity<Map<String, Object>> handleAiException(com.lela.ai.exception.AiException ex) {
         logError(ex);
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(ex.getMessage()));
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("success", false);
+        payload.put("errorCode", ex.getErrorCode() != null ? ex.getErrorCode() : "GEMINI_ERROR");
+        payload.put("message", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(payload);
     }
 
     @ExceptionHandler(IllegalStateException.class)

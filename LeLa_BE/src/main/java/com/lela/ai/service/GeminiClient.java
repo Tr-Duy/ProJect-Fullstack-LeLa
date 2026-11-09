@@ -63,11 +63,14 @@ public class GeminiClient {
     }
 
     public CompletableFuture<HttpResponse<String>> generateContent(GeminiRequest request) {
+        return generateContent(config.getPrimaryModel(), request);
+    }
+
+    public CompletableFuture<HttpResponse<String>> generateContent(String model, GeminiRequest request) {
         try {
             String requestBody = objectMapper.writeValueAsString(request);
-            // Non-streaming endpoint (no alt=sse)
-            String url = config.getApiUrl().replace(":streamGenerateContent", ":generateContent") + "?key=" + config.getApiKey();
-            
+            String url = config.getGenerateContentUrl(model);
+
             HttpRequest httpRequest = HttpRequest.newBuilder()
                     .uri(URI.create(url))
                     .header("Content-Type", "application/json")
@@ -76,8 +79,20 @@ public class GeminiClient {
 
             return httpClient.sendAsync(httpRequest, HttpResponse.BodyHandlers.ofString());
         } catch (Exception e) {
-            log.error("Failed to prepare Gemini non-streaming request", e);
+            log.error("Failed to prepare Gemini non-streaming request for model {}", model, e);
             throw new AiException("Failed to prepare AI non-streaming request", e);
         }
+    }
+
+    public String getPrimaryModel() {
+        return config.getPrimaryModel();
+    }
+
+    public String getFallbackModel() {
+        return config.getFallbackModel();
+    }
+
+    public String getModelNameSafe() {
+        return config.getPrimaryModel();
     }
 }

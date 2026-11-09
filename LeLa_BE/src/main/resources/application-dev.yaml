@@ -24,3 +24,6 @@ payment:
 
 gemini:
   api-key: ${GEMINI_API_KEY:YOUR_GEMINI_API_KEY_HERE}
+  primary-model: ${GEMINI_PRIMARY_MODEL:gemini-3.5-flash}
+  fallback-model: ${GEMINI_FALLBACK_MODEL:gemini-flash-lite-latest}
+  base-url: ${GEMINI_BASE_URL:https://generativelanguage.googleapis.com/v1beta/models}

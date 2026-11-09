@@ -25,11 +25,13 @@ export const VoiceCallRoom: React.FC<VoiceCallRoomProps> = ({
   const [currentAiSpeech, setCurrentAiSpeech] = useState(sessionData.openingLine || '');
   const [currentSuggestion, setCurrentSuggestion] = useState<string>('');
   const [latestEvaluation, setLatestEvaluation] = useState<UserEvaluationDto | null>(null);
+  const [intendedUtterance, setIntendedUtterance] = useState<string>('');
   const [silenceCounter, setSilenceCounter] = useState(0);
   const [textInputFallback, setTextInputFallback] = useState('');
   const [manualTextMode, setManualTextMode] = useState(false);
 
   const bufferTimerRef = useRef<number | null>(null);
+  const lastAiSpeechRef = useRef<string>(sessionData.openingLine || '');
 
   const { speak, isSpeaking, stop: stopTts } = useSpeechSynthesis();
 
@@ -52,8 +54,8 @@ export const VoiceCallRoom: React.FC<VoiceCallRoomProps> = ({
     incompleteExtraMs: 1800,
     minWords: 2,
     isAiSpeaking: isAiSpeaking || isSpeaking,
-    onUtteranceEnd: (text) => {
-      handleSendTurn(text, 0.9, false);
+    onUtteranceEnd: (text, alternatives) => {
+      handleSendTurn(text, 0.9, false, alternatives);
     },
     onError: (errMsg, isFatal) => {
       if (isFatal) {
@@ -144,7 +146,12 @@ export const VoiceCallRoom: React.FC<VoiceCallRoomProps> = ({
     return () => clearInterval(silenceTimer);
   }, [isSpeaking, isAiSpeaking, isAiThinking]);
 
-  const handleSendTurn = async (transcriptText: string, confidence: number, isRetry: boolean) => {
+  const handleSendTurn = async (
+    transcriptText: string,
+    confidence: number,
+    isRetry: boolean,
+    alternatives?: string[]
+  ) => {
     const cleanText = (transcriptText || '').trim();
     if (!cleanText || isAiThinking || isAiSpeaking || isSpeaking) {
       console.warn('[VoiceCallRoom] Bỏ qua lượt gửi vì transcript rỗng hoặc AI đang nói/xử lý');
@@ -165,18 +172,28 @@ export const VoiceCallRoom: React.FC<VoiceCallRoomProps> = ({
         cleanText,
         confidence,
         elapsed,
-        isRetry
+        isRetry,
+        alternatives || [],
+        lastAiSpeechRef.current
       );
 
       const turn = res.data;
       setCurrentAiSpeech(turn.aiReply);
-      setTargetWords(turn.updatedTargetWords);
+      lastAiSpeechRef.current = turn.aiReply;
+      setTargetWords(turn.updatedTargetWords || []);
       setValidTurns(turn.validTurnCount);
       if (turn.quickSuggestion) {
         setCurrentSuggestion(turn.quickSuggestion);
       }
-      if (turn.userEvaluation) {
-        setLatestEvaluation(turn.userEvaluation);
+
+      if (turn.degraded) {
+        setLatestEvaluation(null);
+        setIntendedUtterance('');
+        message.warning('Hệ thống AI đang quá tải, tạm thời chuyển sang câu thoại dự phòng.', 4);
+      } else {
+        const evalData = turn.evaluation || turn.userEvaluation || null;
+        setLatestEvaluation(evalData);
+        setIntendedUtterance(turn.intendedUtterance || cleanText);
       }
 
       setIdle();
@@ -197,7 +214,17 @@ export const VoiceCallRoom: React.FC<VoiceCallRoomProps> = ({
       }
     } catch (err: any) {
       setIdle();
-      message.error(err.response?.data?.message || 'Có lỗi kết nối với AI. Vui lòng thử lại.');
+      console.error('[VoiceCallRoom] Lỗi API processTurn toàn bộ response:', err.response?.data || err);
+      const data = err.response?.data;
+      const errorCode = data?.errorCode;
+      const errorMsg = data?.message;
+      let displayMessage = 'Hệ thống đang bận, vui lòng thử lại sau giây lát.';
+      if (errorCode) {
+        displayMessage = `[${errorCode}] ${errorMsg || 'Lỗi kết nối với AI'}`;
+      } else if (errorMsg) {
+        displayMessage = errorMsg;
+      }
+      message.warning(displayMessage, 5);
     } finally {
       setIsAiThinking(false);
     }
@@ -391,39 +418,65 @@ export const VoiceCallRoom: React.FC<VoiceCallRoomProps> = ({
 
           {/* Quick Feedback Loop Card */}
           {latestEvaluation && (
-            <div className="w-full max-w-lg mx-auto bg-gradient-to-br from-amber-50 to-orange-50 border border-orange-200/90 rounded-2xl p-3.5 text-left shadow-sm animate-fade-in space-y-2">
+            <div className="w-full max-w-lg mx-auto bg-gradient-to-br from-amber-50 to-orange-50 border border-orange-200/90 rounded-2xl p-4 text-left shadow-sm animate-fade-in space-y-2.5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
                   <Award className="w-4 h-4 text-orange-600" />
                   <span className="text-xs font-bold text-slate-800">Đánh giá lượt nói vừa rồi:</span>
                 </div>
-                <div className="flex items-center gap-1 bg-white px-2 py-0.5 rounded-full border border-orange-200 text-xs font-black text-orange-600 shadow-xs">
-                  <span>{latestEvaluation.score ?? 85}</span>
-                  <span className="text-[10px] text-slate-400 font-normal">/100</span>
-                </div>
+                {(() => {
+                  const status = (latestEvaluation.status || '').toUpperCase();
+                  const score = latestEvaluation.score ?? 80;
+                  if (status === 'EXCELLENT' || score >= 85) {
+                    return (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-100 border border-emerald-300 text-emerald-800 text-xs font-bold shadow-xs">
+                        <Check className="w-3.5 h-3.5 text-emerald-600" />
+                        Xuất sắc ({score}/100)
+                      </span>
+                    );
+                  }
+                  if (status === 'GOOD' || score >= 60) {
+                    return (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-300 text-emerald-700 text-xs font-bold shadow-xs">
+                        <Check className="w-3.5 h-3.5 text-emerald-600" />
+                        Tốt ({score}/100)
+                      </span>
+                    );
+                  }
+                  return (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-orange-100 border border-orange-300 text-orange-800 text-xs font-bold shadow-xs">
+                      Cần cải thiện ({score}/100)
+                    </span>
+                  );
+                })()}
               </div>
 
-              {latestEvaluation.feedback && (
-                <p className="text-xs text-slate-700 leading-snug">
-                  {latestEvaluation.feedback}
-                </p>
+              {intendedUtterance && (
+                <div className="text-xs text-slate-600 font-medium">
+                  AI hiểu ý bạn là: <strong className="text-slate-800">"{intendedUtterance}"</strong>
+                </div>
               )}
 
-              <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-orange-100">
-                {latestEvaluation.grammarCheck && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-[11px] font-semibold">
-                    <Check className="w-3 h-3 text-emerald-600" />
-                    {latestEvaluation.grammarCheck}
-                  </span>
-                )}
+              {latestEvaluation.grammarCheck && (
+                <div className="flex items-start gap-1.5 text-xs text-emerald-900 bg-emerald-50/80 border border-emerald-200/80 rounded-xl px-2.5 py-1.5">
+                  <Check className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                  <span>{latestEvaluation.grammarCheck}</span>
+                </div>
+              )}
 
-                {latestEvaluation.suggestedImprovement && (
-                  <div className="text-[11px] text-slate-600 flex items-center gap-1">
-                    <span className="font-semibold text-orange-700">Gợi ý cách nói hay hơn:</span>
-                    <span className="italic font-medium text-slate-800">"{latestEvaluation.suggestedImprovement}"</span>
-                  </div>
-                )}
-              </div>
+              {latestEvaluation.phoneticTip && (
+                <div className="flex items-start gap-1.5 text-xs text-amber-900 bg-amber-50/80 border border-amber-200/80 rounded-xl px-2.5 py-1.5">
+                  <Volume2 className="w-3.5 h-3.5 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <span>{latestEvaluation.phoneticTip}</span>
+                </div>
+              )}
+
+              {latestEvaluation.suggestedImprovement && (
+                <div className="text-xs text-slate-700 pt-1 border-t border-orange-100 flex flex-col sm:flex-row sm:items-baseline gap-1">
+                  <span className="font-semibold text-orange-700 flex-shrink-0">Gợi ý cách nói hay hơn:</span>
+                  <span className="italic font-medium text-orange-900">"{latestEvaluation.suggestedImprovement}"</span>
+                </div>
+              )}
             </div>
           )}
         </div>
