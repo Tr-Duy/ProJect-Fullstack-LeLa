@@ -64,6 +64,7 @@ export function useSpeechSynthesis() {
 
   const speak = useCallback(
     (text: string, rate: number = 0.95, onEnd?: () => void) => {
+
       if (!isSupported || !text) {
         onEnd?.();
         return;
@@ -103,17 +104,22 @@ export function useSpeechSynthesis() {
       setIsSpeaking(true);
 
       utterance.onstart = () => {
+        const now = new Date().toISOString();
+        console.log(`[TTS ONSTART][${now}] utterance started speaking`);
         setIsSpeaking(true);
       };
 
       utterance.onend = () => {
+        const now = new Date().toISOString();
+        console.log(`[TTS ONEND][${now}] utterance finished speaking`);
         setIsSpeaking(false);
         activeUtterance = null;
         onEnd?.();
       };
 
       utterance.onerror = (e) => {
-        console.warn('[useSpeechSynthesis] utterance.onerror:', e);
+        const now = new Date().toISOString();
+        console.warn(`[TTS ONERROR][${now}] utterance.onerror:`, e);
         setIsSpeaking(false);
         activeUtterance = null;
         onEnd?.();
@@ -122,6 +128,8 @@ export function useSpeechSynthesis() {
       // Đệm 50ms sau khi cancel() để Chrome engine giải phóng buffer hoàn toàn trước khi phát câu mới
       setTimeout(() => {
         try {
+          const now = new Date().toISOString();
+          console.log(`[TTS EXECUTE SPEAK][${now}] window.speechSynthesis.speak called`);
           window.speechSynthesis.speak(utterance);
         } catch (err) {
           console.error('[useSpeechSynthesis] speak error:', err);
@@ -136,13 +144,15 @@ export function useSpeechSynthesis() {
 
   const stop = useCallback(() => {
     if (isSupported) {
+      if (activeUtterance) {
+        activeUtterance = null;
+      }
       try {
         window.speechSynthesis.cancel();
       } catch {
         // ignore
       }
       setIsSpeaking(false);
-      activeUtterance = null;
     }
   }, [isSupported]);
 

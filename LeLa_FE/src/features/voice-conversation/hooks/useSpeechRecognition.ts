@@ -8,7 +8,7 @@ export interface UseSpeechRecognitionOptions {
   incompleteExtraMs?: number;
   minWords?: number;
   isAiSpeaking?: boolean;
-  onUtteranceEnd: (text: string, alternatives?: string[]) => void;
+  onUtteranceEnd: (text: string, alternatives?: string[], confidence?: number) => void;
   onError?: (error: string, isFatal?: boolean) => void;
 }
 
@@ -29,12 +29,16 @@ export function useSpeechRecognition({
 }: UseSpeechRecognitionOptions) {
   const [status, setStatus] = useState<SpeechStatus>('idle');
   const [transcript, setTranscript] = useState<string>('');
+  const [finalTranscript, setFinalTranscript] = useState<string>('');
+  const [interimTranscript, setInterimTranscript] = useState<string>('');
+  const [confidence, setConfidence] = useState<number>(1.0);
   const [error, setError] = useState<string | null>(null);
 
   const recognitionRef = useRef<any>(null);
   const finalRef = useRef<string>('');
   const interimRef = useRef<string>('');
   const alternativesRef = useRef<string[]>([]);
+  const confidenceRef = useRef<number>(1.0);
   const timerRef = useRef<number | null>(null);
   const restartTimerRef = useRef<number | null>(null);
   const speechStartTimeRef = useRef<number>(0);
@@ -43,6 +47,7 @@ export function useSpeechRecognition({
   const onEndRef = useRef(onUtteranceEnd);
   const onErrorRef = useRef(onError);
   const isAiSpeakingRef = useRef<boolean>(isAiSpeaking);
+  const sessionIdRef = useRef<number>(0);
 
   useEffect(() => {
     onEndRef.current = onUtteranceEnd;
@@ -67,21 +72,30 @@ export function useSpeechRecognition({
     finalRef.current = '';
     interimRef.current = '';
     alternativesRef.current = [];
+    confidenceRef.current = 1.0;
     submittedRef.current = false;
     setTranscript('');
+    setFinalTranscript('');
+    setInterimTranscript('');
+    setConfidence(1.0);
     setError(null);
     clearTimer();
   }, [clearTimer]);
 
   const abortAndReset = useCallback(() => {
+    sessionIdRef.current++;
     wantListeningRef.current = false;
     clearTimer();
     if (recognitionRef.current) {
       try {
+        recognitionRef.current.onresult = null;
+        recognitionRef.current.onerror = null;
+        recognitionRef.current.onend = null;
         recognitionRef.current.abort();
       } catch (e: any) {
         // ignore
       }
+      recognitionRef.current = null;
     }
     reset();
     setStatus('idle');
@@ -98,14 +112,15 @@ export function useSpeechRecognition({
   const commit = useCallback(
     (requiredWords: number) => {
       if (submittedRef.current || isAiSpeakingRef.current) return;
-      const text = `${finalRef.current} ${interimRef.current}`.replace(/\s+/g, ' ').trim();
+      // Backend CHỈ nhận final transcript, tuyệt đối không gửi interim lên BE
+      const finalText = finalRef.current.replace(/\s+/g, ' ').trim();
       const durationMs = Date.now() - speechStartTimeRef.current;
       
       // Lọc bỏ tiếng ồn ngắn dưới 0.6s hoặc không có từ hợp lệ
-      if (durationMs < 600 && countWords(text) < 1) {
+      if (durationMs < 600 && countWords(finalText) < 1) {
         return;
       }
-      if (countWords(text) < requiredWords) return;
+      if (countWords(finalText) < requiredWords) return;
 
       submittedRef.current = true;
       wantListeningRef.current = false;
@@ -119,10 +134,12 @@ export function useSpeechRecognition({
         }
       }
 
-      setTranscript(text);
-      setStatus('processing');
+      setTranscript(finalText);
+      setInterimTranscript('');
+      setStatus('idle');
       const alts = [...alternativesRef.current];
-      onEndRef.current(text, alts);
+      const conf = confidenceRef.current;
+      onEndRef.current(finalText, alts, conf);
     },
     [clearTimer],
   );
@@ -137,11 +154,20 @@ export function useSpeechRecognition({
   }, [clearTimer, commit, silenceMs, incompleteExtraMs, minWords]);
 
   const start = useCallback(() => {
-    // Không bao giờ khởi động nhận diện nếu AI đang dứt lời chưa xong
-    if (isAiSpeakingRef.current) {
-      console.log('[STT] Blocked start() because AI is speaking (echo guard)');
+    // Không bao giờ khởi động nhận diện nếu loa AI đang phát âm thanh thật
+    const isBrowserSpeaking =
+      typeof window !== 'undefined' &&
+      Boolean(window.speechSynthesis && (window.speechSynthesis.speaking || window.speechSynthesis.pending));
+
+    if (isBrowserSpeaking) {
+      console.log('[STT] Blocked start() because window.speechSynthesis is active (echo guard)');
       return;
     }
+
+    // Đặt lại cờ echo guard khi loa đã im lặng hoàn toàn
+    isAiSpeakingRef.current = false;
+
+    const currentSessionId = ++sessionIdRef.current;
 
     const SpeechRecognitionImpl =
       (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -175,39 +201,61 @@ export function useSpeechRecognition({
     recognition.maxAlternatives = 5;
 
     recognition.onresult = (event: any) => {
+      // Bỏ qua mọi kết quả trễ từ phiên cũ
+      if (sessionIdRef.current !== currentSessionId) {
+        return;
+      }
+
+      // Diagnostic log theo yêu cầu LỖI B.1
+      const now = new Date().toISOString();
+      console.log(`[STT ONRESULT DIAGNOSTIC][${now}] lang=${recognition.lang}, continuous=${recognition.continuous}, interimResults=${recognition.interimResults}`);
+
       // Guard chống echo: Hủy bỏ ngay mọi tạp âm thu được nếu AI đang phát âm
       if (isAiSpeakingRef.current) {
         console.log('[STT] Echo guard: Discarded speech packet because AI is speaking');
         return;
       }
 
-      let interim = '';
+      let currentInterim = '';
       const capturedAlts: string[] = [];
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const result = event.results[i];
+        const piece: string = result[0]?.transcript || '';
+        const conf = result[0]?.confidence ?? 0;
+        console.log(`[STT ONRESULT ITEM][${now}] index=${i}, isFinal=${result.isFinal}, transcript="${piece}", confidence=${conf}`);
+
+        if (conf > 0) {
+          confidenceRef.current = conf;
+          setConfidence(conf);
+        }
+
         for (let a = 0; a < result.length; a++) {
           const altPiece = result[a]?.transcript?.trim();
+          const altConf = result[a]?.confidence ?? 0;
+          console.log(`   alt[${a}]: "${altPiece}" (conf=${altConf})`);
           if (altPiece && !capturedAlts.includes(altPiece)) {
             capturedAlts.push(altPiece);
           }
         }
-        const piece: string = result[0]?.transcript || '';
         if (result.isFinal) {
           finalRef.current = `${finalRef.current} ${piece}`.replace(/\s+/g, ' ').trim();
+          setFinalTranscript(finalRef.current);
         } else {
-          interim += piece;
+          currentInterim += piece;
         }
       }
       if (capturedAlts.length > 0) {
         alternativesRef.current = capturedAlts;
       }
-      interimRef.current = interim.trim();
+      interimRef.current = currentInterim.trim();
+      setInterimTranscript(interimRef.current);
       const combined = `${finalRef.current} ${interimRef.current}`.replace(/\s+/g, ' ').trim();
       setTranscript(combined);
       scheduleCommit();
     };
 
     recognition.onerror = (event: any) => {
+      if (sessionIdRef.current !== currentSessionId) return;
       if (event.error === 'no-speech' || event.error === 'aborted') {
         return;
       }
@@ -228,6 +276,9 @@ export function useSpeechRecognition({
     };
 
     recognition.onend = () => {
+      if (sessionIdRef.current !== currentSessionId) {
+        return;
+      }
       if (isAiSpeakingRef.current) {
         setStatus('idle');
         return;
@@ -239,7 +290,7 @@ export function useSpeechRecognition({
         }
         restartTimerRef.current = window.setTimeout(() => {
           try {
-            if (wantListeningRef.current && !submittedRef.current && !isAiSpeakingRef.current) {
+            if (sessionIdRef.current === currentSessionId && wantListeningRef.current && !submittedRef.current && !isAiSpeakingRef.current) {
               recognition.start();
             }
           } catch (e: any) {
@@ -252,6 +303,9 @@ export function useSpeechRecognition({
     };
 
     recognitionRef.current = recognition;
+    if (typeof window !== 'undefined') {
+      (window as any)._activeRecognitionInstance = recognition;
+    }
     try {
       recognition.start();
       setStatus('listening');
@@ -274,22 +328,37 @@ export function useSpeechRecognition({
 
   const retry = useCallback(() => {
     if (isAiSpeakingRef.current) return;
+    sessionIdRef.current++;
     wantListeningRef.current = false;
     clearTimer();
-    try {
-      recognitionRef.current?.abort();
-    } catch (e: any) {
-      if (e?.name !== 'InvalidStateError') {
-        console.warn('SpeechRecognition abort failed', e);
-      }
-    }
     reset();
     setStatus('idle');
-    window.setTimeout(() => {
-      if (!isAiSpeakingRef.current) {
+
+    const oldInstance = recognitionRef.current;
+    if (oldInstance) {
+      recognitionRef.current = null;
+      try {
+        oldInstance.onresult = null;
+        oldInstance.onerror = null;
+        let restarted = false;
+        const doRestart = () => {
+          if (restarted) return;
+          restarted = true;
+          oldInstance.onend = null;
+          if (!isAiSpeakingRef.current) {
+            start();
+          }
+        };
+        oldInstance.onend = doRestart;
+        oldInstance.abort();
+        // Fallback sau 120ms nếu trình duyệt không phát onend
+        window.setTimeout(doRestart, 120);
+      } catch {
         start();
       }
-    }, 150);
+    } else {
+      start();
+    }
   }, [reset, start, clearTimer]);
 
   const stop = useCallback(() => {
@@ -336,6 +405,9 @@ export function useSpeechRecognition({
     isListening: status === 'listening',
     isProcessing: status === 'processing',
     transcript,
+    finalTranscript,
+    interimTranscript,
+    confidence,
     error,
     isSupported,
     start,
