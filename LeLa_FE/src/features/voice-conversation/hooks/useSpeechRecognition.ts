@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 export type SpeechStatus = 'idle' | 'listening' | 'processing';
+export interface SttAlternative { transcript: string; confidence: number }
 
 export interface UseSpeechRecognitionOptions {
   lang?: string;
@@ -10,7 +11,7 @@ export interface UseSpeechRecognitionOptions {
   isAiSpeaking?: boolean;
   autoCommit?: boolean;
   onStopped?: () => void;
-  onUtteranceEnd: (text: string, alternatives?: string[], confidence?: number) => void;
+  onUtteranceEnd: (text: string, alternatives?: string[], confidence?: number, alternativeDetails?: SttAlternative[]) => void;
   onError?: (error: string, isFatal?: boolean) => void;
 }
 
@@ -42,6 +43,7 @@ export function useSpeechRecognition({
   const finalRef = useRef<string>('');
   const interimRef = useRef<string>('');
   const alternativesRef = useRef<string[]>([]);
+  const alternativeDetailsRef = useRef<SttAlternative[]>([]);
   const confidenceRef = useRef<number>(1.0);
   const timerRef = useRef<number | null>(null);
   const restartTimerRef = useRef<number | null>(null);
@@ -79,6 +81,7 @@ export function useSpeechRecognition({
     finalRef.current = '';
     interimRef.current = '';
     alternativesRef.current = [];
+    alternativeDetailsRef.current = [];
     confidenceRef.current = 1.0;
     submittedRef.current = false;
     finishRequestedRef.current = false;
@@ -154,8 +157,9 @@ export function useSpeechRecognition({
       setInterimTranscript('');
       setStatus('idle');
       const alts = [...alternativesRef.current];
+      const details = [...alternativeDetailsRef.current];
       const conf = confidenceRef.current;
-      onEndRef.current(finalText, alts, conf);
+      onEndRef.current(finalText, alts, conf, details);
     },
     [clearTimer],
   );
@@ -165,7 +169,7 @@ export function useSpeechRecognition({
     clearTimer();
 
     // Chỉ bắt đầu đếm im lặng để tự gửi khi ĐÃ CÓ kết quả final
-    if (!finalRef.current.trim()) return;
+    if (!finalRef.current.trim() || interimRef.current.trim()) return;
 
     const fullText = `${finalRef.current} ${interimRef.current}`.replace(/\s+/g, ' ').trim();
     if (!fullText) return;
@@ -220,6 +224,9 @@ export function useSpeechRecognition({
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.maxAlternatives = 5;
+    // Results are cumulative within one engine run. Rebuild by index instead of
+    // appending repeated final packets; retain a prefix only across engine restarts.
+    let prefix = '';
 
     recognition.onresult = (event: any) => {
       // Bỏ qua mọi kết quả trễ từ phiên cũ
@@ -232,39 +239,47 @@ export function useSpeechRecognition({
       console.log(`[STT ONRESULT DIAGNOSTIC][${now}] lang=${recognition.lang}, continuous=${recognition.continuous}, interimResults=${recognition.interimResults}`);
 
       // Guard chống echo: Hủy bỏ ngay mọi tạp âm thu được nếu AI đang phát âm
-      if (isAiSpeakingRef.current) {
+      if (isAiSpeakingRef.current || window.speechSynthesis?.speaking || window.speechSynthesis?.pending || submittedRef.current) {
         console.log('[STT] Echo guard: Discarded speech packet because AI is speaking');
         return;
       }
 
       let currentInterim = '';
       const capturedAlts: string[] = [];
-      for (let i = event.resultIndex; i < event.results.length; i++) {
+      const details: SttAlternative[] = [];
+      const finals: string[] = [];
+      for (let i = 0; i < event.results.length; i++) {
         const result = event.results[i];
         const piece: string = result[0]?.transcript || '';
         const conf = result[0]?.confidence ?? 0;
         console.debug(`[STT RESULT][${now}] index=${i}, isFinal=${result.isFinal}, confidence=${conf}`);
 
-        if (conf > 0) {
+        if (Number.isFinite(conf) && conf >= 0 && conf <= 1) {
           confidenceRef.current = conf;
           setConfidence(conf);
         }
 
         for (let a = 0; a < result.length; a++) {
           const altPiece = result[a]?.transcript?.trim();
-          if (altPiece && !capturedAlts.includes(altPiece)) {
-            capturedAlts.push(altPiece);
+          // Alternatives are whole utterances, not disconnected result fragments.
+          const alternative = [prefix, ...Array.from({ length: event.results.length }, (_, index) =>
+            index === i ? altPiece : event.results[index][0]?.transcript || '')].join(' ').replace(/\s+/g, ' ').trim();
+          if (altPiece && !capturedAlts.includes(alternative)) {
+            capturedAlts.push(alternative);
+            details.push({ transcript: alternative, confidence: result[a]?.confidence ?? 0 });
           }
         }
         if (result.isFinal) {
-          finalRef.current = `${finalRef.current} ${piece}`.replace(/\s+/g, ' ').trim();
-          setFinalTranscript(finalRef.current);
+          finals.push(piece);
         } else {
           currentInterim += piece;
         }
       }
+      finalRef.current = [prefix, ...finals].join(' ').replace(/\s+/g, ' ').trim();
+      setFinalTranscript(finalRef.current);
       if (capturedAlts.length > 0) {
         alternativesRef.current = capturedAlts;
+        alternativeDetailsRef.current = details;
       }
       interimRef.current = currentInterim.trim();
       setInterimTranscript(interimRef.current);
@@ -290,6 +305,9 @@ export function useSpeechRecognition({
       }
 
       const msg = `Lỗi nhận dạng giọng nói: ${event.error}`;
+      wantListeningRef.current = false;
+      clearTimer();
+      setStatus('idle');
       setError(msg);
       onErrorRef.current?.(msg, false);
     };
@@ -303,7 +321,7 @@ export function useSpeechRecognition({
         return;
       }
 
-      if (!autoCommit) {
+      if (!autoCommit || finishRequestedRef.current) {
         if (finishRequestedRef.current) commit(1);
         wantListeningRef.current = false;
         setStatus('idle');
@@ -317,7 +335,9 @@ export function useSpeechRecognition({
         }
         restartTimerRef.current = window.setTimeout(() => {
           try {
-            if (sessionIdRef.current === currentSessionId && wantListeningRef.current && !submittedRef.current && !isAiSpeakingRef.current) {
+            if (sessionIdRef.current === currentSessionId && wantListeningRef.current && !submittedRef.current && !isAiSpeakingRef.current
+              && !window.speechSynthesis?.speaking && !window.speechSynthesis?.pending) {
+              prefix = finalRef.current;
               recognition.start();
             }
           } catch (e: any) {
@@ -350,12 +370,18 @@ export function useSpeechRecognition({
 
   const finishNow = useCallback(() => {
     if (isAiSpeakingRef.current) return;
+    const flushSessionId = sessionIdRef.current;
     finishRequestedRef.current = true;
     wantListeningRef.current = false;
     clearTimer();
     try { recognitionRef.current?.stop(); } catch { commit(1); }
     // Some engines omit onend; this is a flush deadline, never an auto-send silence threshold.
-    timerRef.current = window.setTimeout(() => { commit(1); setStatus('idle'); onStoppedRef.current?.(); }, 1000);
+    if (sessionIdRef.current === flushSessionId && !submittedRef.current) {
+      timerRef.current = window.setTimeout(() => {
+        if (sessionIdRef.current !== flushSessionId || submittedRef.current) return;
+        commit(1); setStatus('idle'); onStoppedRef.current?.();
+      }, 1000);
+    }
   }, [commit, clearTimer]);
 
   const retry = useCallback(() => {

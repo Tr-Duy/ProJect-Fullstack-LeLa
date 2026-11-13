@@ -116,6 +116,7 @@ public class VoiceConversationIntegrationTest {
 
         // Mock VoiceAiService để phản hồi ngay lập tức mà không phụ thuộc network API Gemini bên ngoài
         VoiceAiService.TurnAiOutput mockOutput = VoiceAiService.TurnAiOutput.builder()
+                .intentConfidence("HIGH")
                 .feedbackLine("Bạn đã đặt phòng rõ ràng.")
                 .suggestions(VoiceAiService.defaultSuggestions())
                 .intendedUtterance("I would like to reserve a deluxe room for two nights.")
@@ -134,9 +135,7 @@ public class VoiceConversationIntegrationTest {
                 .tokensUsed(120)
                 .build();
 
-        when(voiceAiService.generateTurnResponse(any(), anyInt(), anyString(), anyList(), anySet(), anyList()))
-                .thenReturn(mockOutput);
-        when(voiceAiService.generateTurnResponse(any(), anyInt(), anyString(), anyList(), anySet(), anyList(), any(), any()))
+        when(voiceAiService.generateTurnResponse(any(), anyInt(), anyString(), anyList(), anySet(), anyList(), any(), any(), any(), any()))
                 .thenReturn(mockOutput);
     }
 
@@ -163,6 +162,7 @@ public class VoiceConversationIntegrationTest {
                 mockMvc.perform(post("/api/v1/voice-conversations/sessions/" + id + "/turns")
                         .contentType(MediaType.APPLICATION_JSON).content("{\"transcript\":\"I would like a room please\"}"))
                         .andExpect(status().isOk()).andExpect(jsonPath("$.feedbackLine").isNotEmpty())
+                        .andExpect(jsonPath("$.intentConfidence").value("HIGH"))
                         .andExpect(jsonPath("$.suggestions.length()").value(3))
                         .andExpect(jsonPath("$.quickSuggestion").exists());
             }

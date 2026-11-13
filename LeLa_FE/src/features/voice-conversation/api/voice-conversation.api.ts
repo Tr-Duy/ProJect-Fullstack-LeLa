@@ -90,6 +90,9 @@ export interface VoiceTurnResponse {
   degraded?: boolean;
   errorCode?: string;
   intendedUtterance?: string;
+  intentConfidence?: 'HIGH' | 'MEDIUM' | 'LOW';
+  /** Client-only copy for the end-of-session review. */
+  rawTranscript?: string;
   isCompleted?: boolean;
 }
 
@@ -113,6 +116,8 @@ export interface VoiceReportResponse {
     originalTranscript: string;
     errors: string[];
     correctedText: string;
+    phoneticTip?: string;
+    assessmentAvailable?: boolean;
   }[];
 }
 
@@ -128,7 +133,8 @@ export const voiceConversationApi = {
     clientElapsedSeconds?: number,
     isRetry?: boolean,
     alternatives?: string[],
-    previousAiQuestion?: string
+    previousAiQuestion?: string,
+    alternativeDetails?: { transcript: string; confidence: number }[]
   ) =>
     api.post<VoiceTurnResponse>(`/voice-conversations/sessions/${publicId}/turns`, {
       transcript,
@@ -137,6 +143,7 @@ export const voiceConversationApi = {
       isRetry,
       alternatives,
       previousAiQuestion,
+      alternativeDetails,
     }),
   finishSession: (publicId: string, feedback?: string) =>
     api.post<VoiceReportResponse>(`/voice-conversations/sessions/${publicId}/finish`, feedback ? { feedback } : {}),

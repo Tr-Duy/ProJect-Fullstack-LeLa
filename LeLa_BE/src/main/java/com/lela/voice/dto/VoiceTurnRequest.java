@@ -11,5 +11,11 @@ public record VoiceTurnRequest(
         Integer clientElapsedSeconds,
         Boolean isRetry,
         List<String> alternatives,
-        String previousAiQuestion
-) {}
+        String previousAiQuestion,
+        List<SttAlternativeDto> alternativeDetails
+) {
+    public VoiceTurnRequest(String transcript, BigDecimal confidence, Integer elapsed, Boolean retry,
+            List<String> alternatives, String question) {
+        this(transcript, confidence, elapsed, retry, alternatives, question, List.of());
+    }
+}

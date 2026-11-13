@@ -345,11 +345,15 @@ public class VoiceConversationServiceImpl implements VoiceConversationService {
             whitelist.addAll(whitelistService.generateInflections(tw.getWordText()));
         }
 
-        // Lịch sử hội thoại 4 turns gần nhất
+        // Each stored USER row includes its AI answer. Supply three full exchanges.
         List<String> history = turns.stream()
-                .skip(Math.max(0, turns.size() - 4))
-                .map(t -> t.getRole() + ": " + t.getTranscript())
+                .filter(t -> "USER".equals(t.getRole()))
+                .skip(Math.max(0, turns.stream().filter(t -> "USER".equals(t.getRole())).count() - 3))
+                .map(t -> "USER: " + t.getTranscript() + " | AI: " + t.getAiReply())
                 .collect(Collectors.toList());
+        // Use the persisted AI line, so callers cannot bypass the confirmation guard.
+        String previousAiQuestion = turns.isEmpty() ? session.getScenario().getOpeningLine()
+                : turns.get(turns.size() - 1).getAiReply();
 
         // Gọi VoiceAiService với Gemini và fallback an toàn
         VoiceAiService.TurnAiOutput aiOutput;
@@ -362,7 +366,9 @@ public class VoiceConversationServiceImpl implements VoiceConversationService {
                     whitelist,
                     history,
                     req.alternatives(),
-                    req.previousAiQuestion()
+                    previousAiQuestion,
+                    req.sttConfidence() == null ? null : req.sttConfidence().doubleValue(),
+                    req.alternativeDetails()
             );
         } catch (Exception e) {
             log.error("[VoiceConversation] Ngoại lệ không mong muốn khi gọi VoiceAiService: {}", e.getMessage(), e);
@@ -462,7 +468,8 @@ public class VoiceConversationServiceImpl implements VoiceConversationService {
                 aiOutput.getIntendedUtterance(),
                 aiOutput.getIsCompleted(),
                 aiOutput.getFeedbackLine(),
-                aiOutput.getSuggestions()
+                aiOutput.getSuggestions(),
+                aiOutput.getIntentConfidence()
         );
     }
 

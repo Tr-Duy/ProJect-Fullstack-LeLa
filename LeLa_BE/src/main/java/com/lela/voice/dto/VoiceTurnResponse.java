@@ -21,13 +21,21 @@ public record VoiceTurnResponse(
         String intendedUtterance,
         Boolean isCompleted,
         String feedbackLine,
-        List<VoiceSuggestionDto> suggestions
+        List<VoiceSuggestionDto> suggestions,
+        String intentConfidence
 ) {
     public VoiceTurnResponse(int number, String reply, List<String> errors, String corrected,
             String quick, List<VoiceTargetWordDto> words, int count, boolean ended, String reason,
             UserEvaluationDto evaluation, Boolean degraded, String error, String intended, Boolean completed) {
         this(number, reply, errors, corrected, quick, words, count, ended, reason, evaluation,
-                degraded, error, intended, completed, "", List.of());
+                degraded, error, intended, completed, "", List.of(), null);
+    }
+    public VoiceTurnResponse(int number, String reply, List<String> errors, String corrected,
+            String quick, List<VoiceTargetWordDto> words, int count, boolean ended, String reason,
+            UserEvaluationDto evaluation, Boolean degraded, String error, String intended, Boolean completed,
+            String feedbackLine, List<VoiceSuggestionDto> suggestions) {
+        this(number, reply, errors, corrected, quick, words, count, ended, reason, evaluation,
+                degraded, error, intended, completed, feedbackLine, suggestions, null);
     }
     @JsonProperty("userEvaluation")
     public UserEvaluationDto getUserEvaluation() {

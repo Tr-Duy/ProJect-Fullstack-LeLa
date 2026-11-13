@@ -9,6 +9,7 @@ import com.lela.ai.service.GeminiClient;
 import com.lela.voice.config.VoiceConfigurationProperties;
 import com.lela.voice.domain.ConversationScenario;
 import com.lela.voice.dto.VoiceSuggestionDto;
+import com.lela.voice.dto.SttAlternativeDto;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -67,6 +68,9 @@ public class VoiceAiService {
     @Builder
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class TurnAiOutput {
+        private String intentConfidence;
+        private Boolean offTopic;
+        private String scenarioReply;
         private String feedbackLine;
         private List<VoiceSuggestionDto> suggestions;
         @JsonProperty("intendedUtterance")
@@ -130,14 +134,42 @@ public class VoiceAiService {
             List<String> alternatives,
             String previousAiQuestion
     ) {
+        return generateTurnResponse(scenario, currentLevel, userTranscript, targetWords, whitelist,
+                conversationHistory, alternatives, previousAiQuestion, null, List.of());
+    }
+
+    public TurnAiOutput generateTurnResponse(ConversationScenario scenario, int currentLevel, String userTranscript,
+            List<String> targetWords, Set<String> whitelist, List<String> conversationHistory, List<String> alternatives,
+            String previousAiQuestion, Double confidence, List<SttAlternativeDto> alternativeDetails) {
         long startTime = System.currentTimeMillis();
-        GeminiRequest request = buildTurnRequest(scenario, currentLevel, userTranscript, conversationHistory, alternatives, previousAiQuestion);
-        return executeTurn(scenario, userTranscript, request, startTime);
+        GeminiRequest request = buildTurnRequest(scenario, currentLevel, userTranscript, conversationHistory, alternatives,
+                previousAiQuestion, confidence, alternativeDetails);
+        TurnAiOutput output = executeTurn(scenario, userTranscript, request, startTime);
+        if (Boolean.TRUE.equals(output.getOffTopic())) output.setIntendedUtterance(userTranscript);
+        applyUnderstandingPolicy(output, scenario, previousAiQuestion);
+        if (log.isDebugEnabled()) {
+            try {
+                log.debug("VOICE_STT {}", objectMapper.writeValueAsString(Map.of(
+                        "raw", Objects.toString(userTranscript, ""),
+                        "intendedUtterance", Objects.toString(output.getIntendedUtterance(), ""),
+                        "intentConfidence", Objects.toString(output.getIntentConfidence(), "UNKNOWN"))));
+            } catch (Exception ignored) { /* Diagnostics must never interrupt a turn. */ }
+        }
+        return output;
     }
 
     public GeminiRequest buildTurnRequest(ConversationScenario scenario, int currentLevel, String userTranscript,
             List<String> conversationHistory, List<String> alternatives, String previousAiQuestion) {
+        return buildTurnRequest(scenario, currentLevel, userTranscript, conversationHistory, alternatives,
+                previousAiQuestion, null, List.of());
+    }
+
+    public GeminiRequest buildTurnRequest(ConversationScenario scenario, int currentLevel, String userTranscript,
+            List<String> conversationHistory, List<String> alternatives, String previousAiQuestion,
+            Double confidence, List<SttAlternativeDto> alternativeDetails) {
         String promptText = buildPrompt(scenario, previousAiQuestion, conversationHistory, userTranscript, alternatives)
+                + "\nSTT confidence (browser estimate, not truth): " + confidence
+                + "\nSTT alternatives with confidence: " + jsonData(alternativeDetails == null ? List.of() : alternativeDetails)
                 + "\nLearner level (100-1000): " + currentLevel
                 + "\nReturn feedbackLine: one short Vietnamese sentence (max 160 characters)."
                 + "\nReturn suggestions: exactly three English replies to YOUR NEW aiReply, in order EASY, MEDIUM, CHALLENGE."
@@ -159,6 +191,41 @@ public class VoiceAiService {
                         .responseSchema(buildResponseSchema())
                         .build())
                 .build();
+    }
+
+    private String jsonData(Object value) {
+        try { return objectMapper.writeValueAsString(value); }
+        catch (Exception ignored) { return "null"; }
+    }
+
+    private static boolean isConfirmation(String text) {
+        return text != null && text.toLowerCase(Locale.ROOT).matches("(?s).*\\b(did you (say|mean)|do you mean|are you saying)\\b.*");
+    }
+
+    void applyUnderstandingPolicy(TurnAiOutput output, ConversationScenario scenario, String previousQuestion) {
+        if (output == null || Boolean.TRUE.equals(output.getDegraded())) return;
+        String scenarioReply = output.getScenarioReply();
+        if (scenarioReply == null || scenarioReply.isBlank() || isConfirmation(scenarioReply)) {
+            scenarioReply = previousQuestion != null && !isConfirmation(previousQuestion) ? previousQuestion
+                    : scenario != null && scenario.getOpeningLine() != null ? scenario.getOpeningLine() : "How can I help you?";
+        }
+        if (Boolean.TRUE.equals(output.getOffTopic())) {
+            output.setAiReply("Sorry, I didn't catch that. " + scenarioReply);
+            output.setIsCompleted(false);
+        } else if ("LOW".equals(output.getIntentConfidence())) {
+            output.setIsCompleted(false);
+            if (isConfirmation(previousQuestion)) {
+                // A second uncertain turn resumes the scenario instead of looping.
+                output.setAiReply(scenarioReply);
+            } else {
+                String guess = shortText(Objects.toString(output.getIntendedUtterance(), ""), 100)
+                        .replaceAll("[\\r\\n\\\"?!.]", " ").trim();
+                output.setAiReply("Did you say \"" + guess + "\"?");
+                output.setIsCompleted(false);
+            }
+        } else if (isConfirmation(previousQuestion) && isConfirmation(output.getAiReply())) {
+            output.setAiReply(scenarioReply);
+        }
     }
 
     private TurnAiOutput executeTurn(ConversationScenario scenario, String userTranscript, GeminiRequest request, long startTime) {
@@ -351,6 +418,9 @@ public class VoiceAiService {
         if (output.getIntendedUtterance() == null || output.getIntendedUtterance().isBlank()) {
             output.setIntendedUtterance(originalTranscript);
         }
+        if (!List.of("HIGH", "MEDIUM", "LOW").contains(Objects.toString(output.getIntentConfidence(), ""))) {
+            output.setIntentConfidence("MEDIUM");
+        }
         if (output.getEvaluation() != null) {
             EvaluationAiOutput eval = output.getEvaluation();
             int score = eval.getScore() != null ? eval.getScore() : 75;
@@ -467,10 +537,14 @@ public class VoiceAiService {
         String previousQuestion = (lastAiQuestion != null && !lastAiQuestion.isBlank())
                 ? lastAiQuestion
                 : (scenario != null ? scenario.getOpeningLine() : "How can I help you?");
-        String historyStr = (history != null && !history.isEmpty()) ? String.join("; ", history) : "Beginning of conversation";
+        String historyStr = (history != null && !history.isEmpty()) ? String.join("; ", history.subList(Math.max(0, history.size() - 3), history.size())) : "Beginning of conversation";
         String alternativesStr = (alternatives != null && !alternatives.isEmpty()) ? String.join(", ", alternatives) : "None";
 
-        return """
+        String context = "Scenario objective: " + (scenario == null ? "Order a drink" : Objects.toString(scenario.getDescription(), "")
+                + " " + Objects.toString(scenario.getSystemPromptTemplate(), ""))
+                + "\nSituation vocabulary (8-12 contextual words): " + jsonData(ScenarioSpeechContext.vocabulary(scenario))
+                + "\nPrevious turn was a confirmation: " + isConfirmation(previousQuestion) + "\n";
+        return context + """
                 You are playing the role of %s in this scenario: %s. You are also an English speaking coach.
                 The learner's speech was transcribed by browser Speech-to-Text, which often mishears similar-sounding words (e.g. "horse" for "hot", "eyes" for "iced", "tree" for "three").
                 Previous question you asked: "%s"
@@ -495,6 +569,15 @@ public class VoiceAiService {
                      * NEEDS_IMPROVEMENT (< 60): Off-topic, inappropriate, or has severe grammatical flaws.
                      Do NOT claim to score pronunciation precisely, since you only see text.
                 3. Reply in character with the next line of the scenario (1–2 short sentences, A2–B1 level).
+                4. Return intentConfidence HIGH|MEDIUM|LOW. This estimates inferred MEANING, not pronunciation.
+                   HIGH: clear relevant meaning or strong matching alternative. MEDIUM: plausible contextual repair.
+                   LOW: ambiguous guess or no usable meaning. Never invent a confident intent for nonsense.
+                   Return offTopic=true ONLY for wholly unrelated speech/nonsense; do not force it into the scenario.
+                   For offTopic, keep intendedUtterance as the raw text; aiReply must start "Sorry, I didn't catch that" and repeat the last question more simply.
+                   For LOW and relevant speech, aiReply must be ONE short confirmation about the guessed intent, e.g. "Did you say a hot coffee?".
+                   NEVER ask for confirmation twice consecutively. After a confirmation, continue the scenario even if still uncertain.
+                   Return scenarioReply: the next simple in-character line WITHOUT confirmation; for offTopic it is a simpler paraphrase of the last scenario question.
+                   Keep isCompleted=false for clarification and off-topic turns.
                 Write grammarCheck and phoneticTip in Vietnamese (do NOT imply listening to voice audio, label phonetic tip as helpful pronunciation tip). Write aiReply and suggestedImprovement in English. Output JSON only.
                 """.formatted(role, scenarioName, previousQuestion, historyStr, transcript, alternativesStr);
     }
@@ -509,6 +592,9 @@ public class VoiceAiService {
                 "description", "Spoken sentence with ONLY STT phonetic errors replaced. Keep original grammar and phrasing intact. Never rewrite for politeness or grammar."
         ));
         properties.put("aiReply", Map.of("type", "string"));
+        properties.put("intentConfidence", Map.of("type", "string", "enum", List.of("HIGH", "MEDIUM", "LOW")));
+        properties.put("offTopic", Map.of("type", "boolean"));
+        properties.put("scenarioReply", Map.of("type", "string", "description", "Simple next scenario line without confirmation. For unrelated speech, repeat the last question in simpler words."));
         properties.put("feedbackLine", Map.of("type", "string", "description", "One short Vietnamese feedback sentence"));
         properties.put("suggestions", Map.of("type", "array", "minItems", 3, "maxItems", 3,
                 "items", Map.of("type", "object", "properties", Map.of(
@@ -542,7 +628,7 @@ public class VoiceAiService {
         properties.put("evaluation", evalSchema);
 
         schema.put("properties", properties);
-        schema.put("required", List.of("intendedUtterance", "aiReply", "isCompleted", "evaluation", "feedbackLine", "suggestions"));
+        schema.put("required", List.of("intendedUtterance", "intentConfidence", "offTopic", "scenarioReply", "aiReply", "isCompleted", "evaluation", "feedbackLine", "suggestions"));
         return schema;
     }
 }

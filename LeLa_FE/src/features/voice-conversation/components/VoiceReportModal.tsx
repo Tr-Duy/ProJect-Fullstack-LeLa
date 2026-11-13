@@ -62,7 +62,7 @@ export const VoiceReportModal: React.FC<VoiceReportModalProps> = ({
         </div>
 
         {/* 4 Tiêu chí điểm số */}
-        <div className="grid grid-cols-4 gap-3 text-center">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
           <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
             <div className="text-xs font-semibold text-slate-500">Tổng điểm</div>
             <div className="text-2xl font-black text-slate-800 mt-1">{report.overallScore}</div>
@@ -130,21 +130,24 @@ export const VoiceReportModal: React.FC<VoiceReportModalProps> = ({
         {/* Câu sai và sửa lỗi */}
         {report.corrections.length > 0 && (
           <div className="space-y-2">
-            <h3 className="text-xs font-bold  text-slate-500">Gợi Ý Sửa Câu & Ngữ Pháp</h3>
+            <h3 className="text-sm font-bold text-slate-700">Câu nói & cách nói tự nhiên hơn</h3>
+            {report.corrections.flatMap(c => c.errors || []).length > 0 && <div className="text-sm text-rose-700">
+              <p className="font-semibold">Lỗi chính</p>
+              <ul className="list-disc pl-5">{[...new Set(report.corrections.flatMap(c => c.errors || []))].slice(0, 3)
+                .map(error => <li key={error}>{error}</li>)}</ul>
+            </div>}
             <div className="max-h-48 overflow-y-auto space-y-2 pr-1">
               {report.corrections.map((c, idx) => (
-                <div key={idx} className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1">
+                <div key={idx} className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-sm space-y-1">
                   <div className="text-slate-500">
                     <span className="font-semibold text-rose-600">Bạn đã nói:</span> "{c.originalTranscript}"
                   </div>
                   <div className="text-emerald-700 font-semibold">
-                    <span>Cách nói tự nhiên hơn:</span> "{c.correctedText}"
+                    {c.assessmentAvailable === false ? 'Chưa có đánh giá cho câu này.' : c.correctedText
+                      ? <><span>Cách nói tự nhiên hơn:</span> "{c.correctedText}"</> : 'Câu của bạn đã tự nhiên.'}
                   </div>
-                  {c.errors && c.errors.length > 0 && (
-                    <div className="text-[11px] text-slate-400">
-                      Ghi chú: {c.errors.join('; ')}
-                    </div>
-                  )}
+                  {c.phoneticTip && <p className="text-sm text-slate-600"><strong>Mẹo:</strong> {c.phoneticTip}
+                    <span className="block">Gợi ý chung từ văn bản, không phải đánh giá âm thanh.</span></p>}
                 </div>
               ))}
             </div>
@@ -156,7 +159,7 @@ export const VoiceReportModal: React.FC<VoiceReportModalProps> = ({
           <div className="text-center text-xs font-bold text-slate-600">
             Bạn cảm thấy độ khó của buổi hội thoại vừa rồi như thế nào?
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <Button
               danger
               size="large"

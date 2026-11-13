@@ -1,0 +1,41 @@
+.voice-room { width: 100%; max-width: 760px; min-height: 680px; margin: 0 auto; padding: 18px 24px 28px; background: #fff; border: 1px solid #e2e8f0; border-radius: 28px; color: #17243a; font-size: 16px; box-sizing: border-box; }
+.voice-room button { cursor: pointer; font: inherit; }
+.voice-room button:focus-visible { outline: 3px solid #c2410c; outline-offset: 4px; }
+.voice-room button:disabled { cursor: default; }
+.voice-room-header { display: flex; align-items: center; justify-content: space-between; }
+.voice-small-button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 44px; padding: 10px; background: transparent; border: 0; border-radius: 12px; color: #475569; font-size: 14px !important; }
+.voice-end { color: #9f2430; }
+.voice-end:disabled { opacity: .5; }
+.voice-room-conversation { display: flex; flex-direction: column; align-items: center; text-align: center; padding-top: 12px; }
+.voice-scenario { margin: 0 0 24px; font-size: 14px; color: #475569; }
+.voice-avatar { display: grid; place-items: center; width: 112px; height: 112px; flex-shrink: 0; border-radius: 36px; background: #fff0dd; color: #9a3412; box-shadow: 0 0 0 8px #fff8ef; }
+.voice-avatar-speaking { box-shadow: 0 0 0 8px #fff8ef, 0 0 0 10px #fed7aa; }
+.voice-ai-sentence { width: 100%; max-width: 620px; margin: 36px 0 18px; font-size: 30px; line-height: 1.4; font-weight: 700; color: #142338; overflow-wrap: anywhere; }
+.voice-user-sentence { min-height: 52px; margin: 0; max-width: 590px; font-size: 16px; line-height: 1.6; color: #334155; overflow-wrap: anywhere; }
+.voice-user-raw { color: #64748b; font-style: italic; }
+.voice-check { display: inline; vertical-align: middle; margin-left: 5px; color: #087443; }
+.voice-retry { color: #9a3412; margin-left: 8px; white-space: nowrap; }
+.voice-controls { display: flex; flex-direction: column; align-items: center; width: 100%; margin-top: 22px; gap: 12px; }
+.voice-mic { width: 150px; height: 130px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; border: 0; border-radius: 36px; background: #c2410c; color: white; box-shadow: 0 5px 0 #9a3412; font-weight: 700 !important; font-size: 16px !important; }
+.voice-mic-aiSpeaking, .voice-mic-idle { background: #334155; box-shadow: 0 5px 0 #1e293b; }
+.voice-mic-recording { background: #087443; box-shadow: 0 5px 0 #055a33; }
+.voice-mic-processing { background: #5b42a5; box-shadow: 0 5px 0 #403077; }
+.voice-mic-off { background: #475569; box-shadow: 0 5px 0 #334155; }
+.voice-mode-label, .voice-headphones, .voice-silence { font-size: 14px !important; line-height: 1.6; margin: 0; color: #475569; }
+.voice-hint-button { display: inline-flex; align-items: center; gap: 6px; padding: 10px 16px; min-height: 44px; font-size: 14px !important; color: #9a3412; background: #fff7ed; border: 0; border-radius: 14px; }
+.voice-headphones { display: inline-flex; gap: 6px; align-items: center; justify-content: center; border: 0; background: transparent; max-width: 100%; }
+.voice-headphones svg { flex-shrink: 0; }
+.voice-silence { color: #9a3412; }
+.voice-text-form { display: flex; width: 100%; gap: 8px; margin-top: 16px; }
+.voice-text-form input { min-width: 0; flex: 1; padding: 10px; border: 1px solid #94a3b8; border-radius: 10px; font-size: 16px; }
+.voice-text-form button, .voice-error button { border: 0; border-radius: 8px; padding: 8px; color: #9a3412; background: #fff7ed; }
+.voice-error { font-size: 14px; margin-top: 14px; color: #9f2430; }
+.voice-hint-sheet { max-width: 640px; margin: 0 auto; font-size: 18px; color: #17243a; }
+.voice-hint-sheet p { display: flex; flex-direction: column; gap: 5px; padding: 16px 0; border-bottom: 1px solid #e2e8f0; line-height: 1.5; }
+.voice-hint-sheet span { font-size: 14px; color: #64748b; }
+@media (max-width: 480px) {
+  .voice-room { padding: 12px 16px 24px; min-height: 650px; border-radius: 22px; }
+  .voice-ai-sentence { font-size: 26px; margin-top: 32px; }
+  .voice-scenario { margin-bottom: 24px; }
+  .voice-avatar { width: 96px; height: 96px; border-radius: 30px; }
+}

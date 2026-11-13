@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button, message, Checkbox } from 'antd';
 import { Sparkles, Mic, Zap, Clock, ShieldCheck, ArrowRight } from 'lucide-react';
@@ -6,7 +6,8 @@ import { useAuth } from '../../../shared/providers/AuthProvider';
 import { voiceConversationApi } from '../api/voice-conversation.api';
 import { VoiceCallRoom } from '../components/VoiceCallRoom';
 import { VoiceReportModal } from '../components/VoiceReportModal';
-import type { VoiceReportResponse, VoiceStartResponse } from '../api/voice-conversation.api';
+import { mergeSessionReview } from '../hooks/voiceReportReview';
+import type { VoiceReportResponse, VoiceStartResponse, VoiceTurnResponse } from '../api/voice-conversation.api';
 
 export const VoiceConversationPage: React.FC = () => {
   const queryClient = useQueryClient();
@@ -17,6 +18,7 @@ export const VoiceConversationPage: React.FC = () => {
   const [activeSession, setActiveSession] = useState<VoiceStartResponse | null>(null);
   const [reportModalVisible, setReportModalVisible] = useState(false);
   const [finalReport, setFinalReport] = useState<VoiceReportResponse | null>(null);
+  const sessionReviews = useRef<VoiceTurnResponse[]>([]);
 
   const invalidateAll = () => {
     queryClient.invalidateQueries({ queryKey: ['voice-conversation', 'status'] });
@@ -58,6 +60,7 @@ export const VoiceConversationPage: React.FC = () => {
       voiceConversationApi.startSession(slugOverride || selectedScenarioSlug || undefined),
     onSuccess: (res: { data: VoiceStartResponse }) => {
       setActiveSession(res.data);
+      sessionReviews.current = [];
       message.success('Đã kết nối cuộc gọi với AI thành công!');
       queryClient.invalidateQueries({ queryKey: ['voice-conversation', 'status'] });
     },
@@ -73,7 +76,7 @@ export const VoiceConversationPage: React.FC = () => {
       return voiceConversationApi.finishSession(activeSession.publicId);
     },
     onSuccess: (res: { data: VoiceReportResponse }) => {
-      setFinalReport(res.data);
+      setFinalReport(mergeSessionReview(res.data, sessionReviews.current));
       setReportModalVisible(true);
       setActiveSession(null);
       invalidateAll();
@@ -138,7 +141,8 @@ export const VoiceConversationPage: React.FC = () => {
     startMutation.mutate(slugToUse || undefined);
   };
 
-  const handleFinish = () => {
+  const handleFinish = (reviews?: VoiceTurnResponse[]) => {
+    sessionReviews.current = reviews || [];
     finishMutation.mutate();
   };
 

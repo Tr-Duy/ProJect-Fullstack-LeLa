@@ -32,8 +32,10 @@ test('10 real backend/Gemini turns: click-to-feedback, with test STT/TTS adapter
       renderedMs = null;
       await page.goto(`http://localhost:5173/tests/voice-room.html?sessionId=${session.publicId}&opening=${encodeURIComponent(session.openingLine)}`);
       await page.getByRole('button', { name: 'Start fixture' }).click();
-      await expect(page.getByTestId('voice-phase')).toHaveText('Sẵn sàng');
-      await page.getByRole('button', { name: 'Bấm để nói' }).click();
+      await expect(page.getByTestId('voice-phase')).toHaveText('Đang nghe');
+      await page.getByRole('button', { name: 'Tùy chọn cuộc gọi' }).click();
+      await page.getByRole('menuitem', { name: 'Bấm để nói', exact: true }).click();
+      await page.getByRole('button', { name: 'Đến lượt bạn', exact: true }).click();
       await page.getByRole('button', { name: 'Deliver final speech' }).click();
       const responsePromise = page.waitForResponse(r => r.url().endsWith('/turns') && r.request().method() === 'POST');
       const at = performance.now();
@@ -41,7 +43,7 @@ test('10 real backend/Gemini turns: click-to-feedback, with test STT/TTS adapter
       const response = await responsePromise;
       expect(response.ok()).toBeTruthy();
       const data = await response.json();
-      await expect(page.getByRole('button', { name: data.feedbackLine, exact: true })).toBeVisible({ timeout: 40000 });
+      await expect(page.getByTestId('voice-ai-sentence')).toHaveText(data.aiReply, { timeout: 40000 });
       const observedMs = performance.now() - at;
       rows.push({ turn: i, status: response.status(), degraded: data.degraded, errorCode: data.errorCode,
         clickToVisibleMs: Math.round(observedMs), renderedMs, suggestions: data.suggestions,

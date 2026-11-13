@@ -22,6 +22,10 @@ payment:
     account-number: ${PAYMENT_BANK_ACCOUNT_NUMBER:0339999999}
     account-name: ${PAYMENT_BANK_ACCOUNT_NAME:CONG TY LELA}
 
+logging:
+  level:
+    com.lela.voice.service.VoiceAiService: DEBUG
+
 gemini:
   api-key: ${GEMINI_API_KEY:YOUR_GEMINI_API_KEY_HERE}
   primary-model: ${GEMINI_PRIMARY_MODEL:gemini-3.5-flash}
