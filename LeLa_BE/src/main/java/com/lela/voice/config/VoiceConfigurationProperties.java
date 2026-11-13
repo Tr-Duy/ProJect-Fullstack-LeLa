@@ -24,10 +24,17 @@ public class VoiceConfigurationProperties {
     private int maxXpFromTargetWords = 15;
     private double minSttConfidence = 0.50;
     private double maxOffWhitelistRatio = 0.15; // Ngưỡng từ ngoài whitelist (15% tối ưu khi kho foundation đạt 2,480+ từ)
-    private int maxRetriesGemini = 2;
-    private int geminiCallTimeoutSeconds = 12;
-    private int totalTurnTimeoutSeconds = 30;
-    private int fallbackReservedSeconds = 12;
+    private int maxRetriesGemini = 1;
+    private int geminiCallTimeoutSeconds = 4;
+    private int totalTurnTimeoutSeconds = 8;
+    private int fallbackReservedSeconds = 3;
+    private int responseReservedMs = 200;
+    private int minPrimaryAttemptMs = 2500;
+    private int retryDelayMs = 400;
+    private String turnModel;
+    private String fallbackModel;
+    private String summaryModel;
+    private int summaryTimeoutSeconds = 12;
     private int autoCommitSilenceMs = 1200;
     private int incompleteExtraMs = 800;
     private int hintAfterSilenceMs = 8000;

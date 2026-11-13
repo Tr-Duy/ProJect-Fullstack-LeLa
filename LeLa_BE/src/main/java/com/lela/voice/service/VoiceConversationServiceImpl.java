@@ -469,7 +469,10 @@ public class VoiceConversationServiceImpl implements VoiceConversationService {
                 aiOutput.getIsCompleted(),
                 aiOutput.getFeedbackLine(),
                 aiOutput.getSuggestions(),
-                aiOutput.getIntentConfidence()
+                aiOutput.getIntentConfidence(),
+                aiOutput.getAiAttempts(),
+                aiOutput.getAiRetries(),
+                aiOutput.getModelUsed()
         );
     }
 

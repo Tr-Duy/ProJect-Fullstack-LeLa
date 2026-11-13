@@ -45,6 +45,9 @@ class VoiceAiServiceTest {
         props = new VoiceConfigurationProperties();
         props.setGeminiCallTimeoutSeconds(1); // 1s for fast test
         props.setTotalTurnTimeoutSeconds(5);
+        props.setFallbackReservedSeconds(1);
+        props.setResponseReservedMs(0);
+        props.setMinPrimaryAttemptMs(100);
         props.setMaxRetriesGemini(1);
         props.setMaxOffWhitelistRatio(0.20);
 

@@ -97,6 +97,7 @@ export interface VoiceTurnResponse {
 }
 
 export interface VoiceReportResponse {
+  coachSummary?: string | null;
   vocabularyScoreAvailable?: boolean;
   publicId: string;
   overallScore: number;

@@ -41,6 +41,8 @@ export const VoiceReportModal: React.FC<VoiceReportModalProps> = ({
           <p className="text-slate-500 text-sm">Tổng kết quá trình luyện hội thoại</p>
         </div>
 
+        {report.coachSummary && <p className="text-base text-slate-700 leading-relaxed">{report.coachSummary}</p>}
+
         {/* Level & XP Banner */}
         <div className="grid grid-cols-2 gap-4">
           <div className="bg-slate-50 border-2 border-slate-200 rounded-xl p-4 text-center">
@@ -130,7 +132,7 @@ export const VoiceReportModal: React.FC<VoiceReportModalProps> = ({
         {/* Câu sai và sửa lỗi */}
         {report.corrections.length > 0 && (
           <div className="space-y-2">
-            <h3 className="text-sm font-bold text-slate-700">Câu nói & cách nói tự nhiên hơn</h3>
+            <h3 className="text-sm font-bold text-slate-700">Câu nói trong phiên</h3>
             {report.corrections.flatMap(c => c.errors || []).length > 0 && <div className="text-sm text-rose-700">
               <p className="font-semibold">Lỗi chính</p>
               <ul className="list-disc pl-5">{[...new Set(report.corrections.flatMap(c => c.errors || []))].slice(0, 3)

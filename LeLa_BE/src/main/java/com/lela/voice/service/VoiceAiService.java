@@ -68,6 +68,9 @@ public class VoiceAiService {
     @Builder
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class TurnAiOutput {
+        @com.fasterxml.jackson.annotation.JsonIgnore private int aiAttempts;
+        @com.fasterxml.jackson.annotation.JsonIgnore private int aiRetries;
+        @com.fasterxml.jackson.annotation.JsonIgnore private String modelUsed;
         private String intentConfidence;
         private Boolean offTopic;
         private String scenarioReply;
@@ -141,7 +144,7 @@ public class VoiceAiService {
     public TurnAiOutput generateTurnResponse(ConversationScenario scenario, int currentLevel, String userTranscript,
             List<String> targetWords, Set<String> whitelist, List<String> conversationHistory, List<String> alternatives,
             String previousAiQuestion, Double confidence, List<SttAlternativeDto> alternativeDetails) {
-        long startTime = System.currentTimeMillis();
+        long startTime = nanoTime();
         GeminiRequest request = buildTurnRequest(scenario, currentLevel, userTranscript, conversationHistory, alternatives,
                 previousAiQuestion, confidence, alternativeDetails);
         TurnAiOutput output = executeTurn(scenario, userTranscript, request, startTime);
@@ -228,134 +231,111 @@ public class VoiceAiService {
         }
     }
 
-    private TurnAiOutput executeTurn(ConversationScenario scenario, String userTranscript, GeminiRequest request, long startTime) {
-        String primaryModel = geminiClient.getPrimaryModel();
-        String fallbackModel = geminiClient.getFallbackModel();
-        int[] observedTokens = {0};
-
-        // 1. Gọi Model chính (ví dụ: gemini-3.5-flash)
-        TurnAiOutput result = executeModelWithResilience(primaryModel, request, userTranscript, scenario, startTime, true, observedTokens);
-        if (result != null && !Boolean.TRUE.equals(result.getDegraded())) {
-            return result;
-        }
-
-        String primaryError = (result != null && result.getErrorCode() != null) ? result.getErrorCode() : "PRIMARY_MODEL_FAILED";
-        log.warn("[VoiceAiService] Model chính {} không thành công ({}). Chuyển sang model dự phòng {}",
-                primaryModel, primaryError, fallbackModel);
-
-        // 2. Gọi Model dự phòng (ví dụ: gemini-flash-lite-latest)
-        TurnAiOutput fallbackResult = executeModelWithResilience(fallbackModel, request, userTranscript, scenario, startTime, false, observedTokens);
-        if (fallbackResult != null && !Boolean.TRUE.equals(fallbackResult.getDegraded())) {
-            return fallbackResult;
-        }
-
-        String finalError = (fallbackResult != null && fallbackResult.getErrorCode() != null) ? fallbackResult.getErrorCode() : primaryError;
-        log.warn("[VoiceAiService] Cả model chính và model dự phòng đều không thể phản hồi ({}). Kích hoạt Degraded Mode HTTP 200.", finalError);
-
-        // 3. Cả 2 model đều lỗi -> Trả degraded = true, evaluation = null, aiReply mặc định theo kịch bản (HTTP 200)
-        TurnAiOutput degraded = createFallbackOutput(scenario, userTranscript, finalError);
-        degraded.setTokensUsed(observedTokens[0]);
-        return degraded;
+    private static final class CallStats {
+        int attempts;
+        int retries;
+        int tokens;
+        String modelUsed;
     }
 
-    private TurnAiOutput executeModelWithResilience(
-            String model,
-            GeminiRequest request,
-            String userTranscript,
-            ConversationScenario scenario,
-            long startTime,
-            boolean isPrimary,
-            int[] observedTokens
-    ) {
-        int maxAttempts = Math.max(1, Math.min(2, props.getMaxRetriesGemini() + 1));
-        String lastError = null;
+    // Monotonic clock and sleeper are overridable for deterministic budget tests.
+    long nanoTime() { return System.nanoTime(); }
+    void sleepMs(long delay) throws InterruptedException { Thread.sleep(delay); }
 
-        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
-            long remainingTotalTime = (props.getTotalTurnTimeoutSeconds() * 1000L) - (System.currentTimeMillis() - startTime);
-            long callBudgetMs = props.getGeminiCallTimeoutSeconds() * 1000L;
-            long reserveMs = Math.min(props.getFallbackReservedSeconds() * 1000L, callBudgetMs);
-            long availableMs = remainingTotalTime - (isPrimary ? reserveMs : 0);
-            if (availableMs < callBudgetMs) {
-                log.warn("[VoiceAiService] Model {} chạm ngưỡng total turn timeout, dừng attempt.", model);
-                return createFallbackOutput(scenario, userTranscript, "TIMEOUT");
-            }
+    private long remainingMs(long deadline) {
+        return Math.max(0, TimeUnit.NANOSECONDS.toMillis(deadline - nanoTime()));
+    }
 
-            long callStart = System.currentTimeMillis();
+    private TurnAiOutput executeTurn(ConversationScenario scenario, String transcript, GeminiRequest request, long startTime) {
+        String primary = props.getTurnModel() == null ? geminiClient.getPrimaryModel() : props.getTurnModel();
+        String fallback = props.getFallbackModel() == null ? geminiClient.getFallbackModel() : props.getFallbackModel();
+        long usableMs = Math.max(0, props.getTotalTurnTimeoutSeconds() * 1000L - props.getResponseReservedMs());
+        long deadline = startTime + TimeUnit.MILLISECONDS.toNanos(usableMs);
+        CallStats stats = new CallStats();
+        TurnAiOutput output = executeModel(primary, request, transcript, scenario, deadline, true, stats);
+        if (Boolean.TRUE.equals(output.getDegraded()) && !Thread.currentThread().isInterrupted() && !primary.equals(fallback)) {
+            output = executeModel(fallback, request, transcript, scenario, deadline, false, stats);
+        }
+        output.setTokensUsed(stats.tokens);
+        output.setAiAttempts(stats.attempts);
+        output.setAiRetries(stats.retries);
+        output.setModelUsed(stats.modelUsed);
+        return output;
+    }
+
+    private TurnAiOutput executeModel(String model, GeminiRequest request, String transcript,
+            ConversationScenario scenario, long deadline, boolean primary, CallStats stats) {
+        long fallbackBudget = props.getFallbackReservedSeconds() * 1000L;
+        long primaryCap = props.getGeminiCallTimeoutSeconds() * 1000L;
+        long minPrimary = Math.min(primaryCap, Math.max(1, props.getMinPrimaryAttemptMs()));
+        int attempts = primary ? 1 + Math.max(0, Math.min(1, props.getMaxRetriesGemini())) : 1;
+        String error = "TIMEOUT";
+        for (int attempt = 0; attempt < attempts; attempt++) {
+            long remaining = remainingMs(deadline);
+            // Cancellation and model handoff also consume real time. Protect
+            // fallback's minimum budget from that overhead, not only HTTP wait.
+            long handoffMs = Math.max(50, props.getResponseReservedMs());
+            long budget = primary ? Math.min(primaryCap, remaining - fallbackBudget - handoffMs) : remaining - 50;
+            if (primary ? budget < minPrimary : budget < fallbackBudget) break;
+            if (attempt > 0) stats.retries++;
+            stats.attempts++;
+            long started = nanoTime();
             CompletableFuture<HttpResponse<String>> future = null;
+            boolean retry503 = false;
+            long retryDelay = 0;
             try {
                 future = geminiClient.generateContent(model, request);
-                HttpResponse<String> response = future.get(callBudgetMs, TimeUnit.MILLISECONDS);
-                long elapsedMs = System.currentTimeMillis() - callStart;
-
-                String rawBody = response.body();
-                try { observedTokens[0] += objectMapper.readTree(rawBody).path("usageMetadata").path("totalTokenCount").asInt(0); }
-                catch (Exception ignored) { /* Missing usage is unknown, never a fixed estimate. */ }
-                log.debug("[VoiceAiService] Model: {}, Status: {}, Elapsed: {}ms", model, response.statusCode(), elapsedMs);
-
-                if (response.statusCode() == 200 && rawBody != null) {
-                    TurnAiOutput output = parseAiOutput(rawBody, userTranscript);
+                HttpResponse<String> response = future.get(budget, TimeUnit.MILLISECONDS);
+                String body = response.body();
+                try { stats.tokens += objectMapper.readTree(body).path("usageMetadata").path("totalTokenCount").asInt(0); }
+                catch (Exception ignored) { }
+                log.info("VOICE_ATTEMPT model={} attempt={} status={} elapsedMs={} budgetMs={}",
+                        model, attempt + 1, response.statusCode(), TimeUnit.NANOSECONDS.toMillis(nanoTime() - started), budget);
+                if (response.statusCode() == 200) {
+                    TurnAiOutput output = parseAiOutput(body, transcript);
                     if (output != null && output.getAiReply() != null && !output.getAiReply().isBlank()) {
-                        log.info("[VoiceAiService] Model: {} thành công sau {}ms (Attempt {})", model, elapsedMs, attempt);
-                        output.setTokensUsed(observedTokens[0]);
                         output.setDegraded(false);
+                        stats.modelUsed = model;
                         return output;
                     }
-                    log.warn("[VoiceAiService] Parse JSON từ model {} thất bại lần {}", model, attempt);
-                    lastError = "GEMINI_PARSE_ERROR";
-                    // Retry 1 lần nếu parse lỗi
-                    continue;
+                    error = "GEMINI_PARSE_ERROR";
+                } else {
+                    error = "GEMINI_HTTP_" + response.statusCode();
+                    // Only one short primary retry for 503. All 429s, including
+                    // daily quota, switch model immediately; never sleep on them.
+                    retryDelay = shortRetryDelay(response);
+                    retry503 = primary && response.statusCode() == 503 && attempt == 0 && attempts == 2
+                            && retryDelay >= 0 && remainingMs(deadline) >= retryDelay + minPrimary + fallbackBudget + handoffMs;
                 }
-
-                if (response.statusCode() == 429) {
-                    boolean isDailyQuota = rawBody != null && (rawBody.contains("per day") || rawBody.contains("PerDay"));
-                    log.warn("[VoiceAiService] Model {} gặp lỗi 429 (isDaily: {}).", model, isDailyQuota);
-                    lastError = "GEMINI_HTTP_429";
-                    if (isDailyQuota || isPrimary) {
-                        // 429 theo ngày hoặc là primary model: không retry mà chuyển model ngay
-                        break;
-                    }
-                    // 429 theo phút: backoff ngắn
-                    try {
-                        Thread.sleep(retryDelayMs(response, attempt * 800L, availableMs - (System.currentTimeMillis() - callStart)));
-                    } catch (InterruptedException ie) {
-                        Thread.currentThread().interrupt();
-                    }
-                    continue;
-                }
-
-                // Lỗi 5xx hoặc mã khác
-                log.warn("[VoiceAiService] Model {} trả về HTTP status {}", model, response.statusCode());
-                lastError = "GEMINI_HTTP_" + response.statusCode();
-                try {
-                    if (response.statusCode() < 500) break;
-                    Thread.sleep(retryDelayMs(response, attempt * 500L, availableMs - (System.currentTimeMillis() - callStart)));
-                } catch (InterruptedException ie) {
-                    Thread.currentThread().interrupt();
-                }
-
-            } catch (TimeoutException te) {
-                long elapsedMs = System.currentTimeMillis() - callStart;
-                log.warn("[VoiceAiService] Model {} timeout sau {}ms (Attempt {})", model, elapsedMs, attempt);
-                lastError = "TIMEOUT";
+            } catch (TimeoutException e) {
+                error = "TIMEOUT";
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return createFallbackOutput(scenario, transcript, "INTERRUPTED");
             } catch (Exception e) {
-                long elapsedMs = System.currentTimeMillis() - callStart;
-                log.warn("[VoiceAiService] Model {} failed after {}ms ({})", model, elapsedMs, e.getClass().getSimpleName());
-                lastError = "GEMINI_NETWORK_ERROR";
-                if (e instanceof InterruptedException) { Thread.currentThread().interrupt(); break; }
+                error = "GEMINI_NETWORK_ERROR";
+                log.warn("VOICE_ATTEMPT model={} failure={}", model, e.getClass().getSimpleName());
             } finally {
                 if (future != null && !future.isDone()) future.cancel(true);
             }
+            if (!retry503) break;
+            try { sleepMs(retryDelay); }
+            catch (InterruptedException e) { Thread.currentThread().interrupt(); break; }
         }
-
-        return createFallbackOutput(scenario, userTranscript, lastError != null ? lastError : "MODEL_CALL_FAILED");
+        return createFallbackOutput(scenario, transcript, error);
     }
 
-    private static long retryDelayMs(HttpResponse<?> response, long defaultMs, long availableMs) {
-        long requested = defaultMs;
-        try { requested = Long.parseLong(response.headers().firstValue("Retry-After").orElse("0")) * 1000L; }
-        catch (Exception ignored) { }
-        if (requested <= 0) requested = defaultMs;
-        return Math.max(0, Math.min(requested, Math.max(0, availableMs)));
+    private long shortRetryDelay(HttpResponse<?> response) {
+        long configured = Math.max(300, Math.min(500, props.getRetryDelayMs()));
+        String header = response.headers().firstValue("Retry-After").orElse("");
+        if (header.isBlank()) return configured;
+        try {
+            long requested = (long) Math.ceil(Double.parseDouble(header) * 1000);
+            return requested > 500 ? -1 : Math.max(configured, Math.max(300, requested));
+        } catch (NumberFormatException e) {
+            // A date/unknown server delay is not permission to retry sooner.
+            return -1;
+        }
     }
 
     /**
@@ -481,6 +461,17 @@ public class VoiceAiService {
                     ? List.of(output.getEvaluation().getGrammarCheck()) : List.of());
             output.setCorrectedSentence(output.getEvaluation().getSuggestedImprovement());
         }
+        // Do this LAST: defaults/normalization must never restore an invented
+        // correction when the utterance was not understood. Also clear legacy
+        // fields, which are persisted and used by old report clients.
+        if (Boolean.TRUE.equals(output.getOffTopic()) || "LOW".equals(output.getIntentConfidence())) {
+            if (output.getEvaluation() != null) {
+                output.getEvaluation().setSuggestedImprovement("");
+                output.getEvaluation().setGrammarCheck("");
+            }
+            output.setCorrectedSentence("");
+            output.setGrammarErrors(List.of());
+        }
         output.setQuickSuggestion(output.getSuggestions().get(0).text());
         return output;
     }
@@ -569,6 +560,13 @@ public class VoiceAiService {
                      * NEEDS_IMPROVEMENT (< 60): Off-topic, inappropriate, or has severe grammatical flaws.
                      Do NOT claim to score pronunciation precisely, since you only see text.
                 3. Reply in character with the next line of the scenario (1–2 short sentences, A2–B1 level).
+                   If the learner says they are finished or do not need anything else
+                   ("That is all", "No thanks", "No, thanks", "That's it", "Nothing else"),
+                   give ONE short farewell, do NOT offer more items or ask another question,
+                   and set isCompleted=true. Closing intent takes priority over continuing the scenario.
+                   A preference such as "no sugar" is NOT a closing intent.
+                   Explain grammar with simple correct examples: with I, say "I like", not "I likes".
+                   Avoid difficult grammar labels or saying I needs the third-person singular form.
                 4. Return intentConfidence HIGH|MEDIUM|LOW. This estimates inferred MEANING, not pronunciation.
                    HIGH: clear relevant meaning or strong matching alternative. MEDIUM: plausible contextual repair.
                    LOW: ambiguous guess or no usable meaning. Never invent a confident intent for nonsense.
@@ -578,6 +576,8 @@ public class VoiceAiService {
                    NEVER ask for confirmation twice consecutively. After a confirmation, continue the scenario even if still uncertain.
                    Return scenarioReply: the next simple in-character line WITHOUT confirmation; for offTopic it is a simpler paraphrase of the last scenario question.
                    Keep isCompleted=false for clarification and off-topic turns.
+                   For offTopic=true or intentConfidence=LOW, grammarCheck and suggestedImprovement
+                   must both be empty. Do not invent a corrected meaning for unrelated or uncertain speech.
                 Write grammarCheck and phoneticTip in Vietnamese (do NOT imply listening to voice audio, label phonetic tip as helpful pronunciation tip). Write aiReply and suggestedImprovement in English. Output JSON only.
                 """.formatted(role, scenarioName, previousQuestion, historyStr, transcript, alternativesStr);
     }

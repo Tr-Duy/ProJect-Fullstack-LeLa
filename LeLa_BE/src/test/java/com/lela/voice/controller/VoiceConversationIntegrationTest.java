@@ -69,6 +69,7 @@ public class VoiceConversationIntegrationTest {
 
     @MockBean
     private VoiceAiService voiceAiService;
+    @MockBean private com.lela.voice.service.VoiceSummaryService voiceSummaryService;
 
     private Users testUser;
 
@@ -77,6 +78,7 @@ public class VoiceConversationIntegrationTest {
 
     @BeforeEach
     void setUp() {
+        when(voiceSummaryService.enrich(any())).thenAnswer(invocation -> invocation.getArgument(0));
         testUser = usersRepository.findByUsername("admin")
                 .orElseThrow(() -> new IllegalStateException("Test user admin not found"));
 

@@ -17,5 +17,19 @@ public record VoiceReportResponse(
         boolean consecutiveHardWarning,
         List<VoiceTargetWordDto> targetWords,
         List<VoiceTurnCorrectionDto> corrections,
-        boolean vocabularyScoreAvailable
-) {}
+        boolean vocabularyScoreAvailable,
+        String coachSummary
+) {
+    public VoiceReportResponse(String id, int overall, Integer pronunciation, int grammar, int fluency, int vocabulary,
+            String recommendation, String feedback, int oldLevel, int newLevel, int xp, boolean warning,
+            List<VoiceTargetWordDto> words, List<VoiceTurnCorrectionDto> corrections, boolean vocabularyAvailable) {
+        this(id, overall, pronunciation, grammar, fluency, vocabulary, recommendation, feedback,
+                oldLevel, newLevel, xp, warning, words, corrections, vocabularyAvailable, null);
+    }
+
+    public VoiceReportResponse withCoachSummary(String summary) {
+        return new VoiceReportResponse(publicId, overallScore, pronunciationScore, grammarScore, fluencyScore,
+                vocabularyScore, systemRecommendation, userFeedback, oldLevel, newLevel, xpAwarded,
+                consecutiveHardWarning, targetWords, corrections, vocabularyScoreAvailable, summary);
+    }
+}

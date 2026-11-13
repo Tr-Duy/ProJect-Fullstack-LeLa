@@ -54,6 +54,18 @@ springdoc:
     tags-sorter: alpha
 
 app:
+  voice:
+    turn-model: ${VOICE_TURN_MODEL:gemini-flash-lite-latest}
+    fallback-model: ${VOICE_FALLBACK_MODEL:${GEMINI_PRIMARY_MODEL:gemini-3.5-flash}}
+    summary-model: ${VOICE_SUMMARY_MODEL:${GEMINI_PRIMARY_MODEL:gemini-3.5-flash}}
+    max-retries-gemini: 1
+    retry-delay-ms: 400
+    total-turn-timeout-seconds: 8
+    gemini-call-timeout-seconds: 4
+    fallback-reserved-seconds: 3
+    min-primary-attempt-ms: 2500
+    response-reserved-ms: 200
+    summary-timeout-seconds: 12
   jwt:
     issuer: yoedu-demo
     secret: ${YOEDU_JWT_SECRET}

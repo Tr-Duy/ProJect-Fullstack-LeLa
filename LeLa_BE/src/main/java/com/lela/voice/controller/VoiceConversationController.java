@@ -4,6 +4,7 @@ import com.lela.users.domain.Users;
 import com.lela.users.UsersRepository;
 import com.lela.voice.dto.*;
 import com.lela.voice.service.VoiceConversationService;
+import com.lela.voice.service.VoiceSummaryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +24,7 @@ public class VoiceConversationController {
 
     private final UsersRepository usersRepository;
     private final VoiceConversationService voiceConversationService;
+    private final VoiceSummaryService voiceSummaryService;
 
     private Users getCurrentUser() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -66,7 +68,8 @@ public class VoiceConversationController {
             @RequestBody(required = false) VoiceFinishRequest req
     ) {
         Users user = getCurrentUser();
-        return ResponseEntity.ok(voiceConversationService.finishSession(user, publicId, req));
+        VoiceReportResponse report = voiceConversationService.finishSession(user, publicId, req);
+        return ResponseEntity.ok(voiceSummaryService.enrich(report));
     }
 
     @PostMapping("/sessions/{publicId}/feedback")

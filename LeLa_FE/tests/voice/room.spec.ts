@@ -3,6 +3,7 @@ import type { Page } from '@playwright/test';
 import { voiceRoomReducer, initialRoomState } from '../../src/features/voice-conversation/hooks/voiceRoomMachine';
 import type { VoiceTurnResponse } from '../../src/features/voice-conversation/api/voice-conversation.api';
 import fs from 'node:fs/promises';
+import { mergeSessionReview } from '../../src/features/voice-conversation/hooks/voiceReportReview';
 const artifacts = '../tests/experiments/private-results';
 test.beforeAll(async () => { await fs.mkdir(artifacts, { recursive: true }); });
 const result: VoiceTurnResponse = { turnNumber: 1, aiReply: 'Of course! Would you like milk with your coffee?', validTurnCount: 1,
@@ -11,6 +12,30 @@ const result: VoiceTurnResponse = { turnNumber: 1, aiReply: 'Of course! Would yo
   evaluation: { score: 90, status: 'EXCELLENT', hasError: false, grammarCheck: 'Ngữ pháp đúng', phoneticTip: 'Luyện âm cuối', suggestedImprovement: '' },
   suggestions: [{ difficulty: 'EASY', text: 'Yes, please.' }, { difficulty: 'MEDIUM', text: 'A little milk, please.' },
     { difficulty: 'CHALLENGE', text: 'Could you add a little milk and no sugar, please?' }] };
+
+test('unassessed turn cannot resurrect a correction from saved legacy fields', () => {
+  const report = { corrections: [{ turnNumber: 1, originalTranscript: 'noise', correctedText: 'invented coffee', errors: ['invented error'] }] } as any;
+  const merged = mergeSessionReview(report, [{ ...result, intendedUtterance: 'noise', grammarErrors: [],
+    evaluation: { ...result.evaluation!, grammarCheck: '', suggestedImprovement: '', hasError: true } }]);
+  expect(merged.corrections[0].assessmentAvailable).toBe(false);
+  expect(merged.corrections[0].correctedText).toBe('');
+  expect(merged.corrections[0].errors).toEqual([]);
+});
+
+test('uncertain turn has no natural-sentence label in session report', async ({ page }) => {
+  await page.route('**/voice-conversations/sessions/test-session/turns', route => route.fulfill({ json: {
+    ...result, sessionEnded: true, intendedUtterance: 'purple satellites blarg triangle',
+    evaluation: { ...result.evaluation, hasError: true, grammarCheck: '', suggestedImprovement: '' },
+    grammarErrors: [], correctedSentence: '',
+  } }));
+  await start(page, '?report=1');
+  await expect(page.getByTestId('voice-phase')).toHaveText('Đang nghe');
+  await page.getByRole('button', { name: 'Deliver final speech' }).click();
+  const report = page.getByRole('dialog');
+  await expect(report).toBeVisible();
+  await expect(report.getByText('Chưa có đánh giá cho câu này.')).toBeVisible();
+  await expect(report.getByText('Cách nói tự nhiên hơn:', { exact: true })).not.toBeVisible();
+});
 const trace = async (page: Page) => JSON.parse((await page.locator('#trace').textContent()) || '[]') as { event: string; at: string; text?: string }[];
 async function start(page: Page, query = '') {
   await page.goto('/tests/voice-room.html' + query);
