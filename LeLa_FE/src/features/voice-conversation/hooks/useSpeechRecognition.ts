@@ -2,6 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 export type SpeechStatus = 'idle' | 'listening' | 'processing';
 
+export const DEFAULT_VOICE_SILENCE_MS = 1200;
+export const DEFAULT_INCOMPLETE_EXTRA_MS = 800;
+
 export interface UseSpeechRecognitionOptions {
   lang?: string;
   silenceMs?: number;
@@ -20,9 +23,9 @@ const countWords = (text: string): number =>
 
 export function useSpeechRecognition({
   lang = 'en-US',
-  silenceMs = 2200,
-  incompleteExtraMs = 1800,
-  minWords = 2,
+  silenceMs = DEFAULT_VOICE_SILENCE_MS,
+  incompleteExtraMs = DEFAULT_INCOMPLETE_EXTRA_MS,
+  minWords = 1,
   isAiSpeaking = false,
   onUtteranceEnd,
   onError,
@@ -114,10 +117,18 @@ export function useSpeechRecognition({
       if (submittedRef.current || isAiSpeakingRef.current) return;
       // Backend CHỈ nhận final transcript, tuyệt đối không gửi interim lên BE
       const finalText = finalRef.current.replace(/\s+/g, ' ').trim();
+      const hasLetters = /[a-zA-Z]/.test(finalText);
       const durationMs = Date.now() - speechStartTimeRef.current;
       
-      // Lọc bỏ tiếng ồn ngắn dưới 0.6s hoặc không có từ hợp lệ
-      if (durationMs < 600 && countWords(finalText) < 1) {
+      // Lọc bỏ nếu final rỗng, ngắn hơn 2 ký tự hoặc không chứa chữ cái
+      if (!finalText || finalText.length < 2 || !hasLetters) {
+        clearTimer();
+        return;
+      }
+
+      // Lọc bỏ tạp âm quá ngắn dưới 0.4s
+      if (durationMs < 400 && countWords(finalText) < 1) {
+        clearTimer();
         return;
       }
       if (countWords(finalText) < requiredWords) return;
@@ -147,9 +158,14 @@ export function useSpeechRecognition({
   const scheduleCommit = useCallback(() => {
     if (isAiSpeakingRef.current) return;
     clearTimer();
-    const text = `${finalRef.current} ${interimRef.current}`.replace(/\s+/g, ' ').trim();
-    if (!text) return;
-    const wait = INCOMPLETE_ENDING.test(text) ? silenceMs + incompleteExtraMs : silenceMs;
+
+    // Chỉ bắt đầu đếm im lặng để tự gửi khi ĐÃ CÓ kết quả final
+    if (!finalRef.current.trim()) return;
+
+    const fullText = `${finalRef.current} ${interimRef.current}`.replace(/\s+/g, ' ').trim();
+    if (!fullText) return;
+
+    const wait = INCOMPLETE_ENDING.test(fullText) ? silenceMs + incompleteExtraMs : silenceMs;
     timerRef.current = window.setTimeout(() => commit(minWords), wait);
   }, [clearTimer, commit, silenceMs, incompleteExtraMs, minWords]);
 

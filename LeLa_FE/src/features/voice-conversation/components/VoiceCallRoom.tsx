@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Button, message } from 'antd';
-import { Mic, PhoneOff, Volume2, Sparkles, RefreshCw, Clock, CheckCircle, Award, Check, Send } from 'lucide-react';
+import { Mic, PhoneOff, Volume2, Sparkles, RefreshCw, Clock, CheckCircle, Award, Check, AlertTriangle } from 'lucide-react';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 import { useSpeechSynthesis } from '../hooks/useSpeechSynthesis';
 import { voiceConversationApi } from '../api/voice-conversation.api';
@@ -31,11 +31,14 @@ export const VoiceCallRoom: React.FC<VoiceCallRoomProps> = ({
   const [textInputFallback, setTextInputFallback] = useState('');
   const [manualTextMode, setManualTextMode] = useState(false);
 
-  // States xem lại và chỉnh sửa câu nói trước khi gửi (LỖI B)
-  const [speechReviewText, setSpeechReviewText] = useState<string>('');
-  const [speechConfidence, setSpeechConfidence] = useState<number>(1.0);
-  const [speechAlternatives, setSpeechAlternatives] = useState<string[]>([]);
-  const [isReviewing, setIsReviewing] = useState<boolean>(false);
+  // Cờ chống trùng lặp request và lưu trạng thái lượt nói
+  const isSubmittingRef = useRef<boolean>(false);
+  const [latestTurnConfidence, setLatestTurnConfidence] = useState<number | null>(null);
+  const [failedTurn, setFailedTurn] = useState<{
+    text: string;
+    confidence: number;
+    alternatives?: string[];
+  } | null>(null);
 
   const bufferTimerRef = useRef<number | null>(null);
   const lastAiSpeechRef = useRef<string>(sessionData.openingLine || '');
@@ -60,16 +63,12 @@ export const VoiceCallRoom: React.FC<VoiceCallRoomProps> = ({
     setIdle,
   } = useSpeechRecognition({
     lang: 'en-US',
-    silenceMs: 2200,
-    incompleteExtraMs: 1800,
-    minWords: 2,
+    silenceMs: 1200,
+    incompleteExtraMs: 800,
+    minWords: 1,
     isAiSpeaking: isAiSpeaking || isSpeaking,
     onUtteranceEnd: (text, alternatives, conf) => {
-      console.log('[STT] onUtteranceEnd received:', text, 'confidence:', conf);
-      setSpeechReviewText(text);
-      setSpeechConfidence(conf ?? 1.0);
-      setSpeechAlternatives(alternatives || []);
-      setIsReviewing(true);
+      handleSendTurn(text, conf ?? 1.0, false, alternatives);
     },
     onError: (errMsg, isFatal) => {
       if (isFatal) {
@@ -199,20 +198,35 @@ export const VoiceCallRoom: React.FC<VoiceCallRoomProps> = ({
     isRetry: boolean,
     alternatives?: string[]
   ) => {
-    const cleanText = (transcriptText || '').trim();
-    if (!cleanText || isAiThinking || isAiSpeaking || isSpeaking) {
-      console.warn('[VoiceCallRoom] Bỏ qua lượt gửi vì transcript rỗng hoặc AI đang nói/xử lý');
+    // 1. Cờ isSubmittingRef để mỗi lượt chỉ gửi đúng 1 request, kể cả khi onresult và onend cùng kích hoạt
+    if (isSubmittingRef.current || isAiThinking || isAiSpeaking || isSpeaking) {
+      console.warn('[VoiceCallRoom] Bỏ qua lượt gửi vì đang xử lý/AI đang nói hoặc đang gửi');
       return;
     }
 
+    const cleanText = (transcriptText || '').trim();
+    const hasLetters = /[a-zA-Z]/.test(cleanText);
+
+    // 2. Nếu transcript final rỗng hoặc ngắn hơn 2 ký tự (hoặc không có chữ cái): KHÔNG gửi, mở mic nghe lại
+    if (!cleanText || cleanText.length < 2 || !hasLetters) {
+      console.log('[VoiceCallRoom] Transcript rỗng hoặc không hợp lệ:', cleanText);
+      message.info('Mình chưa nghe rõ, bạn nói lại nhé');
+      stopListening();
+      abortAndReset();
+      resetTranscript();
+      safeStartListening();
+      return;
+    }
+
+    isSubmittingRef.current = true;
     setIsAiThinking(true);
     setSilenceCounter(0);
-    // Tắt mic ngay khi gửi lên server và xóa sạch transcript của lượt nói cũ
+    setFailedTurn(null);
+
+    // 3. Trong lúc gửi: tắt mic, reset transcript của lượt nói cũ
     stopListening();
     abortAndReset();
     resetTranscript();
-    setSpeechReviewText('');
-    setIsReviewing(false);
 
     try {
       const elapsed = (sessionData.durationSecondsLimit || 300) - secondsLeft;
@@ -246,6 +260,7 @@ export const VoiceCallRoom: React.FC<VoiceCallRoomProps> = ({
         setLatestEvaluation(evalData);
         setIntendedUtterance(turn.intendedUtterance || cleanText);
       }
+      setLatestTurnConfidence(confidence);
 
       setIdle();
 
@@ -262,43 +277,38 @@ export const VoiceCallRoom: React.FC<VoiceCallRoomProps> = ({
     } catch (err: any) {
       setIdle();
       console.error('[VoiceCallRoom] Lỗi API processTurn toàn bộ response:', err.response?.data || err);
+      // Giữ câu vừa nói để có nút "Thử gửi lại", mic không bị kẹt
+      setFailedTurn({ text: cleanText, confidence, alternatives });
       const data = err.response?.data;
       const errorCode = data?.errorCode;
       const errorMsg = data?.message;
-      let displayMessage = 'Hệ thống đang bận, vui lòng thử lại sau giây lát.';
+      let displayMessage = 'Lỗi kết nối với AI. Bạn có thể nhấn "Thử gửi lại" hoặc nói lại câu khác.';
       if (errorCode) {
-        displayMessage = `[${errorCode}] ${errorMsg || 'Lỗi kết nối với AI'}`;
+        displayMessage = `[${errorCode}] ${errorMsg || displayMessage}`;
       } else if (errorMsg) {
         displayMessage = errorMsg;
       }
       message.warning(displayMessage, 5);
+      safeStartListening();
     } finally {
       setIsAiThinking(false);
+      isSubmittingRef.current = false;
     }
   };
 
   const handleRetry = useCallback(() => {
-    // (a) abort, (b) reset toàn bộ transcript refs & state, (c) xóa Feedback Card lượt này, (d) chờ restart
-    setSpeechReviewText('');
-    setIsReviewing(false);
+    // (a) abort, (b) reset toàn bộ transcript refs & state, (c) xóa Feedback Card lượt này, (d) hủy timer tự gửi
+    isSubmittingRef.current = false;
+    setFailedTurn(null);
     setLatestEvaluation(null);
     setIntendedUtterance('');
+    setLatestTurnConfidence(null);
     retrySpeech();
   }, [retrySpeech]);
 
-  const handleConfirmAndSend = () => {
-    if (!speechReviewText.trim()) return;
-    const textToSend = speechReviewText.trim();
-    const confToSend = speechConfidence;
-    const altsToSend = speechAlternatives;
-    setSpeechReviewText('');
-    setIsReviewing(false);
-    handleSendTurn(textToSend, confToSend, false, altsToSend);
-  };
-
   const handleMicAction = () => {
-    // Không thao tác mic khi AI đang phân tích hoặc đang nói
-    if (isAiThinking || status === 'processing' || isAiSpeaking || isSpeaking) return;
+    // Không thao tác mic khi AI đang phân tích hoặc đang nói hoặc đang gửi request
+    if (isAiThinking || isSubmittingRef.current || status === 'processing' || isAiSpeaking || isSpeaking) return;
 
     if (status === 'listening') {
       if (transcript.trim()) {
@@ -319,13 +329,13 @@ export const VoiceCallRoom: React.FC<VoiceCallRoomProps> = ({
 
   // Xác định rõ các trạng thái trực quan của nút Mic
   const getMicButtonUi = () => {
-    if (isAiThinking || status === 'processing') {
+    if (isAiThinking || isSubmittingRef.current || status === 'processing') {
       return {
         state: 'THINKING',
-        tooltip: 'AI đang phân tích câu nói...',
+        tooltip: 'AI đang xử lý câu nói...',
         buttonClass: 'bg-slate-700 border-2 border-slate-600 cursor-not-allowed opacity-75',
         icon: <Sparkles className="w-8 h-8 text-amber-400 animate-spin" />,
-        statusText: 'AI đang phân tích câu nói của bạn...',
+        statusText: 'AI đang xử lý câu nói của bạn...',
         disabled: true,
       };
     }
@@ -553,6 +563,13 @@ export const VoiceCallRoom: React.FC<VoiceCallRoomProps> = ({
                   <span className="italic font-medium text-orange-900">"{latestEvaluation.suggestedImprovement}"</span>
                 </div>
               )}
+
+              {latestTurnConfidence !== null && latestTurnConfidence < 0.5 && (
+                <div className="text-[11px] text-amber-800 bg-amber-100/80 border border-amber-300/80 rounded-xl px-2.5 py-1.5 flex items-center gap-1.5 font-medium mt-1">
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
+                  <span>Máy nghe chưa rõ, nên dùng tai nghe nếu bạn thấy kết quả sai</span>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -576,6 +593,43 @@ export const VoiceCallRoom: React.FC<VoiceCallRoomProps> = ({
                 Nói theo gợi ý
               </Button>
             )}
+          </div>
+        )}
+
+        {/* Thông báo lỗi khi API thất bại hoặc mạng chập chờn: Cho phép "Thử gửi lại" hoặc "Nói lại" */}
+        {failedTurn && !isAiThinking && (
+          <div className="w-full max-w-lg mx-auto bg-rose-50 border border-rose-200 text-rose-800 rounded-2xl p-3 mb-2 flex items-center justify-between gap-3 text-xs animate-fade-in shadow-xs text-left">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-rose-600 flex-shrink-0" />
+              <span>
+                Không thể gửi câu: <strong className="text-slate-900 font-bold">"{failedTurn.text}"</strong>
+              </span>
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <Button
+                size="small"
+                type="primary"
+                danger
+                className="font-bold text-xs rounded-xl"
+                onClick={() => {
+                  const t = failedTurn;
+                  setFailedTurn(null);
+                  handleSendTurn(t.text, t.confidence, true, t.alternatives);
+                }}
+              >
+                Thử gửi lại
+              </Button>
+              <Button
+                size="small"
+                className="text-xs rounded-xl"
+                onClick={() => {
+                  setFailedTurn(null);
+                  handleRetry();
+                }}
+              >
+                Nói lại
+              </Button>
+            </div>
           </div>
         )}
 
@@ -605,59 +659,6 @@ export const VoiceCallRoom: React.FC<VoiceCallRoomProps> = ({
             </div>
           </div>
         )}
-
-        {/* Khung xem lại và chỉnh sửa sau khi dứt lời trước khi gửi (LỖI B) */}
-        {isReviewing && speechReviewText.trim().length > 0 && !isAiThinking && (
-          <div className="w-full max-w-xl mx-auto bg-amber-50/60 border-2 border-orange-300 rounded-2xl p-4 shadow-lg animate-fade-in space-y-3 mb-2 text-left">
-            <div className="flex items-center justify-between flex-wrap gap-2">
-              <span className="text-xs font-bold text-orange-900">
-                Câu nhận diện được (bạn có thể chỉnh sửa trước khi gửi):
-              </span>
-              {speechConfidence < 0.5 && (
-                <span className="text-[11px] font-semibold text-amber-800 bg-amber-100 border border-amber-300 px-2.5 py-0.5 rounded-lg flex items-center gap-1 shadow-xs">
-                  ⚠️ Máy nghe chưa rõ, bạn thử nói lại hoặc đeo tai nghe
-                </span>
-              )}
-            </div>
-
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={speechReviewText}
-                onChange={(e) => setSpeechReviewText(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    handleConfirmAndSend();
-                  }
-                }}
-                className="flex-1 px-3.5 py-2 rounded-xl border-2 border-orange-200 focus:outline-none focus:border-orange-500 text-slate-800 font-semibold text-sm bg-white shadow-inner"
-                placeholder="Nhập hoặc sửa câu nói..."
-                autoFocus
-              />
-            </div>
-
-            <div className="flex items-center justify-end gap-3 pt-1">
-              <Button
-                shape="round"
-                className="font-bold flex items-center gap-1.5 h-9 px-4 text-slate-600"
-                onClick={handleRetry}
-              >
-                <RefreshCw className="w-3.5 h-3.5" />
-                Nói lại
-              </Button>
-              <Button
-                type="primary"
-                shape="round"
-                className="font-bold flex items-center gap-1.5 h-9 px-5 bg-orange-600 hover:bg-orange-700 text-white border-none shadow-md shadow-orange-600/20"
-                onClick={handleConfirmAndSend}
-                disabled={!speechReviewText.trim()}
-              >
-                <Send className="w-3.5 h-3.5" />
-                Gửi cho AI
-              </Button>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Control Action Bar */}
@@ -669,13 +670,13 @@ export const VoiceCallRoom: React.FC<VoiceCallRoomProps> = ({
               size="large"
               className="font-bold flex items-center gap-2 h-12 px-6"
               onClick={handleRetry}
-              disabled={isAiThinking || status === 'processing'}
+              disabled={isAiThinking || isSubmittingRef.current || status === 'processing'}
             >
               <RefreshCw className="w-4 h-4" />
               Nói lại
             </Button>
 
-            {/* Nút Mic chính với 3 trạng thái rõ ràng */}
+            {/* Nút Mic chính với các trạng thái rõ ràng */}
             <button
               disabled={micUi.disabled}
               onClick={handleMicAction}
@@ -690,7 +691,7 @@ export const VoiceCallRoom: React.FC<VoiceCallRoomProps> = ({
               size="large"
               className="font-bold bg-orange-600 hover:bg-orange-700 text-white border-none h-12 px-6 rounded-2xl shadow-md shadow-orange-600/20"
               onClick={finishNow}
-              disabled={isAiThinking || status === 'processing'}
+              disabled={isAiThinking || isSubmittingRef.current || status === 'processing'}
             >
               Hoàn thành
             </Button>
@@ -722,7 +723,7 @@ export const VoiceCallRoom: React.FC<VoiceCallRoomProps> = ({
                     setTextInputFallback('');
                   }
                 }}
-                disabled={isAiThinking}
+                disabled={isAiThinking || isSubmittingRef.current}
                 placeholder="Nhập câu trả lời bằng tiếng Anh của bạn tại đây..."
                 className="flex-1 px-4 py-2.5 rounded-xl border-2 border-slate-300 focus:outline-none focus:border-orange-500 font-medium text-sm"
               />
@@ -733,7 +734,7 @@ export const VoiceCallRoom: React.FC<VoiceCallRoomProps> = ({
                   handleSendTurn(textInputFallback, 1.0, false);
                   setTextInputFallback('');
                 }}
-                disabled={isAiThinking || !textInputFallback.trim()}
+                disabled={isAiThinking || isSubmittingRef.current || !textInputFallback.trim()}
               >
                 Gửi
               </Button>
