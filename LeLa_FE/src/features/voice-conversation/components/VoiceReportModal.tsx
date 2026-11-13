@@ -38,7 +38,7 @@ export const VoiceReportModal: React.FC<VoiceReportModalProps> = ({
             <Award className="w-8 h-8" />
           </div>
           <h2 className="text-2xl font-black text-slate-900 tracking-tight">Báo Cáo Tổng Kết Phiên Thoại</h2>
-          <p className="text-slate-500 text-sm">Đánh giá khách quan theo 4 tiêu chí hội thoại</p>
+          <p className="text-slate-500 text-sm">Tổng kết quá trình luyện hội thoại</p>
         </div>
 
         {/* Level & XP Banner */}
@@ -72,19 +72,19 @@ export const VoiceReportModal: React.FC<VoiceReportModalProps> = ({
           <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
             <div className="text-xs font-semibold text-slate-500">Ngữ pháp</div>
             <div className="text-2xl font-black text-[var(--teal)] mt-1">{report.grammarScore}</div>
-            <div className="text-[10px] text-slate-400 mt-0.5">40% trọng số</div>
+            <div className="text-[10px] text-slate-400 mt-0.5">{report.vocabularyScoreAvailable === false ? '66,7%' : '40%'} trọng số</div>
           </div>
 
-          <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+          {report.vocabularyScoreAvailable !== false && <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
             <div className="text-xs font-semibold text-slate-500">Từ vựng</div>
             <div className="text-2xl font-black text-emerald-600 mt-1">{report.vocabularyScore}</div>
             <div className="text-[10px] text-slate-400 mt-0.5">40% trọng số</div>
-          </div>
+          </div>}
 
           <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
             <div className="text-xs font-semibold text-slate-500">Lưu loát</div>
             <div className="text-2xl font-black text-purple-600 mt-1">{report.fluencyScore}</div>
-            <div className="text-[10px] text-slate-400 mt-0.5">20% trọng số</div>
+            <div className="text-[10px] text-slate-400 mt-0.5">{report.vocabularyScoreAvailable === false ? '33,3%' : '20%'} trọng số</div>
           </div>
         </div>
 

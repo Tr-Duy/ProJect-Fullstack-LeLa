@@ -21,12 +21,37 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class TargetWordSelectorTest {
+    @Test
+    void scenarioWithoutTopicDoesNotBorrowGlobalVocabulary() {
+        assertTrue(targetWordSelector.selectTargetWords(10L,
+                com.lela.voice.domain.ConversationScenario.builder().build()).isEmpty());
+        verifyNoInteractions(flashcardRepository, cardProgressRepository);
+    }
+
+    @Test
+    void scenarioSelectionExcludesCardsFromOtherTopics() {
+        var topic = new com.lela.deck.domain.Topic(); topic.setId(7L);
+        var otherTopic = new com.lela.deck.domain.Topic(); otherTopic.setId(8L);
+        var deck = new com.lela.deck.domain.Deck(); deck.setTopic(topic);
+        var otherDeck = new com.lela.deck.domain.Deck(); otherDeck.setTopic(otherTopic);
+        var matching = new Flashcard(); matching.setId(1L); matching.setDeck(deck); matching.isActive = true;
+        var unrelated = new Flashcard(); unrelated.setId(2L); unrelated.setDeck(otherDeck); unrelated.isActive = true;
+        var one = new CardProgress(); one.setCard(matching); one.setState(CardProgressState.REVIEW);
+        var two = new CardProgress(); two.setCard(unrelated); two.setState(CardProgressState.REVIEW);
+        when(cardProgressRepository.findAllByUserId(10L)).thenReturn(List.of(two, one));
+        when(flashcardRepository.findByDeckTopicIdAndIsActiveTrue(eq(7L), any()))
+                .thenReturn(org.springframework.data.domain.Page.empty());
+        assertEquals(List.of(matching), targetWordSelector.selectTargetWords(10L,
+                com.lela.voice.domain.ConversationScenario.builder().topic(topic).build()));
+    }
 
     @Mock
     private CardProgressRepository cardProgressRepository;
 
     @Mock
     private ConversationTargetWordRepository targetWordRepository;
+
+    @Mock private com.lela.flashcard.FlashcardRepository flashcardRepository;
 
     @InjectMocks
     private TargetWordSelector targetWordSelector;

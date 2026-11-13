@@ -40,7 +40,7 @@ public class VoiceSessionFinalizer {
      */
     @Transactional
     public ConversationSession finalizeSession(String publicId, Long userId, String userFeedback) {
-        ConversationSession session = sessionRepository.findByPublicId(publicId)
+        ConversationSession session = sessionRepository.findByPublicIdForUpdate(publicId)
                 .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
                         org.springframework.http.HttpStatus.NOT_FOUND, "Không tìm thấy phiên hội thoại"));
 
@@ -61,14 +61,17 @@ public class VoiceSessionFinalizer {
 
         // 1. Tính toán điểm số từ turns và target words
         List<ConversationTurn> turns = turnRepository.findBySessionIdOrderByTurnNumberAsc(session.getId());
-        List<ConversationTargetWord> targetWords = targetWordRepository.findBySessionId(session.getId());
+        List<ConversationTargetWord> targetWords = targetWordRepository.findBySessionId(session.getId()).stream()
+                .filter(word -> TargetWordSelector.belongsToScenario(word.getFlashcard(), session.getScenario())).toList();
 
         int grammarScore = calculateGrammarScore(turns);
-        int vocabScore = calculateVocabularyScore(targetWords, turns);
+        Integer vocabScore = targetWords.isEmpty() ? null : calculateVocabularyScore(targetWords, turns);
         int fluencyScore = calculateFluencyScore(session.getValidTurnCount(), session.getDurationSeconds());
 
         // Điểm tổng: Grammar (40%) + Vocab (40%) + Fluency (20%)
-        int overallScore = Math.round(grammarScore * 0.40f + vocabScore * 0.40f + fluencyScore * 0.20f);
+        int overallScore = vocabScore == null
+                ? Math.round((grammarScore * 0.40f + fluencyScore * 0.20f) / 0.60f)
+                : Math.round(grammarScore * 0.40f + vocabScore * 0.40f + fluencyScore * 0.20f);
         overallScore = Math.max(0, Math.min(100, overallScore));
 
         session.setGrammarScore(grammarScore);
@@ -110,7 +113,7 @@ public class VoiceSessionFinalizer {
 
         // 4. Trao thưởng Gamification (XP & Streak)
         // Điều kiện nhận XP: phiên COMPLETED, >= minValidTurnsForXp (mặc định 3 lượt hợp lệ)
-        int validTurns = session.getValidTurnCount() != null ? session.getValidTurnCount() : 0;
+        int validTurns = (int) turns.stream().filter(t -> "USER".equals(t.getRole()) && Boolean.TRUE.equals(t.getIsValid())).count();
         if (validTurns >= props.getMinValidTurnsForXp()) {
             ZoneId zone = ZoneId.of(props.getTimezone());
             LocalDate today = LocalDate.now(zone);
@@ -125,7 +128,7 @@ public class VoiceSessionFinalizer {
 
             if (session.getXpAwarded() == null || session.getXpAwarded() == 0) {
                 session.setXpAwarded(xpToAward);
-                if (xpToAward > 0) {
+                {
                     DailyLearningActivityRequest actReq = new DailyLearningActivityRequest();
                     actReq.setActivityDate(today);
                     actReq.setXpEarned(xpToAward);
@@ -180,7 +183,8 @@ public class VoiceSessionFinalizer {
         if (targetWords.isEmpty()) return 70;
         long correct = targetWords.stream().filter(ConversationTargetWord::getUsedCorrectly).count();
         int base = (int) Math.round(((double) correct / targetWords.size()) * 70);
-        int bonus = turns.size() >= 5 ? 30 : turns.size() * 6;
+        long userTurns = turns.stream().filter(t -> "USER".equals(t.getRole()) && Boolean.TRUE.equals(t.getIsValid())).count();
+        int bonus = (int) Math.min(30, userTurns * 6);
         return Math.min(100, base + bonus);
     }
 

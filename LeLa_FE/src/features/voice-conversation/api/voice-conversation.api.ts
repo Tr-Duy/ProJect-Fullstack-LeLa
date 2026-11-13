@@ -1,5 +1,12 @@
 import { apiClient as api } from '../../../shared/lib/api';
 
+export interface VoiceSuggestion { difficulty: 'EASY' | 'MEDIUM' | 'CHALLENGE'; text: string }
+export interface VoiceUiConfig {
+  ttsRate: number; bilingualSupport: boolean; autoHintOnSilence: boolean; silenceThresholdSeconds: number;
+  autoCommitSilenceMs?: number; incompleteExtraMs?: number; hintAfterSilenceMs?: number;
+  inputModes?: string[]; configVersion?: string;
+}
+
 export interface VoiceStatusResponse {
   unlocked: boolean;
   learnedCardsCount: number;
@@ -18,12 +25,7 @@ export interface VoiceStatusResponse {
   consecutiveHardCount: number;
   hasInProgressSession: boolean;
   inProgressPublicId?: string | null;
-  uiConfig: {
-    ttsRate: number;
-    bilingualSupport: boolean;
-    autoHintOnSilence: boolean;
-    silenceThresholdSeconds: number;
-  };
+  uiConfig: VoiceUiConfig;
 }
 
 export interface ConversationScenario {
@@ -58,12 +60,7 @@ export interface VoiceStartResponse {
   durationSecondsLimit: number;
   maxTurns: number;
   targetWords: VoiceTargetWordDto[];
-  uiConfig: {
-    ttsRate: number;
-    bilingualSupport: boolean;
-    autoHintOnSilence: boolean;
-    silenceThresholdSeconds: number;
-  };
+  uiConfig: VoiceUiConfig;
 }
 
 export interface UserEvaluationDto {
@@ -77,6 +74,8 @@ export interface UserEvaluationDto {
 }
 
 export interface VoiceTurnResponse {
+  feedbackLine?: string;
+  suggestions?: VoiceSuggestion[];
   turnNumber: number;
   aiReply: string;
   grammarErrors?: string[];
@@ -95,6 +94,7 @@ export interface VoiceTurnResponse {
 }
 
 export interface VoiceReportResponse {
+  vocabularyScoreAvailable?: boolean;
   publicId: string;
   overallScore: number;
   pronunciationScore: number | null;

@@ -60,6 +60,52 @@ class VoiceAiServiceTest {
     }
 
     @Test
+    void usageComesFromGeminiAndFeedbackHasExactlyThreeSuggestions() throws Exception {
+        when(geminiClient.getPrimaryModel()).thenReturn("primary");
+        when(geminiClient.getFallbackModel()).thenReturn("fallback");
+        HttpResponse<String> response = mock(HttpResponse.class);
+        when(response.statusCode()).thenReturn(200);
+        when(response.body()).thenReturn("""
+                {"usageMetadata":{"totalTokenCount":1234},"candidates":[{"content":{"parts":[{"text":"{\\"aiReply\\":\\"Hot or iced?\\",\\"feedbackLine\\":\\"Câu rõ ràng.\\",\\"suggestions\\":[{\\"difficulty\\":\\"EASY\\",\\"text\\":\\"Hot, please.\\"},{\\"difficulty\\":\\"MEDIUM\\",\\"text\\":\\"I would like it hot.\\"},{\\"difficulty\\":\\"CHALLENGE\\",\\"text\\":\\"Could you make it hot with milk?\\"}]}"}]}}]}
+                """);
+        when(geminiClient.generateContent(eq("primary"), any())).thenReturn(CompletableFuture.completedFuture(response));
+        var output = aiService.generateTurnResponse(scenario, 200, "Coffee please", List.of(), Set.of(), List.of());
+        assertEquals(1234, output.getTokensUsed());
+        assertEquals(3, output.getSuggestions().size());
+        assertEquals("Hot, please.", output.getSuggestions().get(0).text());
+        var request = org.mockito.ArgumentCaptor.forClass(GeminiRequest.class);
+        verify(geminiClient).generateContent(eq("primary"), request.capture());
+        assertNull(request.getValue().getGenerationConfig().getThinkingConfig());
+        assertTrue(request.getValue().getContents().get(0).getParts().get(0).getText().contains("200"));
+    }
+
+    @Test
+    void slowPrimaryIsCancelledAndFallbackReceivesAFullCallBudget() {
+        props.setGeminiCallTimeoutSeconds(1);
+        props.setTotalTurnTimeoutSeconds(3);
+        when(geminiClient.getPrimaryModel()).thenReturn("primary");
+        when(geminiClient.getFallbackModel()).thenReturn("fallback");
+        var timedOut = new CompletableFuture<HttpResponse<String>>() {
+            @Override public HttpResponse<String> get(long timeout, TimeUnit unit) throws TimeoutException {
+                assertEquals(1000, unit.toMillis(timeout));
+                try { Thread.sleep(1100); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+                throw new TimeoutException();
+            }
+        };
+        when(geminiClient.generateContent(eq("primary"), any())).thenReturn(timedOut);
+        HttpResponse<String> response = mock(HttpResponse.class);
+        when(response.statusCode()).thenReturn(200);
+        when(response.body()).thenReturn("{\"aiReply\":\"Fallback works\",\"usageMetadata\":{\"totalTokenCount\":17}}");
+        when(geminiClient.generateContent(eq("fallback"), any())).thenReturn(CompletableFuture.completedFuture(response));
+        var result = aiService.generateTurnResponse(scenario, 200, "Coffee", List.of(), Set.of(), List.of());
+        assertFalse(result.getDegraded());
+        assertTrue(timedOut.isCancelled());
+        verify(geminiClient, times(1)).generateContent(eq("primary"), any());
+        verify(geminiClient, times(1)).generateContent(eq("fallback"), any());
+        assertEquals(17, result.getTokensUsed());
+    }
+
+    @Test
     @DisplayName("Unit Test extractJson & parse: Trường hợp 1 - JSON sạch không có suggestedImprovement (EXCELLENT >= 85)")
     void testParseCleanJson() {
         String cleanJson = """

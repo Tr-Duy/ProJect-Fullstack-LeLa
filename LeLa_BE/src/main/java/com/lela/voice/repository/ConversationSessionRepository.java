@@ -17,6 +17,10 @@ public interface ConversationSessionRepository extends JpaRepository<Conversatio
     Optional<ConversationSession> findByPublicId(String publicId);
 
     @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT s FROM ConversationSession s WHERE s.publicId = :publicId")
+    Optional<ConversationSession> findByPublicIdForUpdate(@Param("publicId") String publicId);
+
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT s FROM ConversationSession s WHERE s.user.id = :userId AND s.status = 'IN_PROGRESS'")
     List<ConversationSession> findInProgressSessionsForUpdate(@Param("userId") Long userId);
 

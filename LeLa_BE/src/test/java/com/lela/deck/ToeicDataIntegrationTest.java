@@ -109,11 +109,12 @@ public class ToeicDataIntegrationTest {
         assertTrue(deckL1.isPresent());
 
         List<Map<String, Object>> cards = jdbcTemplate.queryForList(
-                "SELECT front_text, back_text, note, hint, card_order FROM flashcards WHERE deck_id = ? AND front_text = 'Abide by (v.)'",
+                "SELECT front_text, part_of_speech, back_text, note, hint, card_order FROM flashcards WHERE deck_id = ? AND front_text = 'Abide by'",
                 deckL1.get().getId()
         );
-        assertFalse(cards.isEmpty(), "Flashcard 'Abide by (v.)' must exist in DECK-TOEIC-U500-L01");
+        assertFalse(cards.isEmpty(), "V51-normalized flashcard 'Abide by' must exist in DECK-TOEIC-U500-L01");
         Map<String, Object> card = cards.get(0);
+        assertEquals("v", card.get("part_of_speech"));
         assertEquals("Tuân theo, chịu theo", card.get("back_text"));
         assertEquals("to comply with, to conform", card.get("note"));
         assertEquals("L1 Contracts", card.get("hint"));

@@ -90,6 +90,45 @@ class VoiceSessionFinalizerTest {
     }
 
     @Test
+    void exhaustedCapStillRecordsActivityOnceAndExcludesAssistantAndUnrelatedWords() {
+        inProgressSession.setValidTurnCount(3);
+        when(sessionRepository.findByPublicIdForUpdate("sess-finish-1")).thenReturn(Optional.of(inProgressSession));
+        var userTurn = ConversationTurn.builder().role("USER").isValid(true).grammarErrorsJson("[]").build();
+        var assistant = ConversationTurn.builder().role("ASSISTANT").isValid(true).build();
+        when(turnRepository.findBySessionIdOrderByTurnNumberAsc(1L)).thenReturn(List.of(userTurn, userTurn, userTurn, assistant, assistant));
+        var unrelated = ConversationTargetWord.builder().flashcard(new Flashcard()).usedCorrectly(true).build();
+        when(targetWordRepository.findBySessionId(1L)).thenReturn(List.of(unrelated));
+        when(sessionRepository.sumDailyXpAwarded(eq(10L), any())).thenReturn(150);
+        when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        finalizer.finalizeSession("sess-finish-1", 10L, null);
+        finalizer.finalizeSession("sess-finish-1", 10L, null);
+        var activity = ArgumentCaptor.forClass(DailyLearningActivityRequest.class);
+        verify(dailyLearningActivityService, times(1)).logActivity(activity.capture());
+        assertEquals(0, activity.getValue().getXpEarned());
+        assertEquals(1, activity.getValue().getVoiceSessionCount());
+        assertNull(inProgressSession.getVocabularyScore());
+        assertEquals(88, inProgressSession.getOverallScore()); // (100*.4 + 65*.2)/.6
+    }
+
+    @Test
+    void assistantTurnsDoNotQualifyForXpOrInflateVocabularyBonus() {
+        var topic = new com.lela.deck.domain.Topic(); topic.setId(4L);
+        var deck = new com.lela.deck.domain.Deck(); deck.setTopic(topic);
+        var card = new Flashcard(); card.setDeck(deck);
+        inProgressSession.setScenario(ConversationScenario.builder().topic(topic).build());
+        when(sessionRepository.findByPublicIdForUpdate("sess-finish-1")).thenReturn(Optional.of(inProgressSession));
+        when(targetWordRepository.findBySessionId(1L)).thenReturn(List.of(
+                ConversationTargetWord.builder().flashcard(card).usedCorrectly(false).build()));
+        var userTurn = ConversationTurn.builder().role("USER").isValid(true).grammarErrorsJson("[]").build();
+        var assistant = ConversationTurn.builder().role("ASSISTANT").isValid(true).build();
+        when(turnRepository.findBySessionIdOrderByTurnNumberAsc(1L)).thenReturn(List.of(userTurn, assistant, assistant, assistant, assistant));
+        when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        finalizer.finalizeSession("sess-finish-1", 10L, null);
+        assertEquals(6, inProgressSession.getVocabularyScore());
+        verify(dailyLearningActivityService, never()).logActivity(any());
+    }
+
+    @Test
     @DisplayName("Idempotent Finalize: Gọi lần 2 trên session đã COMPLETED không chạy lại logic cộng điểm")
     void testFinalizeIsIdempotent() {
         ConversationSession alreadyCompleted = ConversationSession.builder()
@@ -100,7 +139,7 @@ class VoiceSessionFinalizerTest {
                 .overallScore(85)
                 .build();
 
-        when(sessionRepository.findByPublicId("sess-completed")).thenReturn(Optional.of(alreadyCompleted));
+        when(sessionRepository.findByPublicIdForUpdate("sess-completed")).thenReturn(Optional.of(alreadyCompleted));
 
         ConversationSession result = finalizer.finalizeSession("sess-completed", 10L, "COMFORTABLE");
 
@@ -113,10 +152,14 @@ class VoiceSessionFinalizerTest {
     @Test
     @DisplayName("Hoàn thành hợp lệ: Tính đúng XP theo công thức mới, gọi dailyLearningActivityService.logActivity với voiceSessionCount = 1")
     void testFinalizeAwardsXpAndIncrementsVoiceSessionCount() {
-        when(sessionRepository.findByPublicId("sess-finish-1")).thenReturn(Optional.of(inProgressSession));
+        when(sessionRepository.findByPublicIdForUpdate("sess-finish-1")).thenReturn(Optional.of(inProgressSession));
 
         Flashcard fc1 = new Flashcard(); fc1.setId(101L);
         Flashcard fc2 = new Flashcard(); fc2.setId(102L);
+        var topic = new com.lela.deck.domain.Topic(); topic.setId(1L);
+        var deck = new com.lela.deck.domain.Deck(); deck.setTopic(topic);
+        fc1.setDeck(deck); fc2.setDeck(deck);
+        inProgressSession.setScenario(ConversationScenario.builder().topic(topic).build());
 
         ConversationTargetWord tw1 = ConversationTargetWord.builder()
                 .flashcard(fc1).wordText("coffee").usedCorrectly(true).status("USED_CORRECT").build();
@@ -124,7 +167,8 @@ class VoiceSessionFinalizerTest {
                 .flashcard(fc2).wordText("water").usedCorrectly(true).status("USED_CORRECT").build();
 
         when(targetWordRepository.findBySessionId(1L)).thenReturn(List.of(tw1, tw2));
-        when(turnRepository.findBySessionIdOrderByTurnNumberAsc(1L)).thenReturn(Collections.emptyList());
+        when(turnRepository.findBySessionIdOrderByTurnNumberAsc(1L)).thenReturn(java.util.stream.IntStream.range(0, 4)
+                .mapToObj(i -> ConversationTurn.builder().role("USER").isValid(true).grammarErrorsJson("[]").build()).toList());
         when(sessionRepository.sumDailyXpAwarded(eq(10L), any(LocalDate.class))).thenReturn(0);
         when(sessionRepository.save(any(ConversationSession.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -132,13 +176,13 @@ class VoiceSessionFinalizerTest {
 
         assertEquals("COMPLETED", inProgressSession.getStatus());
         // XP: 4 turns * 2 = 8, score 65 / 10 = 7, 2 target words * 3 = 6 -> Total = 21 XP
-        assertEquals(21, inProgressSession.getXpAwarded());
+        assertEquals(23, inProgressSession.getXpAwarded());
 
         ArgumentCaptor<DailyLearningActivityRequest> captor = ArgumentCaptor.forClass(DailyLearningActivityRequest.class);
         verify(dailyLearningActivityService).logActivity(captor.capture());
 
         DailyLearningActivityRequest captured = captor.getValue();
-        assertEquals(21, captured.getXpEarned());
+        assertEquals(23, captured.getXpEarned());
         assertEquals(1, captured.getVoiceSessionCount());
     }
 
@@ -154,7 +198,7 @@ class VoiceSessionFinalizerTest {
                 .durationSeconds(60)
                 .build();
 
-        when(sessionRepository.findByPublicId("sess-short")).thenReturn(Optional.of(shortSession));
+        when(sessionRepository.findByPublicIdForUpdate("sess-short")).thenReturn(Optional.of(shortSession));
         when(targetWordRepository.findBySessionId(3L)).thenReturn(Collections.emptyList());
         when(turnRepository.findBySessionIdOrderByTurnNumberAsc(3L)).thenReturn(Collections.emptyList());
         when(sessionRepository.save(any(ConversationSession.class))).thenAnswer(inv -> inv.getArgument(0));

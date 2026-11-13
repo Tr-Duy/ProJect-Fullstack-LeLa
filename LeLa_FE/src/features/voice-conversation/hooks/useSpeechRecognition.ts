@@ -2,15 +2,14 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 export type SpeechStatus = 'idle' | 'listening' | 'processing';
 
-export const DEFAULT_VOICE_SILENCE_MS = 1200;
-export const DEFAULT_INCOMPLETE_EXTRA_MS = 800;
-
 export interface UseSpeechRecognitionOptions {
   lang?: string;
   silenceMs?: number;
   incompleteExtraMs?: number;
   minWords?: number;
   isAiSpeaking?: boolean;
+  autoCommit?: boolean;
+  onStopped?: () => void;
   onUtteranceEnd: (text: string, alternatives?: string[], confidence?: number) => void;
   onError?: (error: string, isFatal?: boolean) => void;
 }
@@ -23,10 +22,12 @@ const countWords = (text: string): number =>
 
 export function useSpeechRecognition({
   lang = 'en-US',
-  silenceMs = DEFAULT_VOICE_SILENCE_MS,
-  incompleteExtraMs = DEFAULT_INCOMPLETE_EXTRA_MS,
+  silenceMs,
+  incompleteExtraMs,
   minWords = 1,
   isAiSpeaking = false,
+  autoCommit = false,
+  onStopped,
   onUtteranceEnd,
   onError,
 }: UseSpeechRecognitionOptions) {
@@ -51,6 +52,9 @@ export function useSpeechRecognition({
   const onErrorRef = useRef(onError);
   const isAiSpeakingRef = useRef<boolean>(isAiSpeaking);
   const sessionIdRef = useRef<number>(0);
+  const finishRequestedRef = useRef(false);
+  const onStoppedRef = useRef(onStopped);
+  onStoppedRef.current = onStopped;
 
   useEffect(() => {
     onEndRef.current = onUtteranceEnd;
@@ -77,6 +81,7 @@ export function useSpeechRecognition({
     alternativesRef.current = [];
     confidenceRef.current = 1.0;
     submittedRef.current = false;
+    finishRequestedRef.current = false;
     setTranscript('');
     setFinalTranscript('');
     setInterimTranscript('');
@@ -156,7 +161,7 @@ export function useSpeechRecognition({
   );
 
   const scheduleCommit = useCallback(() => {
-    if (isAiSpeakingRef.current) return;
+    if (isAiSpeakingRef.current || !autoCommit || silenceMs == null || incompleteExtraMs == null) return;
     clearTimer();
 
     // Chỉ bắt đầu đếm im lặng để tự gửi khi ĐÃ CÓ kết quả final
@@ -167,7 +172,7 @@ export function useSpeechRecognition({
 
     const wait = INCOMPLETE_ENDING.test(fullText) ? silenceMs + incompleteExtraMs : silenceMs;
     timerRef.current = window.setTimeout(() => commit(minWords), wait);
-  }, [clearTimer, commit, silenceMs, incompleteExtraMs, minWords]);
+  }, [clearTimer, commit, silenceMs, incompleteExtraMs, minWords, autoCommit]);
 
   const start = useCallback(() => {
     // Không bao giờ khởi động nhận diện nếu loa AI đang phát âm thanh thật
@@ -238,7 +243,7 @@ export function useSpeechRecognition({
         const result = event.results[i];
         const piece: string = result[0]?.transcript || '';
         const conf = result[0]?.confidence ?? 0;
-        console.log(`[STT ONRESULT ITEM][${now}] index=${i}, isFinal=${result.isFinal}, transcript="${piece}", confidence=${conf}`);
+        console.debug(`[STT RESULT][${now}] index=${i}, isFinal=${result.isFinal}, confidence=${conf}`);
 
         if (conf > 0) {
           confidenceRef.current = conf;
@@ -247,8 +252,6 @@ export function useSpeechRecognition({
 
         for (let a = 0; a < result.length; a++) {
           const altPiece = result[a]?.transcript?.trim();
-          const altConf = result[a]?.confidence ?? 0;
-          console.log(`   alt[${a}]: "${altPiece}" (conf=${altConf})`);
           if (altPiece && !capturedAlts.includes(altPiece)) {
             capturedAlts.push(altPiece);
           }
@@ -300,6 +303,14 @@ export function useSpeechRecognition({
         return;
       }
 
+      if (!autoCommit) {
+        if (finishRequestedRef.current) commit(1);
+        wantListeningRef.current = false;
+        setStatus('idle');
+        onStoppedRef.current?.();
+        return;
+      }
+
       if (wantListeningRef.current && !submittedRef.current) {
         if (restartTimerRef.current !== null) {
           window.clearTimeout(restartTimerRef.current);
@@ -335,12 +346,17 @@ export function useSpeechRecognition({
         console.error('SpeechRecognition start failed', e);
       }
     }
-  }, [lang, reset, scheduleCommit, clearTimer]);
+  }, [lang, reset, scheduleCommit, clearTimer, autoCommit, commit]);
 
   const finishNow = useCallback(() => {
     if (isAiSpeakingRef.current) return;
-    commit(1);
-  }, [commit]);
+    finishRequestedRef.current = true;
+    wantListeningRef.current = false;
+    clearTimer();
+    try { recognitionRef.current?.stop(); } catch { commit(1); }
+    // Some engines omit onend; this is a flush deadline, never an auto-send silence threshold.
+    timerRef.current = window.setTimeout(() => { commit(1); setStatus('idle'); onStoppedRef.current?.(); }, 1000);
+  }, [commit, clearTimer]);
 
   const retry = useCallback(() => {
     if (isAiSpeakingRef.current) return;

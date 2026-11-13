@@ -16,6 +16,29 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class TargetWordSelector {
 
+    public static boolean belongsToScenario(Flashcard card, com.lela.voice.domain.ConversationScenario scenario) {
+        return card != null && card.getDeck() != null && card.getDeck().getTopic() != null
+                && scenario != null && scenario.getTopic() != null && scenario.getTopic().getId() != null
+                && scenario.getTopic().getId().equals(card.getDeck().getTopic().getId());
+    }
+
+    public List<Flashcard> selectTargetWords(Long userId, com.lela.voice.domain.ConversationScenario scenario) {
+        if (scenario == null || scenario.getTopic() == null) return List.of();
+        List<Flashcard> candidates = cardProgressRepository.findAllByUserId(userId).stream()
+                .filter(cp -> cp.getState() != CardProgressState.NEW && cp.getState() != CardProgressState.SUSPENDED)
+                .sorted(Comparator.comparingInt((CardProgress cp) -> cp.getLapseCount() == null ? 0 : cp.getLapseCount()).reversed())
+                .map(CardProgress::getCard).filter(card -> belongsToScenario(card, scenario))
+                .filter(card -> card.isActive).distinct().limit(5).collect(Collectors.toCollection(ArrayList::new));
+        if (candidates.size() < 5) {
+            for (Flashcard card : flashcardRepository.findByDeckTopicIdAndIsActiveTrue(
+                    scenario.getTopic().getId(), org.springframework.data.domain.PageRequest.of(0, 10))) {
+                if (candidates.size() >= 5) break;
+                if (candidates.stream().noneMatch(existing -> existing.getId().equals(card.getId()))) candidates.add(card);
+            }
+        }
+        return candidates;
+    }
+
     private final CardProgressRepository cardProgressRepository;
     private final ConversationTargetWordRepository targetWordRepository;
     private final com.lela.flashcard.FlashcardRepository flashcardRepository;

@@ -81,30 +81,10 @@ class ConversationQuotaServiceTest {
     }
 
     @Test
-    @DisplayName("Hạn mức 3 buổi/ngày: Còn lượt khi đã tiêu thụ 2, Hết lượt khi đã tiêu thụ 3")
+    @DisplayName("Existing v1 contract: unlimited sessions use sentinel -1")
     void testDailyQuotaLimit() {
-        when(cardProgressRepository.countByUserIdAndState(10L, CardProgressState.REVIEW)).thenReturn(25L);
-        when(cardProgressRepository.countByUserIdAndState(10L, CardProgressState.LEARNING)).thenReturn(0L);
-        when(cardProgressRepository.countByUserIdAndState(10L, CardProgressState.RELEARNING)).thenReturn(0L);
-
-        // TH1: 2 sessions completed -> remaining = 1
-        when(sessionRepository.countCompletedSessionsToday(eq(10L), any(LocalDateTime.class), any(LocalDateTime.class))).thenReturn(2L);
-        int remaining = quotaService.getRemainingQuota(10L);
-        assertEquals(1, remaining);
-
-        // TH2: 3 sessions completed -> remaining = 0
-        when(sessionRepository.countCompletedSessionsToday(eq(10L), any(LocalDateTime.class), any(LocalDateTime.class))).thenReturn(3L);
-        assertEquals(0, quotaService.getRemainingQuota(10L));
-
-        when(usersRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(testUser));
-        when(sessionRepository.findInProgressSessionsForUpdate(10L)).thenReturn(Collections.emptyList());
-
-        // Cố bắt đầu phiên khi đã hết hạn mức -> Ném IllegalStateException
-        Flashcard dummyCard = new Flashcard();
-        dummyCard.setId(100L);
-        assertThrows(IllegalStateException.class, () ->
-                quotaService.startSessionWithLock(testUser, testScenario, List.of(dummyCard))
-        );
+        assertEquals(-1, quotaService.getRemainingQuota(10L));
+        verifyNoInteractions(sessionRepository);
     }
 
     @Test

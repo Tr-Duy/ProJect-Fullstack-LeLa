@@ -33,7 +33,7 @@ public class GeminiClient {
             
             log.info("====== GEMINI API REQUEST ======");
             log.info("URL: {}", url);
-            log.info("Request Body: {}", requestBody);
+            log.debug("Gemini request body bytes: {}", requestBody.length());
 
             HttpRequest httpRequest = HttpRequest.newBuilder()
                     .uri(URI.create(url))

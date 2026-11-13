@@ -46,7 +46,9 @@ public class VoiceConversationServiceImpl implements VoiceConversationService {
         double ttsRate = 0.8 + ((level - 100) / 900.0) * 0.3;
         ttsRate = Math.round(ttsRate * 100.0) / 100.0;
         boolean bilingual = level < 500;
-        return new VoiceUiConfigDto(ttsRate, bilingual, true, 8);
+        return new VoiceUiConfigDto(ttsRate, bilingual, true, props.getHintAfterSilenceMs() / 1000,
+                props.getAutoCommitSilenceMs(), props.getIncompleteExtraMs(), props.getHintAfterSilenceMs(),
+                List.of("WEB_SPEECH", "TEXT"), "1A");
     }
 
     private List<VoiceTargetWordDto> mapTargetWordsToDtos(List<ConversationTargetWord> targetWords) {
@@ -220,10 +222,8 @@ public class VoiceConversationServiceImpl implements VoiceConversationService {
         }
 
         // 2. Chọn 3-5 Target Words
-        List<Flashcard> targetCards = targetWordSelector.selectTargetWords(user.getId());
-        if (targetCards.size() < 3) {
-            throw new IllegalStateException("Chưa đủ từ vựng mục tiêu để bắt đầu (cần tối thiểu 3 từ). Hãy học thêm thẻ Flashcard!");
-        }
+        List<Flashcard> targetCards = targetWordSelector.selectTargetWords(user.getId(), scenario);
+        // A scenario without matching vocabulary remains playable; its vocabulary score is unavailable.
 
         // 3. Khóa quota và tạo phiên IN_PROGRESS
         ConversationSession session = quotaService.startSessionWithLock(user, scenario, targetCards);
@@ -460,7 +460,9 @@ public class VoiceConversationServiceImpl implements VoiceConversationService {
                 Boolean.TRUE.equals(aiOutput.getDegraded()),
                 aiOutput.getErrorCode(),
                 aiOutput.getIntendedUtterance(),
-                aiOutput.getIsCompleted()
+                aiOutput.getIsCompleted(),
+                aiOutput.getFeedbackLine(),
+                aiOutput.getSuggestions()
         );
     }
 
@@ -554,7 +556,8 @@ public class VoiceConversationServiceImpl implements VoiceConversationService {
                 session.getXpAwarded() != null ? session.getXpAwarded() : 0,
                 hardWarning,
                 wordDtos,
-                corrections
+                corrections,
+                session.getVocabularyScore() != null
         );
     }
 

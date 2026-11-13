@@ -46,11 +46,20 @@ public class GeminiRequest {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class GenerationConfig {
+        @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+        private ThinkingConfig thinkingConfig;
         private Double temperature;
         private Integer topK;
         private Double topP;
         private Integer maxOutputTokens;
         private String responseMimeType;
         private Object responseSchema;
+    }
+
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class ThinkingConfig {
+        private Integer thinkingBudget;
     }
 }

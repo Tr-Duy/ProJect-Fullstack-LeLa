@@ -16,5 +16,6 @@ public record VoiceReportResponse(
         int xpAwarded,
         boolean consecutiveHardWarning,
         List<VoiceTargetWordDto> targetWords,
-        List<VoiceTurnCorrectionDto> corrections
+        List<VoiceTurnCorrectionDto> corrections,
+        boolean vocabularyScoreAvailable
 ) {}
