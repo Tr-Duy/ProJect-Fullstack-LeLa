@@ -93,6 +93,29 @@ class DailyLearningActivityAggregationServiceTest {
     }
 
     @Test
+    void getTodayActivity_voiceOnlyDayWithZeroXpAndMinutesKeepsStreak() {
+        LocalDate today = LocalDate.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"));
+        var yesterday = new com.lela.dailylearningactivity.domain.DailyLearningActivity();
+        yesterday.setActivityDate(today.minusDays(1));
+        yesterday.setVoiceSessionCount(1);
+        yesterday.setXpEarned(0);
+        yesterday.setMinutesSpent(0);
+        var activity = new com.lela.dailylearningactivity.domain.DailyLearningActivity();
+        activity.setActivityDate(today);
+        activity.setVoiceSessionCount(1);
+        activity.setXpEarned(0);
+        activity.setMinutesSpent(0);
+        when(repository.findAllByUserIdOrderByActivityDateAsc(12L)).thenReturn(List.of(yesterday, activity));
+        when(repository.findByUserIdAndActivityDateBetween(12L, today, today)).thenReturn(List.of(activity));
+        when(modelMapper.map(activity, DailyLearningActivityResponse.class)).thenReturn(new DailyLearningActivityResponse());
+
+        var result = service.getTodayActivity();
+
+        assertTrue(result.getActive());
+        assertEquals(2, result.getCurrentStreak());
+    }
+
+    @Test
     void getHistory_marksPlacementQuizOnlyDayAsActive() {
         Quiz quiz = new Quiz();
         quiz.setQuizCategory(QuizCategory.PLACEMENT);

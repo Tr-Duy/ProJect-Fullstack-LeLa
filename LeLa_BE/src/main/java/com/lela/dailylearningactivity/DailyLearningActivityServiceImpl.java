@@ -262,6 +262,7 @@ public class DailyLearningActivityServiceImpl implements DailyLearningActivitySe
         return defaultInt(activity.getReviewCount()) > 0
                 || defaultInt(activity.getCardsLearned()) > 0
                 || defaultInt(activity.getQuizCount()) > 0
+                || defaultInt(activity.getVoiceSessionCount()) > 0
                 || defaultInt(activity.getMinutesSpent()) > 0
                 || defaultInt(activity.getXpEarned()) > 0
                 || Boolean.TRUE.equals(activity.getGoalMet());
