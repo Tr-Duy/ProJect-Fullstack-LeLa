@@ -20,7 +20,7 @@ public class GeminiConfiguration {
 
     public String getGenerateContentUrl(String model) {
         String effectiveModel = (model != null && !model.isBlank()) ? model : primaryModel;
-        return baseUrl + "/" + effectiveModel + ":generateContent?key=" + apiKey;
+        return baseUrl + "/" + effectiveModel + ":generateContent";
     }
 
     public String getApiUrl() {

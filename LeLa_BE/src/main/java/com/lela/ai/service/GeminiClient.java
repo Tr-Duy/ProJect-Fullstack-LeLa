@@ -29,15 +29,16 @@ public class GeminiClient {
     public CompletableFuture<HttpResponse<java.io.InputStream>> streamGenerateContent(GeminiRequest request) {
         try {
             String requestBody = objectMapper.writeValueAsString(request);
-            String url = config.getApiUrl() + "?key=" + config.getApiKey() + "&alt=sse";
+            String url = config.getApiUrl().replace(":generateContent", ":streamGenerateContent") + "?alt=sse";
             
             log.info("====== GEMINI API REQUEST ======");
-            log.info("URL: {}", url.replace(config.getApiKey(), "HIDDEN_KEY"));
+            log.info("URL: {}", url);
             log.info("Request Body: {}", requestBody);
 
             HttpRequest httpRequest = HttpRequest.newBuilder()
                     .uri(URI.create(url))
                     .header("Content-Type", "application/json")
+                    .header("x-goog-api-key", config.getApiKey())
                     .POST(HttpRequest.BodyPublishers.ofString(requestBody))
                     .build();
 
@@ -48,8 +49,8 @@ public class GeminiClient {
                         if (response.statusCode() >= 400) {
                             try {
                                 String errorBody = new String(response.body().readAllBytes());
-                                log.error("Gemini Error Body: {}", errorBody);
-                                throw new AiException("Gemini returned " + response.statusCode() + ": " + errorBody);
+                                log.error("Gemini Error Body: {}", errorBody.replace(config.getApiKey(), "[REDACTED]"));
+                                throw new AiException("Gemini returned " + response.statusCode());
                             } catch (Exception e) {
                                 log.error("Failed to read error body", e);
                             }
@@ -74,6 +75,7 @@ public class GeminiClient {
             HttpRequest httpRequest = HttpRequest.newBuilder()
                     .uri(URI.create(url))
                     .header("Content-Type", "application/json")
+                    .header("x-goog-api-key", config.getApiKey())
                     .POST(HttpRequest.BodyPublishers.ofString(requestBody))
                     .build();
 
