@@ -493,7 +493,7 @@ export function LearnerLayout() {
   };
 
   return (
-    <div className="min-h-screen flex bg-[var(--bg)] text-[var(--text)] font-sans antialiased">
+    <div className={`${isFitViewport ? 'h-[100dvh] overflow-hidden' : 'min-h-screen'} flex bg-[var(--bg)] text-[var(--text)] font-sans antialiased`}>
       {/* =========================================================================
           DESKTOP SIDEBAR (>= 1024px, 264px wide, 72px collapsed, sticky 100dvh)
           ========================================================================= */}
@@ -526,7 +526,7 @@ export function LearnerLayout() {
       {/* =========================================================================
           MAIN APPLICATION AREA (Topbar + Page Outlet)
           ========================================================================= */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 min-h-0">
         {/* Desktop Topbar (>= 1024px, 64px height) */}
         <header className="hidden lg:flex sticky top-0 z-20 h-16 bg-[var(--chrome)] border-b border-[var(--border)] px-8 items-center justify-between">
           {/* Left: Dynamic Clean Page Title */}
@@ -670,12 +670,12 @@ export function LearnerLayout() {
         <main
           className={`flex-1 w-full bg-[var(--bg)] min-w-0 ${
             isFitViewport
-              ? 'h-[calc(100dvh-64px)] overflow-hidden p-3.5 sm:p-5 md:px-6'
+              ? 'min-h-0 h-[calc(100dvh-64px)] overflow-hidden p-3.5 sm:p-5 md:px-6'
               : 'pb-24 lg:pb-16'
           }`}
         >
           <ErrorBoundary resetKey={location.pathname}>
-            <AnimatedOutlet />
+            <AnimatedOutlet fillHeight={isFitViewport} />
           </ErrorBoundary>
         </main>
 

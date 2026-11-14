@@ -2,7 +2,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { useLocation, useOutlet } from 'react-router-dom';
 import { useEffect } from 'react';
 
-export function AnimatedOutlet() {
+export function AnimatedOutlet({ fillHeight = false }: { fillHeight?: boolean }) {
   const { pathname } = useLocation();
   const outlet = useOutlet();
   const reduce = useReducedMotion();
@@ -17,7 +17,7 @@ export function AnimatedOutlet() {
       initial={reduce ? false : { opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-      className="w-full"
+      className={fillHeight ? 'w-full h-full min-h-0' : 'w-full'}
     >
       {outlet}
     </motion.div>

@@ -60,7 +60,7 @@ export const ContextPanel: React.FC<ContextPanelProps> = ({ onQuickAsk }) => {
   // Derived user stats
   const levelName = user?.currentLevel?.name;
   const xp = user?.xpTotal;
-  const streak = typeof user?.streakCurrent === 'number' ? user.streakCurrent : currentStreak;
+  const streak = currentStreak;
   const cardsToday = todayActivity
     ? (todayActivity.cardsLearned || 0) + (todayActivity.reviewCount || 0)
     : undefined;

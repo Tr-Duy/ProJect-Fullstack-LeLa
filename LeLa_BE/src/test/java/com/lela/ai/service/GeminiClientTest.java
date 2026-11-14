@@ -19,6 +19,26 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class GeminiClientTest {
     @Test
+    void bufferedResponsePreservesUtf8AcrossTcpFragmentsWithoutFinalNewline() throws Exception {
+        String json = "{\"text\":\"Xin chào **bạn**.\\nĐã xong.\",\"finishReason\":\"STOP\"}";
+        HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext("/models/", exchange -> {
+            exchange.getRequestBody().readAllBytes();
+            byte[] bytes = json.getBytes(StandardCharsets.UTF_8);
+            exchange.sendResponseHeaders(200, 0);
+            try (var body=exchange.getResponseBody()) {
+                for (byte value:bytes) { body.write(value); body.flush(); }
+            }
+        });
+        server.start();
+        try {
+            var config=new GeminiConfiguration();config.setApiKey("test-only");
+            config.setBaseUrl("http://127.0.0.1:"+server.getAddress().getPort()+"/models");
+            var client=new GeminiClient(config,new ObjectMapper());
+            assertEquals(json,client.generateContent(new GeminiRequest()).get(5,TimeUnit.SECONDS).body());
+        } finally {server.stop(0);}
+    }
+    @Test
     void sendsKeyOnlyInHeaderForBothEndpointsAndRedactsErrorLogs() throws Exception {
         String key = "test-secret-key-never-log";
         var uri = new AtomicReference<String>();

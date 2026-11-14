@@ -53,6 +53,9 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
 
   return (
     <motion.div
+      data-testid="tutor-message"
+      data-message-role={message.role}
+      data-message-status={message.status}
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.18, ease: 'easeOut' }}
@@ -79,7 +82,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
               <div className="prose prose-sm max-w-none text-[var(--text)] break-words [&>p]:my-1.5 [&>p:first-child]:mt-0 [&>p:last-child]:mb-0 [&>ul]:my-1.5 [&>ul]:pl-5 [&>ol]:my-1.5 [&>ol]:pl-5 [&>li]:my-0.5 [&>table]:w-full [&>table]:border-collapse [&>table]:my-2 [&>table_th]:border [&>table_th]:border-[var(--border)] [&>table_th]:bg-[var(--brand-50)] [&>table_th]:p-1.5 [&>table_th]:text-left [&>table_td]:border [&>table_td]:border-[var(--border)] [&>table_td]:p-1.5 [&_strong]:font-semibold [&_strong]:text-[var(--text)] [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:bg-[#FFF8EE] [&_code]:text-[var(--brand-700)] [&_code]:text-[13px] [&_pre]:bg-white [&_pre]:p-3 [&_pre]:rounded-xl [&_pre]:border [&_pre]:border-[var(--border)]">
                 {message.content ? (
                   <>
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    <ReactMarkdown skipHtml remarkPlugins={[remarkGfm]}>
                       {message.content}
                     </ReactMarkdown>
                     {isStreaming && (
@@ -89,13 +92,16 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                       />
                     )}
                   </>
-                ) : (
+                ) : isStreaming ? (
                   <div className="flex items-center gap-1.5 py-1 px-1">
                     <span className="w-2 h-2 bg-[var(--brand)] rounded-full animate-bounce [animation-delay:-0.3s]" />
                     <span className="w-2 h-2 bg-[var(--brand)] rounded-full animate-bounce [animation-delay:-0.15s]" />
                     <span className="w-2 h-2 bg-[var(--brand)] rounded-full animate-bounce" />
                     <span className="text-[12px] text-[var(--text-2)] ml-1 font-medium">LeLa đang suy nghĩ...</span>
                   </div>
+                ) : <p>{message.status === 'interrupted' ? 'Đã dừng trước khi nhận đủ câu trả lời.' : 'Chưa nhận được câu trả lời.'}</p>}
+                {!isStreaming && ['incomplete', 'interrupted'].includes(message.status ?? '') && (
+                  <p className="mt-2 text-xs font-semibold" role="status">Câu trả lời chưa hoàn chỉnh — bạn có thể bấm Thử lại.</p>
                 )}
               </div>
             ) : (
@@ -103,6 +109,12 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
             )}
           </div>
 
+          {isAi && !message.content && !isStreaming && onRegenerate && (
+            <button type="button" onClick={onRegenerate}
+              className="mt-1.5 self-start px-2 text-xs font-semibold text-[var(--brand-700)] underline">
+              Thử lại
+            </button>
+          )}
           {/* Action toolbar below AI bubble */}
           {isAi && message.content && (
             <div

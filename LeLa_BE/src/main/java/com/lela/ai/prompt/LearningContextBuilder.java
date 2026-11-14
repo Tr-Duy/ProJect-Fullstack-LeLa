@@ -75,6 +75,7 @@ public class LearningContextBuilder {
             int cardsLearned = 0;
             int quizCount = 0;
             int minutesSpent = 0;
+            int reviewCount = 0;
 
             try {
                 DailyLearningActivityResponse todayAct = dailyActivityService.getTodayActivity();
@@ -83,6 +84,8 @@ public class LearningContextBuilder {
                     cardsLearned = todayAct.getCardsLearned() != null ? todayAct.getCardsLearned() : 0;
                     quizCount = todayAct.getQuizCount() != null ? todayAct.getQuizCount() : 0;
                     minutesSpent = todayAct.getMinutesSpent() != null ? todayAct.getMinutesSpent() : 0;
+                    reviewCount = todayAct.getReviewCount() != null ? todayAct.getReviewCount() : 0;
+                    if (todayAct.getCurrentStreak()!=null) userInfo.setStreakDays(todayAct.getCurrentStreak());
                 }
             } catch (Exception e) {
                 log.warn("Failed to fetch today activity from service", e);
@@ -93,10 +96,13 @@ public class LearningContextBuilder {
                     cardsLearned = act.getCardsLearned() != null ? act.getCardsLearned() : 0;
                     quizCount = act.getQuizCount() != null ? act.getQuizCount() : 0;
                     minutesSpent = act.getMinutesSpent() != null ? act.getMinutesSpent() : 0;
+                    reviewCount = act.getReviewCount() != null ? act.getReviewCount() : 0;
                 }
             }
 
             AiContextDto.TodayStats todayStats = AiContextDto.TodayStats.builder()
+                    .reviewCount(reviewCount).cardsStudied(cardsLearned + reviewCount)
+                    .dailyGoalCards(user.getDailyGoalCards() == null ? 20 : user.getDailyGoalCards())
                     .xpEarned(xpEarned)
                     .cardsLearned(cardsLearned)
                     .quizCount(quizCount)
@@ -107,7 +113,12 @@ public class LearningContextBuilder {
             int completedDecksCount = 0;
             int totalDecksInLevel = 0;
             int masteredCardsCount = 0;
-            String currentActiveDeck = "Chưa có";
+            List<DeckEnrollment> userEnrollments = deckEnrollmentRepository.findByUserId(user.getId(), Pageable.unpaged()).getContent();
+            List<AiContextDto.DeckProgress> enrolledDecks = userEnrollments.stream()
+                    .filter(e -> e.getDeck() != null)
+                    .map(e -> new AiContextDto.DeckProgress(e.getDeck().getTitle(), e.getMasteredCards(), e.getDeck().getTotalCards())).toList();
+            String enrolledActiveDeck = userEnrollments.stream().filter(e -> e.getDeck() != null && e.getCompletedAt() == null)
+                    .map(e -> e.getDeck().getTitle()).findFirst().orElse("Chưa có");
 
             if (currentLevelId != null) {
                 final Long targetLevelId = currentLevelId;
@@ -116,7 +127,6 @@ public class LearningContextBuilder {
                         .toList();
                 totalDecksInLevel = activeDecks.size();
 
-                List<DeckEnrollment> userEnrollments = deckEnrollmentRepository.findByUserId(user.getId(), Pageable.unpaged()).getContent();
 
                 for (Deck d : activeDecks) {
                     Optional<DeckEnrollment> enOpt = userEnrollments.stream()
@@ -135,8 +145,6 @@ public class LearningContextBuilder {
                     masteredCardsCount += mastered;
                     if (isComp) {
                         completedDecksCount++;
-                    } else if ("Chưa có".equals(currentActiveDeck)) {
-                        currentActiveDeck = d.getTitle();
                     }
                 }
             }
@@ -145,7 +153,8 @@ public class LearningContextBuilder {
                     .completedDecks(completedDecksCount)
                     .totalDecksInLevel(totalDecksInLevel)
                     .masteredCards(masteredCardsCount)
-                    .currentActiveDeck(currentActiveDeck)
+                    .currentActiveDeck(enrolledActiveDeck)
+                    .enrolledDecks(enrolledDecks)
                     .build();
 
             // 5. Exam Status
@@ -173,6 +182,13 @@ public class LearningContextBuilder {
                     .recentScorePercent(recentScore)
                     .recentExamResult(recentResult)
                     .build();
+            var latestAttempts = quizAttemptRepository.findByUserId(user.getId(),
+                    org.springframework.data.domain.PageRequest.of(0, 1, org.springframework.data.domain.Sort.by("createdAt").descending()));
+            if (!latestAttempts.isEmpty()) {
+                QuizAttempt latest = latestAttempts.getContent().get(0);
+                examStatus.setLatestCorrectAnswers(latest.getCorrectAnswers());
+                examStatus.setLatestTotalQuestions(latest.getTotalQuestions());
+            }
 
             return AiContextDto.builder()
                     .user(userInfo)

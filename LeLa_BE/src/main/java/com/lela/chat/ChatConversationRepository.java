@@ -10,6 +10,7 @@ import java.util.Optional;
 
 @Repository
 public interface ChatConversationRepository extends JpaRepository<ChatConversation, Long> {
+    Optional<ChatConversation> findFirstByUserIdAndChannelTypeAndStatusOrderByCreatedAtDesc(Long userId, String channelType, ConversationStatus status);
     Optional<ChatConversation> findByGuestToken(String guestToken);
     
     Optional<ChatConversation> findByUserIdAndStatus(Long userId, ConversationStatus status);

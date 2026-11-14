@@ -16,6 +16,17 @@ import java.util.List;
 public class GeminiResponse {
     private List<Candidate> candidates;
     private PromptFeedback promptFeedback;
+    private String modelVersion;
+    private UsageMetadata usageMetadata;
+    @Data
+    @NoArgsConstructor
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class UsageMetadata {
+        private Integer promptTokenCount;
+        private Integer candidatesTokenCount;
+        private Integer thoughtsTokenCount;
+        private Integer totalTokenCount;
+    }
 
     @Data
     @Builder
@@ -53,6 +64,7 @@ public class GeminiResponse {
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Part {
         private String text;
+        private Boolean thought;
     }
 }
 

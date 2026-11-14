@@ -41,6 +41,9 @@ public class AiContextDto {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class TodayStats {
+        private Integer reviewCount;
+        private Integer cardsStudied;
+        private Integer dailyGoalCards;
         private Integer xpEarned;
         private Integer cardsLearned;
         private Integer quizCount;
@@ -52,6 +55,7 @@ public class AiContextDto {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class LearningProgress {
+        private java.util.List<DeckProgress> enrolledDecks;
         private Integer completedDecks;
         private Integer totalDecksInLevel;
         private Integer masteredCards;
@@ -63,9 +67,13 @@ public class AiContextDto {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class ExamStatus {
+        private Integer latestCorrectAnswers;
+        private Integer latestTotalQuestions;
         private Boolean isEligibleForExam;
         private Integer requiredDecks;
         private Integer recentScorePercent;
         private String recentExamResult; // "PASSED" | "FAILED" | "NOT_TAKEN"
     }
+
+    public record DeckProgress(String title, Integer masteredCards, Integer totalCards) {}
 }

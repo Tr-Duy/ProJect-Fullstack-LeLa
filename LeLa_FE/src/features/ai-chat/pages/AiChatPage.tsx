@@ -110,7 +110,7 @@ const AiChatPageContent: React.FC = () => {
 
   const handleSend = (text: string) => {
     const formattedPrompt = formatPromptByMode(text, activeMode);
-    streamState.sendMessage(formattedPrompt);
+    streamState.sendMessage(formattedPrompt, text);
   };
 
   const handleQuickAsk = (prompt: string) => {
@@ -125,10 +125,7 @@ const AiChatPageContent: React.FC = () => {
 
   const handleRegenerate = () => {
     if (streamState.isGenerating) return;
-    const lastUserMessage = [...streamState.messages].reverse().find((m) => m.role === 'user');
-    if (lastUserMessage) {
-      streamState.sendMessage(lastUserMessage.content);
-    }
+    void streamState.retryLastMessage();
   };
 
   const handleNewChat = () => {
@@ -141,7 +138,7 @@ const AiChatPageContent: React.FC = () => {
   return (
     <div className="flex h-full min-h-0 gap-5">
       {/* Main Chat Column */}
-      <section className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-[20px] sm:rounded-[24px] border border-[var(--border)] bg-white shadow-[var(--shadow-sm)]">
+      <section className="flex min-w-0 min-h-0 flex-1 flex-col overflow-hidden rounded-[20px] sm:rounded-[24px] border border-[var(--border)] bg-white shadow-[var(--shadow-sm)]">
         {/* Header (56px) */}
         <TutorHeader
           currentLevelName={currentLevelName}

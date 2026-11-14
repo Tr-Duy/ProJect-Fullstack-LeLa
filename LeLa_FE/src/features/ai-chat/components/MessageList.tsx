@@ -32,10 +32,10 @@ export const MessageList: React.FC<MessageListProps> = ({
   const [showScrollBottom, setShowScrollBottom] = useState<boolean>(false);
 
   const scrollToBottom = useCallback((smooth = true) => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({
+    if (containerRef.current) {
+      containerRef.current.scrollTo({
+        top: containerRef.current.scrollHeight,
         behavior: smooth ? 'smooth' : 'auto',
-        block: 'end',
       });
     }
   }, []);
@@ -96,7 +96,7 @@ export const MessageList: React.FC<MessageListProps> = ({
 
               {/* Error banner with retry */}
               {error && (
-                <div className="my-3 mx-auto max-w-md w-full bg-red-50 border border-red-200 rounded-xl p-3 flex items-start gap-2.5 text-[13px] text-red-700">
+                <div role="alert" className="my-3 mx-auto max-w-md w-full bg-red-50 border border-red-200 rounded-xl p-3 flex items-start gap-2.5 text-[13px] text-red-700">
                   <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
                   <div className="flex-1 min-w-0">
                     <p className="font-medium">{error}</p>

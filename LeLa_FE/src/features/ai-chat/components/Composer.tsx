@@ -46,7 +46,6 @@ export const Composer: React.FC<ComposerProps> = ({
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
     if (isGenerating) {
-      onStop();
       return;
     }
     if (inputValue.trim()) {

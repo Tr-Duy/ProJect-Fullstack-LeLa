@@ -56,23 +56,13 @@ Text:
 ${sourceText.trim()}`;
 
     try {
-      await aiApi.streamChat(
-        { message: prompt },
-        (chunk) => {
-          setTranslatedText((prev) => prev + chunk);
-        },
-        (err) => {
-          console.error('[Translation API Error]', err);
-          setError('Không thể dịch lúc này. Vui lòng thử lại.');
-          setIsLoading(false);
-        },
-        () => {
-          setIsLoading(false);
-        },
-        abortControllerRef.current.signal
-      );
-    } catch (err) {
+      const response = await aiApi.chat({ message: prompt, clientMessageId: crypto.randomUUID() }, abortControllerRef.current.signal);
+      setTranslatedText(response.content);
+      if (!response.complete) setError('Bản dịch chưa hoàn chỉnh. Bạn thử lại sau ít phút nhé.');
+    } catch {
       setError('Không thể dịch lúc này. Vui lòng thử lại.');
+      setIsLoading(false);
+    } finally {
       setIsLoading(false);
     }
   };
