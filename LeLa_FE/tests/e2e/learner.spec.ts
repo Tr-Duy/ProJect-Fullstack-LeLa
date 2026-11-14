@@ -6,8 +6,8 @@ test.describe('Learner journeys', () => {
 
   test('dashboard loads and learner shortcuts are visible', async ({ page }) => {
     await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
-    await expect(page.getByRole('heading', { name: /LỐI TẮT NHANH|👋 Chào|Chào/i })).toBeVisible();
-    await expect(page.locator('.grid button').first()).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Chặng hôm nay', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Học từ mới ngay/ })).toBeVisible();
   });
 
 

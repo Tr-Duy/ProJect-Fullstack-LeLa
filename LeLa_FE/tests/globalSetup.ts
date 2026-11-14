@@ -31,7 +31,7 @@ async function globalSetup(config: FullConfig) {
   console.log(`[globalSetup] Navigated to login URL: ${page.url()}`);
 
   await page.getByLabel(/Tên đăng nhập hoặc Email/i).fill(username);
-  await page.getByLabel(/Mật khẩu/i).fill(password);
+  await page.getByLabel(/^Mật khẩu$/i).fill(password);
 
   console.log(`[globalSetup] Submitting login form for user: '${username}'`);
 
@@ -40,7 +40,7 @@ async function globalSetup(config: FullConfig) {
     { timeout: 15000 }
   ).catch(() => null);
 
-  await page.getByRole('button', { name: 'Đăng Nhập', exact: true }).click();
+  await page.getByRole('button', { name: /^Đăng nhập$/i }).click();
 
   const response = await loginResponsePromise;
   if (response) {

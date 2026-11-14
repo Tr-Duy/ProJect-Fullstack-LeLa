@@ -13,7 +13,7 @@ test.describe('Authentication flows', () => {
     await landing.expectHeroVisible();
     await landing.goToLogin();
     await expect(page).toHaveURL(/\/login/);
-    await expect(page.getByRole('button', { name: 'Đăng Nhập', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: /^Đăng nhập$/i })).toBeVisible();
 
   });
 

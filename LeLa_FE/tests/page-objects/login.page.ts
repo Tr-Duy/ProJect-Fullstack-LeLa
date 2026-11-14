@@ -7,9 +7,9 @@ export class LoginPage extends BasePage {
   }
 
   async login(username: string, password: string) {
-    await this.fillInput('Tên đăng nhập hoặc Email', username);
-    await this.fillInput('Mật khẩu', password);
-    await this.clickButton('Đăng Nhập');
+    await this.page.getByLabel(/^Tên đăng nhập hoặc email$/i).fill(username);
+    await this.page.getByLabel(/^Mật khẩu$/i).fill(password);
+    await this.page.getByRole('button', { name: /^Đăng nhập$/i }).click();
   }
 
   async expectValidationMessage(message: string) {

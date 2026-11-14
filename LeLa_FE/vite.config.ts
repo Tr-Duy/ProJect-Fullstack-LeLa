@@ -9,12 +9,18 @@ export default defineConfig({
     tailwindcss(),
     react(),
   ],
+  optimizeDeps: {
+    // Rebuild the dev dependency graph on startup after switching app/test configs.
+    force: true,
+  },
   server: {
     watch: {
       usePolling: true,
     },
   },
   resolve: {
+    // Keep lazy routes and linked dependencies on the renderer's React instance.
+    dedupe: ['react', 'react-dom'],
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
