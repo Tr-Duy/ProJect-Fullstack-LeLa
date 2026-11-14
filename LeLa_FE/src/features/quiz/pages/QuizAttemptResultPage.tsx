@@ -1,3 +1,4 @@
+import { TimedVocabularyResult } from '../components/TimedVocabularyResult';
 import { useEffect, useState } from 'react';
 import { App, Button, Skeleton, Tag } from 'antd';
 import { useMutation, useQuery } from '@tanstack/react-query';
@@ -145,6 +146,8 @@ export function QuizAttemptResultPage() {
   if (isLoading || !attemptDetail) {
     return <div className="min-h-screen bg-[#F4F3EE] p-8 max-w-3xl mx-auto"><Skeleton active paragraph={{ rows: 10 }} /></div>;
   }
+
+  if (attemptDetail.preciseScore != null) return <TimedVocabularyResult result={attemptDetail} />;
 
   const questions = attemptDetail.questions || [];
   const answers = attemptDetail.answers || [];

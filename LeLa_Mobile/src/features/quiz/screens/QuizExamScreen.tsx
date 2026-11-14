@@ -1,3 +1,4 @@
+import { TimedVocabularyQuiz } from '../components/TimedVocabularyQuiz';
 import React, { useState, useEffect, useRef } from 'react';
 import {
   StyleSheet,
@@ -81,7 +82,7 @@ export const QuizExamScreen: React.FC = () => {
 
         setAttempt(attemptData);
         const questionList = attemptData.questions || [];
-        setQuestions(questionList);
+        setQuestions(attemptData.timedScreen ? [...questionList].sort((a, b) => Number(['MULTIPLE_CHOICE_MEANING', 'MATCHING_PAIRS'].includes(a.questionType || '')) - Number(['MULTIPLE_CHOICE_MEANING', 'MATCHING_PAIRS'].includes(b.questionType || ''))) : questionList);
 
         // Thiết lập thời gian làm bài
         const limit = attemptData.timeSpentSeconds
@@ -111,7 +112,7 @@ export const QuizExamScreen: React.FC = () => {
 
   // 2. Quản lý đồng hồ đếm ngược
   useEffect(() => {
-    if (loading || submitting || !attempt) return;
+    if (loading || submitting || !attempt || attempt.timedScreen) return;
 
     timerRef.current = setInterval(() => {
       setRemainingSeconds((prev) => {
@@ -294,6 +295,9 @@ export const QuizExamScreen: React.FC = () => {
   }
 
   const currentQuestion = questions[currentIndex];
+  if (attempt?.timedScreen && ['MULTIPLE_CHOICE_MEANING', 'MATCHING_PAIRS'].includes(currentQuestion?.questionType || '')) {
+    return <TimedVocabularyQuiz initial={attempt.timedScreen} legacyAnswers={Object.entries(userAnswers).map(([id, option]) => ({attemptQuestionId: Number(id), selectedAttemptOptionId: option}))} onFinished={attemptResult => navigation.replace('QuizResult', { attemptResult })} />;
+  }
   const selectedOptionId = currentQuestion ? userAnswers[currentQuestion.id] : undefined;
   const isTimeWarning = remainingSeconds <= 60;
 

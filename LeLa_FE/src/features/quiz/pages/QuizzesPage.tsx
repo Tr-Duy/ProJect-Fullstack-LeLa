@@ -1,3 +1,4 @@
+import { VocabularyQuizLauncher } from '../components/TimedVocabularyQuiz';
 import { useQuery } from '@tanstack/react-query';
 import { Button, Card, Skeleton, Tag } from 'antd';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -95,6 +96,7 @@ export function QuizzesPage() {
 
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto min-h-screen bg-[#F4F3EE]">
+      <VocabularyQuizLauncher />
       {/* Header section */}
       <div className="mb-8 rounded-[var(--radius-card)] bg-white p-6 border-4 border-[var(--border)] shadow-[var(--shadow-md)]">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">

@@ -7,6 +7,7 @@ import java.util.List;
 
 @Data
 public class QuizSubmitRequest {
+    private boolean abandoned;
     @NotNull(message = "Answers list cannot be null")
     @Valid
     private List<QuizAnswerSubmitRequest> answers;

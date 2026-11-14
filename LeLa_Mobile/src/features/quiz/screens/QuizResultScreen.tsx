@@ -102,6 +102,7 @@ export const QuizResultScreen: React.FC = () => {
 
   // Chuyển hướng làm lại bài thi
   const handleRetakeQuiz = () => {
+    if (attemptResult.preciseScore != null) { navigation.replace('QuizList'); return; }
     navigation.replace('QuizExam', {
       quizId: attemptResult.quizId,
       quizTitle: attemptResult.quizTitle,
@@ -128,6 +129,13 @@ export const QuizResultScreen: React.FC = () => {
       </View>
 
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+        {attemptResult.preciseScore != null && <View style={{ padding: 16, gap: 12 }}>
+          <Text style={{ fontSize: 24, fontWeight: '700' }}>{attemptResult.preciseScore}/{attemptResult.preciseMaxScore} điểm · +{attemptResult.xpAwarded || 0} XP</Text>
+          {attemptResult.timedReview?.map((screen, i) => <View key={i} style={{ padding: 12, backgroundColor: '#fff7ed', borderRadius: 16 }}>
+            <Text style={{ fontSize: 18, fontWeight: '600' }}>Màn {i + 1}: {screen.score} điểm · {screen.errors} lỗi</Text>
+            {screen.type === 'MATCHING_PAIRS' ? screen.left.map(c => <Text key={c.id} style={{ fontSize: 16, lineHeight: 26 }}>{c.text} — {screen.right.find(r => r.id === screen.solution[c.id])?.text}</Text>) : <Text style={{ fontSize: 16 }}>Đáp án đúng: {screen.left.find(c => c.id === screen.solution.answer)?.text}</Text>}
+          </View>)}
+        </View>}
         {/* 2. Thẻ Hero Tổng Kết Điểm Số */}
         <View style={styles.heroCard}>
           <View
@@ -163,7 +171,7 @@ export const QuizResultScreen: React.FC = () => {
               {Math.round(Number(attemptResult.scorePercent || 0))}%
             </Text>
             <Text style={styles.scoreFractionText}>
-              {correctCount}/{totalCount} câu đúng
+              {attemptResult.preciseScore != null ? `${attemptResult.preciseScore}/${attemptResult.preciseMaxScore} điểm` : `${correctCount}/${totalCount} câu đúng`}
             </Text>
           </View>
 

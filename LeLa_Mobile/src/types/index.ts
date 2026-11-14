@@ -269,6 +269,10 @@ export interface QuizAttemptResponse {
 }
 
 export interface QuizAttemptDetailResponse {
+  timedScreen?: import('../features/quiz/components/useTimedVocabularyQuiz').TimedQuizView;
+  timedReview?: { type: string; left: {id: string; text: string}[]; right: {id: string; text: string}[]; solution: Record<string,string>; errors: number; score: number }[];
+  preciseScore?: number;
+  preciseMaxScore?: number;
   id: number;
   publicId: string;
   quizId: number;

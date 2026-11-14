@@ -1,3 +1,4 @@
+import { VocabularyQuizLauncher } from '../components/TimedVocabularyQuiz';
 import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
@@ -124,6 +125,7 @@ export const QuizListScreen: React.FC = () => {
         </View>
       ) : (
         <FlatList
+          ListHeaderComponent={<VocabularyQuizLauncher onFinished={attemptResult => navigation.navigate('QuizResult', { attemptResult })} />}
           data={quizzes}
           keyExtractor={(item) => item.id.toString()}
           renderItem={renderQuizItem}

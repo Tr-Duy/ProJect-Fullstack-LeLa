@@ -54,6 +54,18 @@ springdoc:
     tags-sorter: alpha
 
 app:
+  quiz:
+    vocabulary:
+      multiple-choice-enabled: ${QUIZ_MEANING_ENABLED:true}
+      matching-enabled: ${QUIZ_MATCHING_ENABLED:true}
+      question-seconds: ${QUIZ_MEANING_SECONDS:20}
+      screen-seconds: ${QUIZ_MATCHING_SECONDS:60}
+      question-count: ${QUIZ_MEANING_COUNT:20}
+      screen-count: ${QUIZ_MATCHING_COUNT:5}
+      tolerance-seconds: ${QUIZ_TIME_TOLERANCE_SECONDS:2}
+      pair-points: ${QUIZ_PAIR_POINTS:1}
+      error-penalty: ${QUIZ_PAIR_ERROR_PENALTY:0.25}
+      system-owner: ${QUIZ_SYSTEM_OWNER:admin}
   voice:
     turn-model: ${VOICE_TURN_MODEL:gemini-flash-lite-latest}
     fallback-model: ${VOICE_FALLBACK_MODEL:${GEMINI_PRIMARY_MODEL:gemini-3.5-flash}}

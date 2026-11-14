@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { VocabularyQuizLauncher } from '../components/TimedVocabularyQuiz';
 import {
   StyleSheet,
   Text,
@@ -395,6 +396,7 @@ export const AssessmentCenterScreen: React.FC = () => {
         renderItem={renderAssessmentItem}
         ListHeaderComponent={
           <>
+            <VocabularyQuizLauncher onFinished={attemptResult => navigation.navigate('QuizResult', { attemptResult })} />
             {renderHeroBanner()}
             {renderTabSwitcher()}
           </>

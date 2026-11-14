@@ -9,6 +9,8 @@ import java.util.List;
 
 @Data
 public class QuizAttemptDetailResponse {
+    private com.lela.Quiz.timed.TimedQuizEngine.View timedScreen;
+    private List<com.lela.Quiz.timed.TimedQuizEngine.Screen> timedReview;
     private Long id;
     private String publicId;
     private Long quizId;
@@ -27,6 +29,8 @@ public class QuizAttemptDetailResponse {
     private Integer totalQuestions;
     private Integer correctAnswers;
     private Integer scorePoints;
+    private BigDecimal preciseScore;
+    private BigDecimal preciseMaxScore;
     private BigDecimal scorePercent;
     private BigDecimal estimatedToeicScore;
     private BigDecimal bestEstimatedToeicScore;

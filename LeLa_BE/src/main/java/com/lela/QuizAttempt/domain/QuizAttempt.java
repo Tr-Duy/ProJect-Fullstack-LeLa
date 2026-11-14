@@ -74,6 +74,11 @@ public class QuizAttempt extends AuditableEntity {
     @Column(name = "correct_answers", nullable = false)
     private Integer correctAnswers = 0; // Số câu trả lời đúng.
 
+    @Column(name = "precise_score", precision = 12, scale = 4)
+    private BigDecimal preciseScore;
+    @Column(name = "precise_max_score", precision = 12, scale = 4)
+    private BigDecimal preciseMaxScore;
+
     @Column(name = "score_points", nullable = false)
     private Integer scorePoints = 0; // Tổng điểm đạt được.
 

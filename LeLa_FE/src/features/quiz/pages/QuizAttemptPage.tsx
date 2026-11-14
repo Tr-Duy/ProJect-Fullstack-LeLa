@@ -1,3 +1,4 @@
+import { TimedVocabularyQuiz } from '../components/TimedVocabularyQuiz';
 import { useEffect, useState } from 'react';
 import { App, Button, Skeleton } from 'antd';
 import { useMutation, useQuery } from '@tanstack/react-query';
@@ -64,7 +65,7 @@ export function QuizAttemptPage() {
   const hasAttemptError = isStartError || isAttemptDetailError;
 
   useEffect(() => {
-    if (attemptData?.timeLimitSeconds) {
+    if (!attemptData?.timedScreen && attemptData?.timeLimitSeconds) {
       setTimeLeft(attemptData.timeLimitSeconds);
     }
   }, [attemptData]);
@@ -165,7 +166,12 @@ export function QuizAttemptPage() {
     return <div className="min-h-screen bg-[#F4F3EE] p-8 max-w-3xl mx-auto"><Skeleton active paragraph={{ rows: 10 }} /></div>;
   }
 
-  const questions = attemptData.questions || [];
+  const questions = attemptData.timedScreen
+    ? [...(attemptData.questions || [])].sort((a, b) => Number(['MULTIPLE_CHOICE_MEANING', 'MATCHING_PAIRS'].includes(a.questionType)) - Number(['MULTIPLE_CHOICE_MEANING', 'MATCHING_PAIRS'].includes(b.questionType)))
+    : attemptData.questions || [];
+  if (attemptData.timedScreen && ['MULTIPLE_CHOICE_MEANING', 'MATCHING_PAIRS'].includes(questions[currentQuestionIndex]?.questionType)) {
+    return <div className="max-w-3xl mx-auto p-5"><TimedVocabularyQuiz initial={attemptData.timedScreen} onExit={() => navigate('/quizzes')} legacyAnswers={Object.values(answers)} /></div>;
+  }
   const totalQuestions = questions.length;
   const currentQuestion = questions[currentQuestionIndex];
 

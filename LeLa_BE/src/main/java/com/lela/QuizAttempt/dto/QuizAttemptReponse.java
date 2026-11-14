@@ -42,6 +42,8 @@ public class QuizAttemptReponse {
     private Integer correctAnswers;
 
     private Integer scorePoints;
+    private BigDecimal preciseScore;
+    private BigDecimal preciseMaxScore;
 
     private BigDecimal scorePercent;
 

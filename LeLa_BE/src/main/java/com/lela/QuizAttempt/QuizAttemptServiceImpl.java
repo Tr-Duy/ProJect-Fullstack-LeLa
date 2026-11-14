@@ -63,6 +63,7 @@ public class QuizAttemptServiceImpl implements QuizAttemptService {
     private final com.lela.deck.DeckRepository deckRepository;
     private final com.lela.deckenrollment.DeckEnrollmentRepository deckEnrollmentRepository;
     private final ModelMapper mapper;
+    private final com.lela.Quiz.timed.TimedQuizEngine timedQuizEngine;
 
     private Users getCurrentUser() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -374,6 +375,7 @@ public class QuizAttemptServiceImpl implements QuizAttemptService {
 
         // Create AttemptOptions using saved AttemptQuestions and fetched SourceOptions
         for (QuizAttemptQuestion aq : allAttemptQuestions) {
+            if (com.lela.Quiz.timed.TimedQuizEngine.isNew(aq.getQuestionType())) continue;
             List<QuizQuestionOption> sourceOptions = optionsBySourceQuestionId
                     .getOrDefault(aq.getSourceQuestion().getId(), new ArrayList<>());
             for (QuizQuestionOption o : sourceOptions) {
@@ -392,6 +394,7 @@ public class QuizAttemptServiceImpl implements QuizAttemptService {
             quizAttemptOptionRepository.saveAll(allAttemptOptions);
         }
 
+        if (timedQuizEngine != null) timedQuizEngine.attach(savedAttempt, allAttemptQuestions);
         return buildDetailResponse(savedAttempt);
     }
 
@@ -418,8 +421,12 @@ public class QuizAttemptServiceImpl implements QuizAttemptService {
     @Transactional
     @Override
     public QuizAttemptDetailResponse submit(Long id, QuizSubmitRequest request) {
+        Map<Long, com.lela.Quiz.timed.TimedQuizEngine.Earned> timedScores = timedQuizEngine != null
+                ? timedQuizEngine.finalizeForSubmit(id) : Map.of();
         QuizAttempt attempt = quizAttemptRepository.findById(id)
                 .orElseThrow(() -> new NotFoundExeception("QuizAttempt not found: " + id));
+
+        if (attempt.getSubmittedAt() != null) return buildDetailResponse(attempt);
 
         List<QuizAttemptQuestion> questions = quizAttemptQuestionRepository.findByAttemptId(id);
 
@@ -429,6 +436,9 @@ public class QuizAttemptServiceImpl implements QuizAttemptService {
         int totalScore = 0;
         int maxScore = 0;
         int correctCount = 0;
+        int xpCorrectCount = 0;
+        BigDecimal preciseScore = BigDecimal.ZERO;
+        BigDecimal preciseMax = BigDecimal.ZERO;
 
         List<Long> questionIds = questions.stream().map(QuizAttemptQuestion::getId).collect(Collectors.toList());
         Map<Long, List<QuizAttemptOption>> optionsByQuestionId = quizAttemptOptionRepository
@@ -440,6 +450,22 @@ public class QuizAttemptServiceImpl implements QuizAttemptService {
 
         for (QuizAttemptQuestion question : questions) {
             maxScore += question.getPoints();
+            var timed = timedScores.get(question.getId());
+            preciseMax = preciseMax.add(timed != null ? timed.maxScore() : BigDecimal.valueOf(question.getPoints()));
+            if (com.lela.Quiz.timed.TimedQuizEngine.isNew(question.getQuestionType())) {
+                // No client-provided answer or score can override the server event ledger.
+                if (timed == null) continue;
+                preciseScore = preciseScore.add(timed.score());
+                totalScore += timed.score().intValue();
+                xpCorrectCount += timed.correct();
+                if (timed.score().compareTo(timed.maxScore()) == 0) correctCount++;
+                QuizAnswer answer = new QuizAnswer();
+                answer.setAttempt(attempt); answer.setAttemptQuestion(question);
+                answer.setAnsweredAt(LocalDateTime.now()); answer.setPointsAwarded(timed.score().intValue());
+                answer.setIsCorrect(timed.score().compareTo(timed.maxScore()) == 0);
+                allAnswersToSave.add(answer);
+                continue;
+            }
 
             // Find student answer for this question
             QuizAnswerSubmitRequest studentAnswerReq = request.getAnswers().stream()
@@ -490,7 +516,9 @@ public class QuizAttemptServiceImpl implements QuizAttemptService {
 
                 if (isCorrect) {
                     totalScore += question.getPoints();
+                    preciseScore = preciseScore.add(BigDecimal.valueOf(question.getPoints()));
                     correctCount++;
+                    xpCorrectCount++;
                     answer.setPointsAwarded(question.getPoints());
                 } else {
                     answer.setPointsAwarded(0);
@@ -505,14 +533,18 @@ public class QuizAttemptServiceImpl implements QuizAttemptService {
             quizAnswerRepository.saveAll(allAnswersToSave);
         }
 
+        if (!timedScores.isEmpty() && request.isAbandoned()) attempt.setAbandonedAt(LocalDateTime.now());
         attempt.setSubmittedAt(LocalDateTime.now());
         if (attempt.getStartedAt() != null) {
             long seconds = java.time.Duration.between(attempt.getStartedAt(), attempt.getSubmittedAt()).getSeconds();
             attempt.setTimeSpentSeconds((int) seconds);
         }
         attempt.setScorePoints(totalScore);
+        if (!timedScores.isEmpty()) { attempt.setPreciseScore(preciseScore); attempt.setPreciseMaxScore(preciseMax); }
 
         BigDecimal percent = maxScore > 0 ? BigDecimal.valueOf((double) totalScore / maxScore * 100) : BigDecimal.ZERO;
+        if (!timedScores.isEmpty()) percent = preciseMax.signum() > 0
+                ? preciseScore.multiply(BigDecimal.valueOf(100)).divide(preciseMax, 2, java.math.RoundingMode.HALF_UP) : BigDecimal.ZERO;
         attempt.setScorePercent(percent);
         attempt.setStatus(com.lela.QuizAttemptQuestion.domain.QuizAttemptStatus.SUBMITTED);
         attempt.setCorrectAnswers(correctCount);
@@ -523,7 +555,7 @@ public class QuizAttemptServiceImpl implements QuizAttemptService {
             attempt.setPassed(percent.compareTo(BigDecimal.valueOf(70)) >= 0);
         }
 
-        attempt.setXpAwarded(correctCount * 10); // Example: 10 XP per correct answer
+        attempt.setXpAwarded(xpCorrectCount * 10); // Example: 10 XP per correct answer
 
         Users user = attempt.getUser();
 
@@ -619,6 +651,10 @@ public class QuizAttemptServiceImpl implements QuizAttemptService {
     // build response chi tiết đầy đủ cho 1 attempt
     private QuizAttemptDetailResponse buildDetailResponse(QuizAttempt attempt) {
         QuizAttemptDetailResponse res = mapper.map(attempt, QuizAttemptDetailResponse.class);
+        if (timedQuizEngine != null) {
+            res.setTimedScreen(timedQuizEngine.snapshot(attempt));
+            res.setTimedReview(timedQuizEngine.review(attempt));
+        }
         if (attempt.getQuiz() != null) {
             res.setQuizCategory(attempt.getQuiz().getQuizCategory());
             res.setMaxScore(determineAttemptMaxScore(attempt));
@@ -733,6 +769,7 @@ public class QuizAttemptServiceImpl implements QuizAttemptService {
     }
 
     private BigDecimal determineAttemptMaxScore(QuizAttempt attempt) {
+        if (attempt.getPreciseMaxScore() != null) return attempt.getPreciseMaxScore();
         if (attempt.getQuiz() == null || attempt.getQuiz().getQuizCategory() == null) {
             return null;
         }
