@@ -18,6 +18,9 @@ public class TimedQuizProperties {
     private int toleranceSeconds = 2;
     private BigDecimal pairPoints = BigDecimal.ONE;
     private BigDecimal errorPenalty = new BigDecimal("0.25");
+    private int xpPerMeaning = 1;
+    private int xpPerPair = 2;
+    private int maxXpPerAttempt = 40;
     // Explicit system seed owner, never the current learner's decks/progress.
     private String systemOwner = "admin";
 }

@@ -85,6 +85,22 @@ test('exit confirmation submits only the server ledger through existing endpoint
   await page.getByRole('button', { name: 'Thoát', exact: true }).filter({ visible: true }).click();
   await expect.poll(() => payload).toEqual({ answers: [], abandoned: true });
 });
+test('submission refetches XP and streak observed by the header', async ({ page }) => {
+  let xp = 0, streak = 0, profileReads = 0, activityReads = 0;
+  await page.route('**/tests/mock-profile', route => { profileReads++; return route.fulfill({ json: { xpTotal: xp } }); });
+  await page.route('**/tests/mock-activity', route => { activityReads++; return route.fulfill({ json: { currentStreak: streak } }); });
+  await page.route('**/quiz-attempts/99/submit', route => { xp = 1; streak = 1; return route.fulfill({ json: { data: {} } }); });
+  await mockServer(page); await page.goto('/tests/vocabulary-quiz.html?header');
+  await expect(page.getByTestId('header-xp')).toHaveText('0');
+  await expect(page.getByTestId('header-streak')).toHaveText('0');
+  await page.getByRole('button', { name: 'enjoy', exact: true }).click();
+  await expect(page.getByText('Đáp án đúng: enjoy', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Thoát', exact: true }).click();
+  await page.getByRole('button', { name: 'Thoát', exact: true }).click();
+  await expect(page.getByTestId('header-xp')).toHaveText('1');
+  await expect(page.getByTestId('header-streak')).toHaveText('1');
+  expect(profileReads).toBeGreaterThanOrEqual(2); expect(activityReads).toBeGreaterThanOrEqual(2);
+});
 for (const type of ['MULTIPLE_CHOICE', 'TRUE_FALSE', 'FILL_BLANK']) test(`legacy ${type} still emits existing answer format`, async ({ page }) => {
   await page.goto(`/tests/vocabulary-quiz.html?legacy=${type}`);
   if (type === 'FILL_BLANK') await page.getByRole('textbox').fill('old answer');

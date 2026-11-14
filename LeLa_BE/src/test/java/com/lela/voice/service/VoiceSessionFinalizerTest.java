@@ -47,6 +47,7 @@ class VoiceSessionFinalizerTest {
     private DailyLearningActivityService dailyLearningActivityService;
     @Mock
     private UsersRepository usersRepository;
+    @Mock private com.lela.dailylearningactivity.DailyXpBudget dailyXpBudget;
     @Mock
     private com.lela.voice.repository.UsageLedgerRepository usageLedgerRepository;
 
@@ -73,7 +74,8 @@ class VoiceSessionFinalizerTest {
                 dailyLearningActivityService,
                 usersRepository,
                 props,
-                usageLedgerRepository
+                usageLedgerRepository,
+                dailyXpBudget
         );
 
         testUser = new Users();
@@ -98,7 +100,7 @@ class VoiceSessionFinalizerTest {
         when(turnRepository.findBySessionIdOrderByTurnNumberAsc(1L)).thenReturn(List.of(userTurn, userTurn, userTurn, assistant, assistant));
         var unrelated = ConversationTargetWord.builder().flashcard(new Flashcard()).usedCorrectly(true).build();
         when(targetWordRepository.findBySessionId(1L)).thenReturn(List.of(unrelated));
-        when(sessionRepository.sumDailyXpAwarded(eq(10L), any())).thenReturn(150);
+        when(dailyXpBudget.remaining(eq(10L), any(), eq(150))).thenReturn(0);
         when(sessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         finalizer.finalizeSession("sess-finish-1", 10L, null);
         finalizer.finalizeSession("sess-finish-1", 10L, null);
@@ -169,7 +171,7 @@ class VoiceSessionFinalizerTest {
         when(targetWordRepository.findBySessionId(1L)).thenReturn(List.of(tw1, tw2));
         when(turnRepository.findBySessionIdOrderByTurnNumberAsc(1L)).thenReturn(java.util.stream.IntStream.range(0, 4)
                 .mapToObj(i -> ConversationTurn.builder().role("USER").isValid(true).grammarErrorsJson("[]").build()).toList());
-        when(sessionRepository.sumDailyXpAwarded(eq(10L), any(LocalDate.class))).thenReturn(0);
+        when(dailyXpBudget.remaining(eq(10L), any(LocalDate.class), eq(150))).thenReturn(150);
         when(sessionRepository.save(any(ConversationSession.class))).thenAnswer(inv -> inv.getArgument(0));
 
         finalizer.finalizeSession("sess-finish-1", 10L, "COMFORTABLE");

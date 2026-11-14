@@ -7,7 +7,7 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 
 public interface VocabularyRepository extends JpaRepository<Flashcard, Long> {
-    @Query("select f from Flashcard f join fetch f.deck d join fetch d.level " +
+    @Query("select f from Flashcard f join fetch f.deck d left join fetch d.level " +
            "where d.owner.username = :owner and d.visibility = 'PUBLIC' and d.status = 'PUBLISHED' " +
            "and d.isActive = true and f.isActive = true and d.deletedAt is null and f.deletedAt is null " +
            "and (:level is null or d.level.id = :level)")

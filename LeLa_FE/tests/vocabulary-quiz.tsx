@@ -1,6 +1,7 @@
 import React, { StrictMode, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { MemoryRouter } from 'react-router-dom';
+import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { TimedVocabularyQuiz } from '../src/features/quiz/components/TimedVocabularyQuiz';
 import { ExamQuestionCard } from '../src/features/quiz/components/ExamQuestionCard';
 import type { TimedQuizView } from '../src/features/quiz/components/useTimedVocabularyQuiz';
@@ -21,11 +22,13 @@ const initial: TimedQuizView = {
 };
 function Fixture() {
   const [answer, setAnswer] = useState<any>();
+  const { data: profile } = useQuery({ queryKey: ['profile'], enabled: params.has('header'), queryFn: async () => (await fetch('/tests/mock-profile')).json() });
+  const { data: activity } = useQuery({ queryKey: ['daily-activity', 'today'], enabled: params.has('header'), queryFn: async () => (await fetch('/tests/mock-activity')).json() });
   if (params.has('legacy')) return <div className="max-w-3xl mx-auto p-5"><ExamQuestionCard
     questionNumber={1} totalQuestions={1} question={{ id: 1, questionText: 'Existing quiz', questionType: params.get('legacy')!,
       options: [{ id: 10, optionText: 'Existing option' }, { id: 11, optionText: 'Other option' }] }} currentAnswer={answer}
     onOptionSelect={(questionId, optionId) => setAnswer({ attemptQuestionId: questionId, selectedAttemptOptionId: optionId })}
     onTextAnswer={(questionId, text) => setAnswer({ attemptQuestionId: questionId, answerText: text })}/><output data-testid="answer">{JSON.stringify(answer)}</output></div>;
-  return <div className="max-w-3xl mx-auto p-5 bg-[#fffaf5] min-h-screen"><TimedVocabularyQuiz initial={initial} onExit={() => {}} /></div>;
+  return <div className="max-w-3xl mx-auto p-5 bg-[#fffaf5] min-h-screen">{params.has('header') && <div><output data-testid="header-xp">{profile?.xpTotal}</output><output data-testid="header-streak">{activity?.currentStreak}</output></div>}<TimedVocabularyQuiz initial={initial} onExit={() => {}} /></div>;
 }
-createRoot(document.getElementById('root')!).render(<StrictMode><MemoryRouter><Fixture /></MemoryRouter></StrictMode>);
+createRoot(document.getElementById('root')!).render(<StrictMode><QueryClientProvider client={new QueryClient()}><MemoryRouter><Fixture /></MemoryRouter></QueryClientProvider></StrictMode>);

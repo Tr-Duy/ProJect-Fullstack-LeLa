@@ -60,6 +60,7 @@ public class TimedQuizEngine {
         private BigDecimal score = BigDecimal.ZERO;
     }
     @Data public static class Session {
+        private boolean participated;
         private List<Screen> screens = new ArrayList<>();
         private int index;
         private boolean closed;
@@ -150,7 +151,7 @@ public class TimedQuizEngine {
                     screen.getLeft().add(new Cell(left, word.english())); screen.getRight().add(new Cell(right, word.meaning()));
                     screen.getSolution().put(left, right);
                 }
-                Collections.shuffle(screen.getLeft()); Collections.shuffle(screen.getRight());
+                shuffleColumns(screen);
             }
             session.getScreens().add(screen);
         }
@@ -205,7 +206,7 @@ public class TimedQuizEngine {
                     screen.getLeft().add(new Cell(left, word.english())); screen.getRight().add(new Cell(right, word.meaning()));
                     screen.getSolution().put(left, right);
                 }
-                Collections.shuffle(screen.getLeft()); Collections.shuffle(screen.getRight());
+                shuffleColumns(screen);
             }
             session.getScreens().add(screen);
         }
@@ -220,6 +221,9 @@ public class TimedQuizEngine {
         if (attempt.getSubmittedAt() == null) return List.of();
         return states.findById(attempt.getId()).map(s -> read(s).getScreens()).orElse(List.of());
     }
+    public boolean participated(Long id) {
+        return states.findById(id).map(s -> read(s).isParticipated()).orElse(false);
+    }
     Session read(TimedQuizState state) {
         try { return json.readValue(state.getPayload(), Session.class); }
         catch (Exception ex) { throw new IllegalStateException("Invalid timed quiz snapshot", ex); }
@@ -230,6 +234,21 @@ public class TimedQuizEngine {
     }
     static boolean late(Screen screen, long time, int toleranceSeconds) {
         return screen.getDeadline() > 0 && screen.getPausedAt() == null && time > screen.getDeadline() + toleranceSeconds * 1000L;
+    }
+    static boolean fullyAligned(Screen screen) {
+        if (screen.getLeft().size() != screen.getRight().size() || screen.getLeft().isEmpty()) return false;
+        for (int i = 0; i < screen.getLeft().size(); i++)
+            if (!Objects.equals(screen.getSolution().get(screen.getLeft().get(i).getId()), screen.getRight().get(i).getId())) return false;
+        return true;
+    }
+    static void avoidAlignedColumns(Screen screen) {
+        if (!fullyAligned(screen)) return;
+        Collections.shuffle(screen.getRight());
+        if (fullyAligned(screen)) Collections.rotate(screen.getRight(), 1);
+    }
+    static void shuffleColumns(Screen screen) {
+        Collections.shuffle(screen.getLeft()); Collections.shuffle(screen.getRight());
+        avoidAlignedColumns(screen);
     }
     static BigDecimal matchingScore(int correct, int errors, BigDecimal points, BigDecimal penalty) {
         return points.multiply(BigDecimal.valueOf(correct)).subtract(penalty.multiply(BigDecimal.valueOf(errors))).max(BigDecimal.ZERO);
@@ -260,13 +279,16 @@ public class TimedQuizEngine {
         Screen screen = session.getScreens().get(session.getIndex());
         long time = now();
         Boolean correct = null;
-        if (!screen.isDone() && late(screen, time, session.getToleranceSeconds())) complete(screen, session, true);
+        if (!screen.isDone() && late(screen, time, session.getToleranceSeconds())) {
+            session.setParticipated(true); complete(screen, session, true);
+        }
         switch (event.getAction()) {
             case "BEGIN" -> { if (screen.getDeadline() == 0) screen.setDeadline(time + screen.getSeconds() * 1000L); }
             case "ANSWER" -> {
                 if (!screen.isDone() && screen.getDeadline() > 0 && screen.getPausedAt() == null && screen.getType().equals("MULTIPLE_CHOICE_MEANING")) {
                     if (screen.getLeft().stream().noneMatch(c -> c.getId().equals(event.getLeftId()))) throw new IllegalArgumentException("Invalid option");
                     screen.setSelected(event.getLeftId()); complete(screen, session, false);
+                    session.setParticipated(true);
                     correct = screen.getScore().signum() > 0;
                 }
             }
@@ -277,11 +299,12 @@ public class TimedQuizEngine {
                     if (screen.getMatched().contains(event.getLeftId()) || screen.getMatched().stream().anyMatch(k -> screen.getSolution().get(k).equals(event.getRightId())))
                         throw new IllegalArgumentException("Pair already locked");
                     correct = screen.getSolution().get(event.getLeftId()).equals(event.getRightId());
+                    session.setParticipated(true);
                     if (correct) screen.getMatched().add(event.getLeftId()); else screen.setErrors(screen.getErrors() + 1);
                     if (screen.getMatched().size() == 4) complete(screen, session, false);
                 }
             }
-            case "TIMEOUT" -> { if (!screen.isDone() && screen.getDeadline() > 0 && screen.getPausedAt() == null && time >= screen.getDeadline()) complete(screen, session, true); }
+            case "TIMEOUT" -> { if (!screen.isDone() && screen.getDeadline() > 0 && screen.getPausedAt() == null && time >= screen.getDeadline()) { session.setParticipated(true); complete(screen, session, true); } }
             case "PAUSE" -> { if (!screen.isDone() && screen.getDeadline() > 0 && screen.getPausedAt() == null) screen.setPausedAt(time); }
             case "RESUME" -> {
                 if (screen.getPausedAt() != null) { screen.setDeadline(screen.getDeadline() + time - screen.getPausedAt()); screen.setPausedAt(null); }
@@ -307,6 +330,9 @@ public class TimedQuizEngine {
         if (found.isEmpty()) return Map.of();
         owned(id);
         Session session = read(found.get());
+        // Older in-flight snapshots predate the participation flag.
+        session.setParticipated(session.isParticipated() || session.getScreens().stream().anyMatch(s ->
+                s.getSelected() != null || !s.getMatched().isEmpty() || s.getErrors() > 0 || (s.isDone() && s.isTimedOut() && s.getDeadline() > 0)));
         Map<Long,Earned> earned = new HashMap<>();
         for (Screen s : session.getScreens()) {
             if (!s.isDone()) {

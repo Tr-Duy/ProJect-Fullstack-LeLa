@@ -44,6 +44,7 @@ export const QuizResultScreen: React.FC = () => {
   }, []);
 
   const handleProcessAssessment = async () => {
+    if (attemptResult.preciseScore != null && refreshProfile) await refreshProfile();
     const isPlacement =
       attemptResult.quizCategory === 'PLACEMENT' ||
       attemptResult.quizTitle?.toLowerCase().includes('placement') ||

@@ -1,7 +1,7 @@
 import { useSpeechSynthesis } from '../../voice-conversation/hooks/useSpeechSynthesis';
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Button, Modal } from 'antd';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { quizAttemptsApi } from '../api/quiz-attempts.api';
 import { timedVocabularyApi } from '../api/timed-vocabulary.api';
@@ -35,6 +35,7 @@ export function TimedVocabularyQuiz({ initial, onExit, legacyAnswers = [] }: { i
   const quiz = useTimedVocabularyQuiz(initial, event => timedVocabularyApi.event(initial.attemptId, event));
   const { view, remaining, busy, error, hidden, selection, wrong, choose, act } = quiz;
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const speech = useSpeechSynthesis();
   const [exiting, setExiting] = useState(false);
   const [finishing, setFinishing] = useState(false);
@@ -52,6 +53,8 @@ export function TimedVocabularyQuiz({ initial, onExit, legacyAnswers = [] }: { i
     finishLock.current = true; setFinishing(true); setFinishError('');
     try {
       await quizAttemptsApi.submitAttempt(view.attemptId, { answers: legacyAnswers, abandoned });
+      await Promise.allSettled([['profile'], ['auth', 'me'], ['daily-activity', 'today'],
+        ['daily-activity', 'history'], ['my-quiz-attempts']].map(queryKey => queryClient.invalidateQueries({ queryKey })));
       navigate(`/quiz-attempts/${view.publicId}/result`, { replace: true });
       onExit();
     } catch { setFinishError('Chưa nộp được bài. Bấm lại để thử nộp.'); }

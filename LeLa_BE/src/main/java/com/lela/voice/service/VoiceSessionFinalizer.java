@@ -34,6 +34,7 @@ public class VoiceSessionFinalizer {
     private final UsersRepository usersRepository;
     private final VoiceConfigurationProperties props;
     private final UsageLedgerRepository usageLedgerRepository;
+    private final com.lela.dailylearningactivity.DailyXpBudget dailyXpBudget;
 
     /**
      * Chốt phiên hội thoại và chấm điểm (Idempotent transaction)
@@ -117,8 +118,7 @@ public class VoiceSessionFinalizer {
         if (validTurns >= props.getMinValidTurnsForXp()) {
             ZoneId zone = ZoneId.of(props.getTimezone());
             LocalDate today = LocalDate.now(zone);
-            int todayXpUsed = sessionRepository.sumDailyXpAwarded(userId, today);
-            int remainingCap = Math.max(0, props.getDailyXpCap() - todayXpUsed);
+            int remainingCap = dailyXpBudget.remaining(userId, today, props.getDailyXpCap());
 
             int xpFromTurns = Math.min(validTurns * props.getXpPerValidTurn(), props.getMaxXpFromTurns());
             int xpFromScore = Math.round(overallScore / 10.0f);

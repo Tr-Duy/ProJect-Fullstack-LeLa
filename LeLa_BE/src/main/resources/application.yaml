@@ -66,7 +66,11 @@ app:
       pair-points: ${QUIZ_PAIR_POINTS:1}
       error-penalty: ${QUIZ_PAIR_ERROR_PENALTY:0.25}
       system-owner: ${QUIZ_SYSTEM_OWNER:admin}
+      xp-per-meaning: ${QUIZ_XP_PER_MEANING:1}
+      xp-per-pair: ${QUIZ_XP_PER_PAIR:2}
+      max-xp-per-attempt: ${QUIZ_MAX_XP_PER_ATTEMPT:40}
   voice:
+    daily-xp-cap: ${DAILY_XP_CAP:150}
     turn-model: ${VOICE_TURN_MODEL:gemini-flash-lite-latest}
     fallback-model: ${VOICE_FALLBACK_MODEL:${GEMINI_PRIMARY_MODEL:gemini-3.5-flash}}
     summary-model: ${VOICE_SUMMARY_MODEL:${GEMINI_PRIMARY_MODEL:gemini-3.5-flash}}

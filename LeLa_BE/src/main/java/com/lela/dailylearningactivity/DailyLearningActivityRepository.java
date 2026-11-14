@@ -12,6 +12,10 @@ import java.util.Optional;
 
 @Repository
 public interface DailyLearningActivityRepository extends JpaRepository<DailyLearningActivity, Long> {
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT a FROM DailyLearningActivity a WHERE a.user.id = :userId AND a.activityDate = :date")
+    Optional<DailyLearningActivity> findForUpdate(@Param("userId") Long userId, @Param("date") LocalDate date);
+
     @Query("SELECT dla FROM DailyLearningActivity dla WHERE dla.user.id = :userId AND dla.activityDate = :activityDate")
     Optional<DailyLearningActivity> findByUserIdAndActivityDate(@Param("userId") Long userId, @Param("activityDate") LocalDate activityDate);
 

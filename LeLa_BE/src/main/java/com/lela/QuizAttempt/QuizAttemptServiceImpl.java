@@ -64,6 +64,7 @@ public class QuizAttemptServiceImpl implements QuizAttemptService {
     private final com.lela.deckenrollment.DeckEnrollmentRepository deckEnrollmentRepository;
     private final ModelMapper mapper;
     private final com.lela.Quiz.timed.TimedQuizEngine timedQuizEngine;
+    private final com.lela.Quiz.timed.VocabularyQuizRewards vocabularyQuizRewards;
 
     private Users getCurrentUser() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -437,6 +438,10 @@ public class QuizAttemptServiceImpl implements QuizAttemptService {
         int maxScore = 0;
         int correctCount = 0;
         int xpCorrectCount = 0;
+        int meaningCorrect = 0;
+        int pairsCorrect = 0;
+        int legacyCorrect = 0;
+        boolean legacyAnswered = false;
         BigDecimal preciseScore = BigDecimal.ZERO;
         BigDecimal preciseMax = BigDecimal.ZERO;
 
@@ -458,6 +463,8 @@ public class QuizAttemptServiceImpl implements QuizAttemptService {
                 preciseScore = preciseScore.add(timed.score());
                 totalScore += timed.score().intValue();
                 xpCorrectCount += timed.correct();
+                if (question.getQuestionType() == com.lela.QuizQuestion.domain.QuestionType.MATCHING_PAIRS) pairsCorrect += timed.correct();
+                else meaningCorrect += timed.correct();
                 if (timed.score().compareTo(timed.maxScore()) == 0) correctCount++;
                 QuizAnswer answer = new QuizAnswer();
                 answer.setAttempt(attempt); answer.setAttemptQuestion(question);
@@ -473,6 +480,7 @@ public class QuizAttemptServiceImpl implements QuizAttemptService {
                     .findFirst().orElse(null);
 
             if (studentAnswerReq != null) {
+                legacyAnswered = true;
                 QuizAnswer answer = new QuizAnswer();
                 answer.setAttempt(attempt);
                 answer.setAttemptQuestion(question);
@@ -519,6 +527,7 @@ public class QuizAttemptServiceImpl implements QuizAttemptService {
                     preciseScore = preciseScore.add(BigDecimal.valueOf(question.getPoints()));
                     correctCount++;
                     xpCorrectCount++;
+                    legacyCorrect++;
                     answer.setPointsAwarded(question.getPoints());
                 } else {
                     answer.setPointsAwarded(0);
@@ -556,6 +565,8 @@ public class QuizAttemptServiceImpl implements QuizAttemptService {
         }
 
         attempt.setXpAwarded(xpCorrectCount * 10); // Example: 10 XP per correct answer
+        if (!timedScores.isEmpty()) vocabularyQuizRewards.award(attempt, vocabularyQuizRewards.rawXp(meaningCorrect, pairsCorrect, legacyCorrect),
+                legacyAnswered || timedQuizEngine.participated(id));
 
         Users user = attempt.getUser();
 
