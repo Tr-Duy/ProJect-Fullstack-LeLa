@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lela.ai.dto.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import java.time.Instant;
@@ -13,56 +14,104 @@ import java.util.concurrent.*;
 /** Buffered generation: only a provider STOP response is a complete answer. */
 @Service
 @Slf4j
-@RequiredArgsConstructor
 public class TutorGenerationService {
     private final GeminiClient client;
     private final ObjectMapper mapper;
+    private final TutorModelRouter router;
     private final Map<String, Instant> exhaustedUntil = new ConcurrentHashMap<>();
-    @Value("${gemini.tutor-call-timeout-seconds:40}")
-    int timeoutSeconds = 40;
+
+    @Value("${gemini.tutor-call-timeout-seconds:70}")
+    int timeoutSeconds = 70;
+    @Value("${gemini.tutor-primary-timeout-seconds:70}")
+    int primaryTimeoutSeconds = 70;
+    @Value("${gemini.tutor-lite-timeout-seconds:30}")
+    int liteTimeoutSeconds = 30;
     @Value("${gemini.tutor-retry-delay-ms:1000}")
     long retryDelayMs = 1000;
 
     @Value("${gemini.tutor-stream-model:gemini-3.6-flash}")
-    String streamModel="gemini-3.6-flash";
+    String streamModel = "gemini-3.6-flash";
     @Value("${gemini.tutor-lite-model:gemini-3.5-flash-lite}")
-    String liteModel="gemini-3.5-flash-lite";
-    @Value("${gemini.tutor-lite-enabled:false}")
-    boolean liteEnabled;
+    String liteModel = "gemini-3.5-flash-lite";
+    @Value("${gemini.tutor-lite-enabled:true}")
+    boolean liteEnabled = true;
 
-    public AiChatResponse generateStream(GeminiRequest request,String requestId,String mode,
-            java.util.function.Consumer<String> delta,java.util.function.BooleanSupplier cancelled) {
-        var timings=new TutorTimings();var text=new StringBuilder();
-        boolean shortTask=("translation".equals(mode)||"sentence".equals(mode)) &&
-                request.getContents().get(request.getContents().size()-1).getParts().get(0).getText().length()<2000;
-        String selected=liteEnabled && shortTask?liteModel:streamModel;
-        String thinking="chat".equals(mode) && request.getContents().get(request.getContents().size()-1)
-                .getParts().get(0).getText().length()>160?"low":"minimal";
-        request.getGenerationConfig().setThinkingConfig(new GeminiRequest.ThinkingConfig(null,thinking));
-        final var usage=new GeminiResponse.UsageMetadata[]{null};final String[] reason={null},version={selected};
-        for (String model:new LinkedHashSet<>(List.of(selected,streamModel))) {
-            if (exhaustedUntil.getOrDefault(model,Instant.MIN).isAfter(Instant.now())) continue;
-            for (int attempt=0;attempt<2;attempt++) {
+    @Autowired
+    public TutorGenerationService(GeminiClient client, ObjectMapper mapper, TutorModelRouter router) {
+        this.client = client;
+        this.mapper = mapper;
+        this.router = router != null ? router : new TutorModelRouter();
+    }
+
+    public TutorGenerationService(GeminiClient client, ObjectMapper mapper) {
+        this(client, mapper, new TutorModelRouter());
+    }
+
+    public AiChatResponse generateStream(GeminiRequest request, String requestId, String mode,
+            java.util.function.Consumer<String> delta, java.util.function.BooleanSupplier cancelled) {
+        var timings = new TutorTimings();
+        var text = new StringBuilder();
+
+        String promptText = "";
+        if (request.getContents() != null && !request.getContents().isEmpty()) {
+            var lastContent = request.getContents().get(request.getContents().size() - 1);
+            if (lastContent.getParts() != null && !lastContent.getParts().isEmpty()) {
+                promptText = lastContent.getParts().get(0).getText();
+            }
+        }
+
+        router.setPrimaryModel(streamModel);
+        router.setLiteModel(liteModel);
+        router.setLiteEnabled(liteEnabled);
+
+        String selected = router.selectModel(mode, promptText);
+        String thinking = router.determineThinkingLevel(selected, mode, promptText);
+
+        if (request.getGenerationConfig() == null) {
+            request.setGenerationConfig(GeminiRequest.GenerationConfig.builder().build());
+        }
+        request.getGenerationConfig().setThinkingConfig(new GeminiRequest.ThinkingConfig(null, thinking));
+
+        final var usage = new GeminiResponse.UsageMetadata[]{null};
+        final String[] reason = {null}, version = {selected};
+
+        // Two-way fallback: lite -> primary OR primary -> lite
+        List<String> candidateModels = selected.equals(liteModel)
+                ? List.of(liteModel, streamModel)
+                : List.of(streamModel, liteModel);
+
+        for (String model : new LinkedHashSet<>(candidateModels)) {
+            if (exhaustedUntil.getOrDefault(model, Instant.MIN).isAfter(Instant.now())) continue;
+            int modelTimeout = model.equals(liteModel) ? liteTimeoutSeconds : primaryTimeoutSeconds;
+
+            for (int attempt = 0; attempt < 2; attempt++) {
                 if (cancelled.getAsBoolean()) throw new CancellationException();
-                timings.setAttempts(timings.getAttempts()+1);
-                if(attempt>0)timings.setRetries(timings.getRetries()+1);
-                if(!model.equals(selected)&&attempt==0)timings.setFallbacks(timings.getFallbacks()+1);
-                long started=System.nanoTime();
-                java.net.http.HttpResponse<java.io.InputStream> response=null;
-                CompletableFuture<java.net.http.HttpResponse<java.io.InputStream>> pending=null;
+                timings.setAttempts(timings.getAttempts() + 1);
+                if (attempt > 0) timings.setRetries(timings.getRetries() + 1);
+                if (!model.equals(selected) && attempt == 0) timings.setFallbacks(timings.getFallbacks() + 1);
+
+                long started = System.nanoTime();
+                java.net.http.HttpResponse<java.io.InputStream> response = null;
+                CompletableFuture<java.net.http.HttpResponse<java.io.InputStream>> pending = null;
                 try {
-                    pending=client.streamGenerateContent(model,request);
-                    response=pending.get(timeoutSeconds,TimeUnit.SECONDS);
-                    final var body=response.body();
-                    final var finished=new java.util.concurrent.atomic.AtomicBoolean();
+                    pending = client.streamGenerateContent(model, request);
+                    response = pending.get(modelTimeout, TimeUnit.SECONDS);
+                    final var body = response.body();
+                    final var finished = new java.util.concurrent.atomic.AtomicBoolean();
+
                     // Closing the response body also stops a stalled read after Stop/disconnect.
-                    Thread watchdog=Thread.startVirtualThread(()->{
-                        try { while(!finished.get()) {
-                            if(cancelled.getAsBoolean() || System.nanoTime()-started>TimeUnit.SECONDS.toNanos(timeoutSeconds)) {
-                                try {body.close();} catch(java.io.IOException ignored) {} return;
+                    Thread watchdog = Thread.startVirtualThread(() -> {
+                        try {
+                            while (!finished.get()) {
+                                if (cancelled.getAsBoolean() || System.nanoTime() - started > TimeUnit.SECONDS.toNanos(modelTimeout)) {
+                                    try { body.close(); } catch (java.io.IOException ignored) {}
+                                    return;
+                                }
+                                Thread.sleep(100);
                             }
-                            Thread.sleep(100);
-                        }} catch(InterruptedException ignored) {Thread.currentThread().interrupt();}
+                        } catch (InterruptedException ignored) {
+                            Thread.currentThread().interrupt();
+                        }
                     });
                     try (body) {
                         log.info("Tutor stream call requestId={} model={} attempt={} status={}",requestId,model,attempt+1,response.statusCode());
@@ -225,11 +274,14 @@ public class TutorGenerationService {
     }
     boolean isDailyQuota(String body) {
         try {
-            JsonNode details = mapper.readTree(body).path("error").path("details");
+            JsonNode tree = mapper.readTree(body);
+            JsonNode details = tree.path("error").path("details");
             for (JsonNode detail : details) for (JsonNode violation : detail.path("violations")) {
                 String id = violation.path("quotaId").asText().toLowerCase(Locale.ROOT);
                 if (id.contains("perday") || id.contains("daily")) return true;
             }
+            String message = tree.path("error").path("message").asText().toLowerCase(Locale.ROOT);
+            if (message.contains("per day") || message.contains("daily") || message.contains("perday")) return true;
             return false;
         } catch (Exception malformed) { return false; } // Unknown 429: bounded retry, never an answer.
     }

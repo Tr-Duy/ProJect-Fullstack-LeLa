@@ -12,6 +12,7 @@ interface MessageListProps {
   isGenerating: boolean;
   error: string | null;
   onRegenerate: () => void;
+  onStop?: () => void;
   onSelectSuggestion: (text: string, mode: AiMode) => void;
   suggestedDeck?: { title: string; word?: string };
 }
@@ -23,6 +24,7 @@ export const MessageList: React.FC<MessageListProps> = ({
   isGenerating,
   error,
   onRegenerate,
+  onStop,
   onSelectSuggestion,
   suggestedDeck,
 }) => {
@@ -90,6 +92,7 @@ export const MessageList: React.FC<MessageListProps> = ({
                         ? onRegenerate
                         : undefined
                     }
+                    onStop={isLastAiMessage ? onStop : undefined}
                   />
                 );
               })}

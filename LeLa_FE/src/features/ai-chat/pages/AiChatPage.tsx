@@ -157,6 +157,7 @@ const AiChatPageContent: React.FC = () => {
           isGenerating={streamState.isGenerating}
           error={streamState.error}
           onRegenerate={handleRegenerate}
+          onStop={streamState.stopGeneration}
           onSelectSuggestion={handleSelectSuggestion}
           suggestedDeck={suggestedDeck}
         />

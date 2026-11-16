@@ -10,6 +10,15 @@ test.beforeAll(async()=>{
   req.resume();res.writeHead(200,{'Content-Type':'text/event-stream; charset=utf-8'});
   const event=(type:string,payload:unknown)=>`event: ${type}\r\ndata: ${JSON.stringify(payload)}\r\n\r\n`;
   res.write('event: ready\ndata: {}\n\n');
+  if(req.url==='/slow'){
+   const slowTimer=setTimeout(()=>{
+    if(res.destroyed)return;
+    res.write(event('delta',{sequence:0,text:'Phản hồi sau khi chờ sâu.'}));
+    res.end(event('done',{content:'Phản hồi sau khi chờ sâu.',finishReason:'STOP',complete:true,model:'mock',requestId:'mock-id'}));
+   },3600);
+   res.on('close',()=>clearTimeout(slowTimer));
+   return;
+  }
   const first=setTimeout(()=>{const data=Buffer.from(event('delta',{sequence:0,text:content.slice(0,24)}));let i=0;
    const pieces=setInterval(()=>{if(res.destroyed||i>=data.length){clearInterval(pieces);return}res.write(data.subarray(i,i+1));i++},1);
    res.on('close',()=>clearInterval(pieces));
@@ -88,4 +97,13 @@ test('token expires during stream: current turn completes; next turn refreshes o
  await page.evaluate(()=>localStorage.setItem('accessToken','expired'));await expect(bubble(page,'ai')).toHaveAttribute('data-message-status','complete');
  await send(page,'Second');await expect(page.locator('[data-message-role="ai"][data-message-status="complete"]')).toHaveCount(2);
  expect(expiredCalls).toBe(1);expect(refresh).toBe(1);expect(ids).toHaveLength(3);expect(ids[1]).toBe(ids[2]);await expect(bubble(page,'user')).toHaveCount(2);
+});
+
+test('slow response (>3s) transitions from thinking to deep preparation message with stop button',async({page})=>{
+ await connect(page,'/slow');await page.goto('/ai-chat');await send(page,'Câu hỏi sâu');
+ await expect(bubble(page,'ai')).toContainText('LeLa đang suy nghĩ');
+ await expect(bubble(page,'ai')).toContainText('LeLa đang chuẩn bị câu trả lời, có thể mất vài chục giây với câu hỏi sâu',{timeout:4500});
+ await expect(page.locator('[data-testid="bubble-stop-button"]')).toBeVisible();
+ await page.locator('[data-testid="bubble-stop-button"]').click();
+ await expect(bubble(page,'ai')).toHaveAttribute('data-message-status','interrupted');
 });

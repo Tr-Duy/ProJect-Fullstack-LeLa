@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { motion } from 'framer-motion';
-import { Copy, Check, Volume2, RotateCcw } from 'lucide-react';
+import { Copy, Check, Volume2, RotateCcw, Square } from 'lucide-react';
 import type { AiMessage } from '../types/ai.types';
 import { Lela } from '../../../shared/components/ui/Lela';
 
@@ -10,16 +10,39 @@ interface MessageBubbleProps {
   message: AiMessage;
   isStreaming?: boolean;
   onRegenerate?: () => void;
+  onStop?: () => void;
 }
 
 export const MessageBubble: React.FC<MessageBubbleProps> = ({
   message,
   isStreaming = false,
   onRegenerate,
+  onStop,
 }) => {
   const isAi = message.role === 'ai';
   const [copied, setCopied] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  useEffect(() => {
+    if (!isStreaming || message.content) {
+      setElapsedSeconds(0);
+      return;
+    }
+    const startTime = message.timestamp ? new Date(message.timestamp).getTime() : Date.now();
+    const interval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - startTime) / 1000);
+      setElapsedSeconds(elapsed);
+    }, 500);
+    return () => clearInterval(interval);
+  }, [isStreaming, message.content, message.timestamp]);
+
+  const isDeepOrSlow = isStreaming && !message.content && elapsedSeconds >= 3;
+
+  const isDebug = typeof window !== 'undefined' && (
+    new URLSearchParams(window.location.search).has('debug') ||
+    localStorage.getItem('lela_debug') === 'true'
+  );
 
   const handleCopy = async () => {
     try {
@@ -95,11 +118,29 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                     )}
                   </>
                 ) : isStreaming ? (
-                  <div className="flex items-center gap-1.5 py-1 px-1">
-                    <span className="w-2 h-2 bg-[var(--brand)] rounded-full animate-bounce [animation-delay:-0.3s]" />
-                    <span className="w-2 h-2 bg-[var(--brand)] rounded-full animate-bounce [animation-delay:-0.15s]" />
-                    <span className="w-2 h-2 bg-[var(--brand)] rounded-full animate-bounce" />
-                    <span className="text-[12px] text-[var(--text-2)] ml-1 font-medium">LeLa đang suy nghĩ...</span>
+                  <div className="flex flex-col gap-1.5 py-1 px-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 bg-[var(--brand)] rounded-full animate-bounce [animation-delay:-0.3s]" />
+                      <span className="w-2 h-2 bg-[var(--brand)] rounded-full animate-bounce [animation-delay:-0.15s]" />
+                      <span className="w-2 h-2 bg-[var(--brand)] rounded-full animate-bounce" />
+                      <span className="text-[12px] text-[var(--text-2)] ml-1 font-medium">
+                        {isDeepOrSlow
+                          ? 'LeLa đang chuẩn bị câu trả lời, có thể mất vài chục giây với câu hỏi sâu'
+                          : 'LeLa đang suy nghĩ...'}
+                      </span>
+                    </div>
+                    {isDeepOrSlow && onStop && (
+                      <button
+                        type="button"
+                        onClick={onStop}
+                        data-testid="bubble-stop-button"
+                        className="self-start inline-flex items-center gap-1 text-[11px] font-medium text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 px-2 py-0.5 rounded transition-colors"
+                        aria-label="Dừng tạo câu trả lời"
+                      >
+                        <Square className="w-3 h-3 fill-current" />
+                        <span>Dừng</span>
+                      </button>
+                    )}
                   </div>
                 ) : <p>{message.status === 'interrupted' ? 'Đã dừng trước khi nhận đủ câu trả lời.' : 'Chưa nhận được câu trả lời.'}</p>}
                 {!isStreaming && ['incomplete', 'interrupted'].includes(message.status ?? '') && (
@@ -160,6 +201,17 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                   <RotateCcw className="w-3 h-3" />
                   <span>Thử lại</span>
                 </button>
+              )}
+
+              {isDebug && (message.model || message.mode) && (
+                <span
+                  data-testid="debug-model-tag"
+                  className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-amber-50 text-amber-800 border border-amber-200"
+                  title="Debug information"
+                >
+                  {message.mode ? `[mode: ${message.mode}] ` : ''}
+                  {message.model ? `[model: ${message.model}]` : ''}
+                </span>
               )}
             </div>
           )}
