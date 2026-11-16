@@ -39,7 +39,7 @@ class GeminiClientTest {
         } finally {server.stop(0);}
     }
     @Test
-    void sendsKeyOnlyInHeaderForBothEndpointsAndRedactsErrorLogs() throws Exception {
+    void sendsKeyOnlyInHeaderForBothEndpointsAndNeverLogsProviderErrorBody() throws Exception {
         String key = "test-secret-key-never-log";
         var uri = new AtomicReference<String>();
         var header = new AtomicReference<String>();
@@ -85,7 +85,7 @@ class GeminiClientTest {
                             .asString(event.getThrowableProxy()).contains(key));
                 }
             }
-            assertTrue(logs.list.stream().anyMatch(e -> e.getFormattedMessage().contains("[REDACTED]")));
+            assertTrue(logs.list.stream().noneMatch(e -> e.getFormattedMessage().contains("error echoed")));
         } finally {
             server.stop(0);
             logger.detachAppender(logs);

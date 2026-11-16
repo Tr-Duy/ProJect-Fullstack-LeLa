@@ -16,6 +16,8 @@ public class AiChatRequest {
     private String conversationId; // optional, for resuming
     @jakarta.validation.constraints.Size(max = 128)
     private String clientMessageId;
+    @jakarta.validation.constraints.Pattern(regexp = "chat|translation|sentence|vocabulary|grammar|conversation")
+    private String mode;
     @jakarta.validation.Valid
     @jakarta.validation.constraints.Size(max = 12)
     private java.util.List<HistoryMessage> history;

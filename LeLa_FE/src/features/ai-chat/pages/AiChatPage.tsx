@@ -110,7 +110,7 @@ const AiChatPageContent: React.FC = () => {
 
   const handleSend = (text: string) => {
     const formattedPrompt = formatPromptByMode(text, activeMode);
-    streamState.sendMessage(formattedPrompt, text);
+    streamState.sendMessage(formattedPrompt, text, activeMode);
   };
 
   const handleQuickAsk = (prompt: string) => {

@@ -59,7 +59,10 @@ public class GeminiRequest {
     @Data
     @AllArgsConstructor
     @NoArgsConstructor
+    @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
     public static class ThinkingConfig {
         private Integer thinkingBudget;
+        private String thinkingLevel;
+        public ThinkingConfig(Integer budget) { this.thinkingBudget=budget; }
     }
 }

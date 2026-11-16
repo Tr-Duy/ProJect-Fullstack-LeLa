@@ -32,8 +32,26 @@ public class AiServiceImpl implements AiService {
 
     @Override
     public AiChatResponse chat(AiChatRequest request) {
+        return execute(request,getCurrentUser(),null,()->false,null,0);
+    }
+    @Override
+    public java.util.function.Supplier<AiChatResponse> prepareStream(AiChatRequest request,
+            java.util.function.Consumer<String> delta,java.util.function.BooleanSupplier cancelled) {
         promptValidator.validatePrompt(request.getMessage());
-        Users user = getCurrentUser();
+        Users user=getCurrentUser(); // Capture authentication before leaving the servlet thread.
+        long started=System.nanoTime();
+        try {
+            String context=promptContext(contextBuilder.buildContextObjectForUser(user));
+            double contextMs=(System.nanoTime()-started)/1_000_000.0;
+            return ()->execute(request,user,delta,cancelled,context,contextMs);
+        } catch(com.fasterxml.jackson.core.JsonProcessingException failure) {
+            throw new AiException("AI_CONTEXT_ERROR","Không thể chuẩn bị ngữ cảnh học tập.");
+        }
+    }
+    private AiChatResponse execute(AiChatRequest request,Users user,java.util.function.Consumer<String> delta,
+            java.util.function.BooleanSupplier cancelled,String preparedContext,double preparedMs) {
+        long totalStarted=System.nanoTime();
+        promptValidator.validatePrompt(request.getMessage());
         String clientId = request.getClientMessageId() == null ? UUID.randomUUID().toString() : request.getClientMessageId();
         String key = user.getId() + ":" + clientId;
         Turn turn = new Turn(request.getMessage(), new CompletableFuture<>());
@@ -43,7 +61,10 @@ public class AiServiceImpl implements AiService {
             return existing.result().join();
         }
         try {
-            String context = promptContext(contextBuilder.buildContextObjectForUser(user));
+            long stageStarted=System.nanoTime();
+            String context = preparedContext==null?promptContext(contextBuilder.buildContextObjectForUser(user)):preparedContext;
+            double contextMs=preparedContext==null?(System.nanoTime()-stageStarted)/1_000_000.0:preparedMs;
+            stageStarted=System.nanoTime();
             var contents = new ArrayList<GeminiRequest.Content>();
             if (request.getHistory() != null) for (var item : request.getHistory()) {
                 contents.add(new GeminiRequest.Content(item.role(), List.of(new GeminiRequest.Part(item.text()))));
@@ -54,8 +75,15 @@ public class AiServiceImpl implements AiService {
                             systemPromptBuilder.buildPrompt() + "\n\nDữ liệu học tập hiện tại:\n" + context))))
                     .contents(contents).generationConfig(GeminiRequest.GenerationConfig.builder()
                             .temperature(0.7).maxOutputTokens(maxOutputTokens).build()).build();
-            AiChatResponse result = generator.generate(geminiRequest, UUID.randomUUID().toString());
+            double promptMs=(System.nanoTime()-stageStarted)/1_000_000.0;
+            AiChatResponse result = delta==null?generator.generate(geminiRequest, UUID.randomUUID().toString())
+                    :generator.generateStream(geminiRequest,UUID.randomUUID().toString(),request.getMode()==null?"chat":request.getMode(),delta,cancelled);
+            result.timings().setContextMs(contextMs);result.timings().setPromptMs(promptMs);
+            stageStarted=System.nanoTime();
+            if(cancelled.getAsBoolean())throw new CancellationException();
             if (result.complete()) saveCompleteTurn(user, request.getMessage(), result);
+            result.timings().setDbMs((System.nanoTime()-stageStarted)/1_000_000.0);
+            result.timings().setTotalMs((System.nanoTime()-totalStarted)/1_000_000.0+(preparedContext==null?0:preparedMs));
             turn.result().complete(result);
             if (!result.complete()) turns.remove(key, turn);
             if (turns.size() > 256) turns.entrySet().removeIf(e -> !e.getKey().equals(key) && e.getValue().result().isDone());

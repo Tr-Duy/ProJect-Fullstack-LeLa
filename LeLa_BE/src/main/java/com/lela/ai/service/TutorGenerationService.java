@@ -23,15 +23,124 @@ public class TutorGenerationService {
     @Value("${gemini.tutor-retry-delay-ms:1000}")
     long retryDelayMs = 1000;
 
+    @Value("${gemini.tutor-stream-model:gemini-3.6-flash}")
+    String streamModel="gemini-3.6-flash";
+    @Value("${gemini.tutor-lite-model:gemini-3.5-flash-lite}")
+    String liteModel="gemini-3.5-flash-lite";
+    @Value("${gemini.tutor-lite-enabled:false}")
+    boolean liteEnabled;
+
+    public AiChatResponse generateStream(GeminiRequest request,String requestId,String mode,
+            java.util.function.Consumer<String> delta,java.util.function.BooleanSupplier cancelled) {
+        var timings=new TutorTimings();var text=new StringBuilder();
+        boolean shortTask=("translation".equals(mode)||"sentence".equals(mode)) &&
+                request.getContents().get(request.getContents().size()-1).getParts().get(0).getText().length()<2000;
+        String selected=liteEnabled && shortTask?liteModel:streamModel;
+        String thinking="chat".equals(mode) && request.getContents().get(request.getContents().size()-1)
+                .getParts().get(0).getText().length()>160?"low":"minimal";
+        request.getGenerationConfig().setThinkingConfig(new GeminiRequest.ThinkingConfig(null,thinking));
+        final var usage=new GeminiResponse.UsageMetadata[]{null};final String[] reason={null},version={selected};
+        for (String model:new LinkedHashSet<>(List.of(selected,streamModel))) {
+            if (exhaustedUntil.getOrDefault(model,Instant.MIN).isAfter(Instant.now())) continue;
+            for (int attempt=0;attempt<2;attempt++) {
+                if (cancelled.getAsBoolean()) throw new CancellationException();
+                timings.setAttempts(timings.getAttempts()+1);
+                if(attempt>0)timings.setRetries(timings.getRetries()+1);
+                if(!model.equals(selected)&&attempt==0)timings.setFallbacks(timings.getFallbacks()+1);
+                long started=System.nanoTime();
+                java.net.http.HttpResponse<java.io.InputStream> response=null;
+                CompletableFuture<java.net.http.HttpResponse<java.io.InputStream>> pending=null;
+                try {
+                    pending=client.streamGenerateContent(model,request);
+                    response=pending.get(timeoutSeconds,TimeUnit.SECONDS);
+                    final var body=response.body();
+                    final var finished=new java.util.concurrent.atomic.AtomicBoolean();
+                    // Closing the response body also stops a stalled read after Stop/disconnect.
+                    Thread watchdog=Thread.startVirtualThread(()->{
+                        try { while(!finished.get()) {
+                            if(cancelled.getAsBoolean() || System.nanoTime()-started>TimeUnit.SECONDS.toNanos(timeoutSeconds)) {
+                                try {body.close();} catch(java.io.IOException ignored) {} return;
+                            }
+                            Thread.sleep(100);
+                        }} catch(InterruptedException ignored) {Thread.currentThread().interrupt();}
+                    });
+                    try (body) {
+                        log.info("Tutor stream call requestId={} model={} attempt={} status={}",requestId,model,attempt+1,response.statusCode());
+                        if (response.statusCode()!=200) {
+                            String error=new String(body.readAllBytes(),java.nio.charset.StandardCharsets.UTF_8);
+                            if(response.statusCode()==429 && isDailyQuota(error)) {
+                                exhaustedUntil.put(model,Instant.now().plusSeconds(3600));break;
+                            }
+                            if((response.statusCode()==429||response.statusCode()>=500)&&attempt==0) {backoff();continue;}
+                            break;
+                        }
+                        var measured=new java.io.FilterInputStream(body) {
+                            public int read(byte[] bytes,int offset,int length)throws java.io.IOException {
+                                int n=super.read(bytes,offset,length);
+                                if(n>0 && timings.getProviderFirstByteMs()==0)timings.setProviderFirstByteMs((System.nanoTime()-started)/1_000_000.0);
+                                return n;
+                            }
+                        };
+                        TutorSseReader.read(measured,json->{
+                            if(cancelled.getAsBoolean())throw new CancellationException();
+                            long parse=System.nanoTime();
+                            try {
+                                if("[DONE]".equals(json)) return;
+                                if(mapper.readTree(json).has("error"))throw new IllegalStateException("PROVIDER_STREAM_ERROR");
+                                var chunk=mapper.readValue(json,GeminiResponse.class);
+                                if(chunk.getModelVersion()!=null)version[0]=chunk.getModelVersion();
+                                if(chunk.getUsageMetadata()!=null)usage[0]=chunk.getUsageMetadata(); // cumulative, never sum chunks
+                                if(chunk.getCandidates()!=null && !chunk.getCandidates().isEmpty()) {
+                                    var candidate=chunk.getCandidates().get(0);
+                                    if(candidate.getFinishReason()!=null)reason[0]=candidate.getFinishReason();
+                                    if(candidate.getContent()!=null && candidate.getContent().getParts()!=null)
+                                        for(var part:candidate.getContent().getParts())
+                                            if(!Boolean.TRUE.equals(part.getThought()) && part.getText()!=null && !part.getText().isEmpty()) {
+                                                if(timings.getProviderFirstTextMs()==0)timings.setProviderFirstTextMs((System.nanoTime()-started)/1_000_000.0);
+                                                text.append(part.getText());delta.accept(part.getText());
+                                            }
+                                }
+                            } catch(com.fasterxml.jackson.core.JsonProcessingException malformed) {
+                                throw new IllegalStateException("PROVIDER_STREAM_INVALID",malformed);
+                            } finally {timings.setParseMs(timings.getParseMs()+(System.nanoTime()-parse)/1_000_000.0);}
+                        });
+                        if(cancelled.getAsBoolean())throw new CancellationException();
+                        timings.setProviderTotalMs((System.nanoTime()-started)/1_000_000.0);
+                        boolean complete="STOP".equals(reason[0])&&!text.toString().isBlank();
+                        log.info("Tutor stream result requestId={} model={} finishReason={} usage={}",requestId,version[0],reason[0],usage[0]);
+                        return new AiChatResponse(text.toString(),reason[0]==null?"INTERRUPTED":reason[0],complete,version[0],usage[0],complete?null:"AI_INCOMPLETE",requestId,timings);
+                    } finally {finished.set(true);watchdog.interrupt();}
+                } catch(CancellationException cancelledRequest) {throw cancelledRequest;}
+                catch(InterruptedException interrupted) {Thread.currentThread().interrupt();throw new CancellationException();}
+                catch(Exception failure) {
+                    if(pending!=null)pending.cancel(true);
+                    if(cancelled.getAsBoolean())throw new CancellationException();
+                    log.warn("Tutor stream transport requestId={} model={} failureType={}",requestId,model,failure.getClass().getSimpleName());
+                    // Once text is visible, never splice a retry/fallback into the same answer.
+                    if(!text.isEmpty())return new AiChatResponse(text.toString(),"INTERRUPTED",false,version[0],usage[0],"AI_CONNECTION",requestId,timings);
+                    if(attempt==0)try {backoff();} catch(InterruptedException interrupted) {Thread.currentThread().interrupt();throw new CancellationException();}
+                }
+            }
+        }
+        return new AiChatResponse("","ERROR",false,selected,null,"AI_BUSY",requestId,timings);
+    }
+
     public AiChatResponse generate(GeminiRequest request, String requestId) {
+        TutorTimings timings=new TutorTimings();
         for (String model : new LinkedHashSet<>(List.of(client.getPrimaryModel(), client.getFallbackModel()))) {
             if (exhaustedUntil.getOrDefault(model, Instant.MIN).isAfter(Instant.now())) continue;
             for (int attempt = 0; attempt < 2; attempt++) {
+                timings.setAttempts(timings.getAttempts()+1);
+                if (attempt>0) timings.setRetries(timings.getRetries()+1);
+                if (!model.equals(client.getPrimaryModel()) && attempt==0) timings.setFallbacks(timings.getFallbacks()+1);
                 long start = System.nanoTime();
                 CompletableFuture<java.net.http.HttpResponse<String>> pending = null;
                 try {
                     pending = client.generateContent(model, request);
                     var response = pending.get(timeoutSeconds, TimeUnit.SECONDS);
+                    if (response instanceof GeminiClient.MeasuredResponse measured) {
+                        timings.setProviderFirstByteMs(measured.firstByteMs());timings.setProviderTotalMs(measured.totalMs());
+                    }
                     int status = response.statusCode();
                     // Metadata only: no prompts, generated text, provider body or credentials.
                     log.info("Tutor call requestId={} model={} attempt={} status={} durationMs={}",
@@ -45,7 +154,9 @@ public class TutorGenerationService {
                         break;
                     }
                     if (status != 200) break;
+                    long parseStarted=System.nanoTime();
                     GeminiResponse result = mapper.readValue(response.body(), GeminiResponse.class);
+                    timings.setParseMs((System.nanoTime()-parseStarted)/1_000_000.0);
                     var candidate = result.getCandidates() == null || result.getCandidates().isEmpty()
                             ? null : result.getCandidates().get(0);
                     String reason = candidate == null ? "BLOCKED" : candidate.getFinishReason();
@@ -94,7 +205,7 @@ public class TutorGenerationService {
                     log.info("Tutor result requestId={} model={} finishReason={} usage={}",
                             requestId, result.getModelVersion(), reason, result.getUsageMetadata());
                     return new AiChatResponse(text.toString(), reason, complete, result.getModelVersion(),
-                            result.getUsageMetadata(), complete ? null : "MAX_TOKENS".equals(reason) ? "AI_TRUNCATED" : "AI_INCOMPLETE", requestId);
+                            result.getUsageMetadata(), complete ? null : "MAX_TOKENS".equals(reason) ? "AI_TRUNCATED" : "AI_INCOMPLETE", requestId,timings);
                 } catch (InterruptedException interrupted) {
                     if (pending != null) pending.cancel(true);
                     Thread.currentThread().interrupt();

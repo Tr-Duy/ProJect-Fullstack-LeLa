@@ -87,6 +87,7 @@ apiClient.interceptors.response.use(
     }
 
     if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
+      originalRequest._retry = true;
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
@@ -98,7 +99,6 @@ apiClient.interceptors.response.use(
           .catch((err) => Promise.reject(err));
       }
 
-      originalRequest._retry = true;
       isRefreshing = true;
 
       const refreshToken = localStorage.getItem('refreshToken');

@@ -27,9 +27,13 @@ public class GeminiClient {
      * Sends request to Gemini and returns a CompletableFuture of HttpResponse stream.
      */
     public CompletableFuture<HttpResponse<java.io.InputStream>> streamGenerateContent(GeminiRequest request) {
+        return streamGenerateContent(config.getPrimaryModel(),request);
+    }
+
+    public CompletableFuture<HttpResponse<java.io.InputStream>> streamGenerateContent(String model, GeminiRequest request) {
         try {
             String requestBody = objectMapper.writeValueAsString(request);
-            String url = config.getApiUrl().replace(":generateContent", ":streamGenerateContent") + "?alt=sse";
+            String url = config.getGenerateContentUrl(model).replace(":generateContent", ":streamGenerateContent") + "?alt=sse";
             
             log.info("====== GEMINI API REQUEST ======");
             log.info("URL: {}", url);
@@ -42,21 +46,7 @@ public class GeminiClient {
                     .POST(HttpRequest.BodyPublishers.ofString(requestBody))
                     .build();
 
-            return httpClient.sendAsync(httpRequest, HttpResponse.BodyHandlers.ofInputStream())
-                    .thenApply(response -> {
-                        log.info("====== GEMINI API RESPONSE ======");
-                        log.info("Status Code: {}", response.statusCode());
-                        if (response.statusCode() >= 400) {
-                            try {
-                                String errorBody = new String(response.body().readAllBytes());
-                                log.error("Gemini Error Body: {}", errorBody.replace(config.getApiKey(), "[REDACTED]"));
-                                throw new AiException("Gemini returned " + response.statusCode());
-                            } catch (Exception e) {
-                                log.error("Failed to read error body", e);
-                            }
-                        }
-                        return response;
-                    });
+            return httpClient.sendAsync(httpRequest, HttpResponse.BodyHandlers.ofInputStream());
         } catch (Exception e) {
             log.error("Failed to prepare Gemini request", e);
             throw new AiException("Failed to prepare AI request", e);
@@ -79,7 +69,17 @@ public class GeminiClient {
                     .POST(HttpRequest.BodyPublishers.ofString(requestBody))
                     .build();
 
-            return httpClient.sendAsync(httpRequest, HttpResponse.BodyHandlers.ofString());
+            long started=System.nanoTime();
+            return httpClient.sendAsync(httpRequest, HttpResponse.BodyHandlers.ofInputStream()).thenApply(response -> {
+                try (var body=response.body();var bytes=new java.io.ByteArrayOutputStream()) {
+                    byte[] buffer=new byte[8192];int read;long first=0;
+                    while ((read=body.read(buffer))!=-1) {
+                        if (first==0) first=System.nanoTime();bytes.write(buffer,0,read);
+                    }
+                    return new MeasuredResponse(response,bytes.toString(java.nio.charset.StandardCharsets.UTF_8),
+                            first==0?0:(first-started)/1_000_000.0,(System.nanoTime()-started)/1_000_000.0);
+                } catch (java.io.IOException failure) {throw new java.util.concurrent.CompletionException(failure);}
+            });
         } catch (Exception e) {
             log.error("Failed to prepare Gemini non-streaming request for model {}", model, e);
             throw new AiException("Failed to prepare AI non-streaming request", e);
@@ -88,6 +88,17 @@ public class GeminiClient {
 
     public String getPrimaryModel() {
         return config.getPrimaryModel();
+    }
+
+    public record MeasuredResponse(HttpResponse<java.io.InputStream> original,String body,
+            double firstByteMs,double totalMs) implements HttpResponse<String> {
+        public int statusCode(){return original.statusCode();}
+        public HttpRequest request(){return original.request();}
+        public java.util.Optional<HttpResponse<String>> previousResponse(){return java.util.Optional.empty();}
+        public java.net.http.HttpHeaders headers(){return original.headers();}
+        public java.util.Optional<javax.net.ssl.SSLSession> sslSession(){return original.sslSession();}
+        public URI uri(){return original.uri();}
+        public HttpClient.Version version(){return original.version();}
     }
 
     public String getFallbackModel() {

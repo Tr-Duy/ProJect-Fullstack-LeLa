@@ -7,12 +7,14 @@ export interface AiMessage {
   status?: 'pending' | 'complete' | 'incomplete' | 'error' | 'interrupted';
   requestText?: string;
   clientMessageId?: string;
+  mode?: string;
   finishReason?: string;
   model?: string;
   usageMetadata?: AiChatResponse['usageMetadata'];
 }
 
 export interface AiChatRequest {
+  mode?: string;
   message: string;
   conversationId?: string;
   clientMessageId?: string;

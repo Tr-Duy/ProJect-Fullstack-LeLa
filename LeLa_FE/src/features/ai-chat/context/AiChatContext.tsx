@@ -9,7 +9,7 @@ interface AiChatContextType {
   isLoading: boolean;
   isGenerating: boolean;
   error: string | null;
-  sendMessage: (text: string, displayText?: string) => Promise<void>;
+  sendMessage: (text: string, displayText?: string, mode?: string) => Promise<void>;
   retryLastMessage: () => Promise<void>;
   stopGeneration: () => void;
   clearMessages: () => void;
@@ -48,7 +48,7 @@ export const AiChatProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     sessionStorage.removeItem(STORAGE_KEY); // Migrate legacy session history to a user-scoped key.
   }, [persist]);
 
-  const run = useCallback(async (text: string, displayText?: string, previous?: AiMessage) => {
+  const run = useCallback(async (text: string, displayText?: string, previous?: AiMessage, mode = 'chat') => {
     if (locked.current || !text.trim()) return;
     locked.current = true; // Synchronous: Enter and submit in the same render cannot create two turns.
     const userId = previous?.id ?? crypto.randomUUID();
@@ -57,7 +57,7 @@ export const AiChatProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const clientMessageId = previousAi?.status === 'complete' ? crypto.randomUUID()
       : previous?.clientMessageId ?? userId;
     const userMessage: AiMessage = { id: userId, role: 'user', content: displayText ?? text,
-      requestText: text, clientMessageId, timestamp: previous?.timestamp ?? new Date(), status: 'complete' };
+      requestText: text, clientMessageId, mode: previous?.mode ?? mode, timestamp: previous?.timestamp ?? new Date(), status: 'complete' };
     const aiMessage: AiMessage = { id: aiId, role: 'ai', content: '', timestamp: new Date(), status: 'pending' };
     const cutoff = previous ? messagesRef.current.findIndex(m => m.id === userId) : messagesRef.current.length;
     const before = messagesRef.current.slice(0, cutoff);
@@ -73,8 +73,11 @@ export const AiChatProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     active.current = { controller, aiId };
     setIsGenerating(true); setError(null);
     try {
-      const result = await aiApi.chat({ message: text, clientMessageId,
-        history: history.slice(-12).map(item => ({ ...item, text: item.text.slice(0, 16000) })) }, controller.signal);
+      const result = await aiApi.stream({ message: text, clientMessageId, mode: userMessage.mode,
+        history: history.slice(-12).map(item => ({ ...item, text: item.text.slice(0, 16000) })) }, content => {
+          if (active.current?.controller === controller)
+            persist(messagesRef.current.map(m => m.id === aiId ? { ...m, content } : m));
+        }, controller.signal);
       if (active.current?.controller !== controller) return;
       const complete = result.complete && result.finishReason === 'STOP';
       persist(messagesRef.current.map(m => m.id === aiId ? { ...m, content: result.content,
@@ -87,7 +90,7 @@ export const AiChatProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     } catch (failure) {
       if (active.current?.controller !== controller) return;
       const cancelled = axios.isCancel(failure) || controller.signal.aborted;
-      persist(messagesRef.current.map(m => m.id === aiId ? { ...m, status: cancelled ? 'interrupted' : 'error' } : m));
+      persist(messagesRef.current.map(m => m.id === aiId ? { ...m, status: cancelled ? 'interrupted' : m.content ? 'incomplete' : 'error' } : m));
       if (!cancelled) setError(!localStorage.getItem('accessToken') || (axios.isAxiosError(failure) && failure.response?.status === 401)
         ? 'Phiên đăng nhập đã hết hạn. Bạn đăng nhập lại để tiếp tục trò chuyện nhé.'
         : axios.isAxiosError(failure) && failure.code === 'ECONNABORTED'
@@ -108,13 +111,17 @@ export const AiChatProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
     locked.current = false; setIsGenerating(false);
   }, [persist]);
+  useEffect(() => {
+    window.addEventListener('pagehide', stopGeneration);
+    return () => window.removeEventListener('pagehide', stopGeneration);
+  }, [stopGeneration]);
   useEffect(() => () => {
     const current = active.current;
     active.current = null;
     locked.current = false;
     current?.controller.abort();
   }, []);
-  const sendMessage = useCallback((text: string, displayText?: string) => run(text, displayText), [run]);
+  const sendMessage = useCallback((text: string, displayText?: string, mode?: string) => run(text, displayText, undefined, mode), [run]);
   const retryLastMessage = useCallback(async () => {
     const previous = [...messagesRef.current].reverse().find(m => m.role === 'user');
     if (previous) await run(previous.requestText ?? previous.content, previous.content, previous);

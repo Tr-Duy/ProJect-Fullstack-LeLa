@@ -26,6 +26,41 @@ public class AiController {
     private final LearningContextBuilder contextBuilder;
     private final UsersRepository usersRepository;
 
+    @PostMapping(value="/chat/stream",produces=MediaType.TEXT_EVENT_STREAM_VALUE)
+    public org.springframework.web.servlet.mvc.method.annotation.SseEmitter stream(
+            @jakarta.validation.Valid @RequestBody AiChatRequest request,jakarta.servlet.http.HttpServletResponse response) {
+        response.setHeader("Cache-Control","no-cache, no-transform");
+        response.setHeader("X-Accel-Buffering","no");
+        response.setCharacterEncoding("UTF-8");
+        var emitter=new org.springframework.web.servlet.mvc.method.annotation.SseEmitter(120_000L);
+        var cancelled=new java.util.concurrent.atomic.AtomicBoolean();
+        var sequence=new java.util.concurrent.atomic.AtomicInteger();
+        emitter.onCompletion(()->cancelled.set(true));
+        emitter.onTimeout(()->{cancelled.set(true);emitter.complete();});
+        emitter.onError(error->cancelled.set(true));
+        var work=aiService.prepareStream(request,text->{
+            try {emitter.send(org.springframework.web.servlet.mvc.method.annotation.SseEmitter.event()
+                    .name("delta").data(java.util.Map.of("sequence",sequence.getAndIncrement(),"text",text),MediaType.APPLICATION_JSON));}
+            catch(java.io.IOException disconnected) {cancelled.set(true);throw new java.util.concurrent.CancellationException();}
+        },cancelled::get);
+        Thread.startVirtualThread(()->{
+            try {
+                emitter.send(org.springframework.web.servlet.mvc.method.annotation.SseEmitter.event().name("ready").data("{}"));
+                var result=work.get();
+                if(!cancelled.get())emitter.send(org.springframework.web.servlet.mvc.method.annotation.SseEmitter.event()
+                        .name("done").data(result,MediaType.APPLICATION_JSON));
+                emitter.complete();
+            } catch(java.util.concurrent.CancellationException disconnected) {emitter.complete();}
+            catch(Exception failure) {
+                if(!cancelled.get())try {emitter.send(org.springframework.web.servlet.mvc.method.annotation.SseEmitter.event()
+                        .name("error").data(java.util.Map.of("code","AI_STREAM_ERROR"),MediaType.APPLICATION_JSON));}
+                    catch(java.io.IOException disconnected) {cancelled.set(true);}
+                emitter.complete();
+            }
+        });
+        return emitter;
+    }
+
     @PostMapping(value = "/chat")
     public ResponseEntity<?> chat(@jakarta.validation.Valid @RequestBody AiChatRequest request,
             @org.springframework.web.bind.annotation.RequestHeader(value = "Accept", defaultValue = "application/json") String accept) {

@@ -86,10 +86,12 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                       {message.content}
                     </ReactMarkdown>
                     {isStreaming && (
+                      <span role="status" className="text-xs text-[var(--text-2)]">Đang viết…
                       <span
                         className="inline-block w-1.5 h-4 ml-1 bg-[var(--brand)] animate-pulse align-middle rounded-sm"
                         aria-hidden="true"
                       />
+                      </span>
                     )}
                   </>
                 ) : isStreaming ? (

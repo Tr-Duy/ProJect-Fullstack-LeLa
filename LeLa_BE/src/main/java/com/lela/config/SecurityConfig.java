@@ -57,6 +57,7 @@ public class SecurityConfig {
                         })
                 )
                 .authorizeHttpRequests(auth -> auth
+                        .dispatcherTypeMatchers(jakarta.servlet.DispatcherType.ASYNC).permitAll()
 
                         // ── Health & Auth ──────────────────────────────────
                         .requestMatchers(HttpMethod.GET, "/health").permitAll()
