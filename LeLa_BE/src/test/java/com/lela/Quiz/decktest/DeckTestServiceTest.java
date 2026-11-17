@@ -36,6 +36,7 @@ import com.lela.flashcard.domain.Flashcard;
 import com.lela.users.UsersRepository;
 import com.lela.users.domain.Users;
 import com.lela.voice.config.VoiceConfigurationProperties;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -138,6 +139,11 @@ class DeckTestServiceTest {
         DailyLearningActivityResponse actResp = new DailyLearningActivityResponse();
         actResp.setCurrentStreak(5);
         when(activityService.logActivity(any())).thenReturn(actResp);
+    }
+
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
     }
 
     private List<Flashcard> makeCards(int count) {
@@ -330,11 +336,9 @@ class DeckTestServiceTest {
         service.submitDeckTest(501L, new QuizSubmitRequest());
 
         // rawXp = 4 * 2 (pair points) = 8 XP
-        // user ban đầu có 50 XP -> tăng thành 58 XP
-        assertThat(testUser.getXpTotal()).isEqualTo(58L);
+        verify(activityService, times(1)).logActivity(argThat(req -> req.getXpEarned() == 8));
         assertThat(attempt.getXpAwarded()).isEqualTo(8);
         assertThat(enrollment.getTopicTestPassed()).isTrue(); // Đạt 100% >= 70%
-        verify(usersRepository, times(1)).save(testUser);
         verify(deckEnrollmentRepository, times(1)).save(enrollment);
     }
 

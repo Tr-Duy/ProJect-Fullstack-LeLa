@@ -18,9 +18,13 @@ test.describe('Authentication flows', () => {
   });
 
   test('login with valid credentials redirects learner dashboard', async ({ page }) => {
+    const password = process.env.PLAYWRIGHT_PASSWORD;
+    if (!password) {
+      throw new Error('PLAYWRIGHT_PASSWORD environment variable must be set');
+    }
     const loginPage = new LoginPage(page);
     await loginPage.open();
-    await loginPage.login(process.env.PLAYWRIGHT_USERNAME || 'learner1', process.env.PLAYWRIGHT_PASSWORD || '123456');
+    await loginPage.login(process.env.PLAYWRIGHT_USERNAME || 'learner1', password);
     await expect(page).toHaveURL(/\/dashboard|\/admin\/dashboard|\/onboarding/);
   });
 

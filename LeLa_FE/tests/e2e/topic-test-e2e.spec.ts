@@ -7,6 +7,16 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const SCREENSHOT_DIR = path.resolve(__dirname, '../../../docs/screenshots/topic-tests');
 
+const DB_PASSWORD = process.env.DB_PASSWORD;
+if (!DB_PASSWORD) {
+  throw new Error('DB_PASSWORD environment variable must be set');
+}
+
+const PLAYWRIGHT_PASSWORD = process.env.PLAYWRIGHT_PASSWORD;
+if (!PLAYWRIGHT_PASSWORD) {
+  throw new Error('PLAYWRIGHT_PASSWORD environment variable must be set');
+}
+
 function runSql(sql: string) {
   const statements = sql
     .split(';')
@@ -14,15 +24,15 @@ function runSql(sql: string) {
     .filter(Boolean);
   for (const s of statements) {
     const sanitized = s.replace(/\r?\n/g, ' ').replace(/"/g, '\\"');
-    const cmd = `python -c "import pymysql; conn = pymysql.connect(host='127.0.0.1', port=3306, user='root', password='123456', database='lela_db'); cur = conn.cursor(); cur.execute(\\"${sanitized}\\"); conn.commit()"`;
-    execSync(cmd, { stdio: 'inherit' });
+    const cmd = `python -c "import pymysql, os; conn = pymysql.connect(host='127.0.0.1', port=3306, user='root', password=os.environ['DB_PASSWORD'], database='lela_db'); cur = conn.cursor(); cur.execute(\\"${sanitized}\\"); conn.commit()"`;
+    execSync(cmd, { stdio: 'inherit', env: process.env });
   }
 }
 
 function querySql(sql: string): any {
   const sanitized = sql.replace(/\r?\n/g, ' ').replace(/"/g, '\\"');
-  const cmd = `python -c "import pymysql, json; conn = pymysql.connect(host='127.0.0.1', port=3306, user='root', password='123456', database='lela_db'); cur = conn.cursor(); cur.execute(\\"${sanitized}\\"); print(json.dumps(cur.fetchall()))"`;
-  const out = execSync(cmd).toString().trim();
+  const cmd = `python -c "import pymysql, json, os; conn = pymysql.connect(host='127.0.0.1', port=3306, user='root', password=os.environ['DB_PASSWORD'], database='lela_db'); cur = conn.cursor(); cur.execute(\\"${sanitized}\\"); print(json.dumps(cur.fetchall()))"`;
+  const out = execSync(cmd, { env: process.env }).toString().trim();
   return JSON.parse(out);
 }
 
@@ -64,7 +74,7 @@ test.describe('Topic-Based Tests (Bài thi theo chủ đề) E2E Flow', () => {
     // 1. Login as learner1
     await page.goto('http://localhost:5173/login');
     await page.fill('#usernameOrEmail', 'learner1');
-    await page.fill('#password', '123456');
+    await page.fill('#password', PLAYWRIGHT_PASSWORD);
     await page.click('button[type="submit"]');
     await page.waitForURL(/.*dashboard.*/, { timeout: 15000 });
 

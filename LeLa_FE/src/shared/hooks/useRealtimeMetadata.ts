@@ -51,7 +51,9 @@ export function useRealtimeMetadata() {
           };
         });
         
-        // Always invalidate to ensure freshness if user navigates to Dashboard
+        // Invalidate queries so Header and Dashboard immediately reflect fresh XP
+        queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
+        queryClient.invalidateQueries({ queryKey: ['profile'] });
         queryClient.invalidateQueries({ queryKey: ['daily-activity', 'today'] });
         queryClient.invalidateQueries({ queryKey: ['daily-activity', 'history'] });
 
@@ -80,6 +82,11 @@ export function useRealtimeMetadata() {
           duration: 5,
           className: 'border border-[var(--border)] shadow-[var(--shadow-md)] bg-[#FFD700] text-brand-navy font-bold text-lg'
         });
+        // Refresh Header XP and notifications
+        queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
+        queryClient.invalidateQueries({ queryKey: ['profile'] });
+        queryClient.invalidateQueries({ queryKey: ['user-achievements'] });
+        queryClient.invalidateQueries({ queryKey: ['daily-activity', 'today'] });
       } catch (e) {
         console.error('Failed to parse SSE badge_unlocked', e);
       }

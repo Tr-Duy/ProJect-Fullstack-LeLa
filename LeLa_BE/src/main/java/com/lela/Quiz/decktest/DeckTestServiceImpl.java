@@ -470,14 +470,12 @@ public class DeckTestServiceImpl implements DeckTestService {
         } else if (today.minusDays(1).equals(user.getLastActivityDate())) {
             streak = Math.max(streak, previous + 1);
         }
-        user.setStreakCurrent(streak);
-        user.setStreakLongest(Math.max(streak, user.getStreakLongest() == null ? 0 : user.getStreakLongest()));
-        user.setLastActivityDate(today);
-
-        // XÁC NHẬN VÀ CẬP NHẬT XP_TOTAL CHO USER
-        long currentXpTotal = user.getXpTotal() == null ? 0L : user.getXpTotal();
-        user.setXpTotal(currentXpTotal + awardedXp);
-        usersRepository.save(user);
+        // Cập nhật streak và lastActivityDate cho user (users.xp_total đã được activityService.logActivity cộng)
+        Users refreshedUser = usersRepository.findById(user.getId()).orElse(user);
+        refreshedUser.setStreakCurrent(streak);
+        refreshedUser.setStreakLongest(Math.max(streak, refreshedUser.getStreakLongest() == null ? 0 : refreshedUser.getStreakLongest()));
+        refreshedUser.setLastActivityDate(today);
+        usersRepository.save(refreshedUser);
 
         attempt.setXpAwarded(awardedXp);
         QuizAttempt savedAttempt = quizAttemptRepository.save(attempt);

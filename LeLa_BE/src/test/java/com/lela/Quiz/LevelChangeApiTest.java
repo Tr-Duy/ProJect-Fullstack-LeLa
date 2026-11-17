@@ -35,8 +35,14 @@ public class LevelChangeApiTest {
     private com.lela.QuizAttempt.QuizAttemptRepository quizAttemptRepository;
 
     private void authenticateUser(String username) {
+        SecurityContextHolder.setContext(SecurityContextHolder.createEmptyContext());
         UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(username, null, List.of());
         SecurityContextHolder.getContext().setAuthentication(auth);
+    }
+
+    @org.junit.jupiter.api.AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
     }
 
     @org.junit.jupiter.api.BeforeEach

@@ -120,7 +120,7 @@ public class AchievementService {
         }
     }
 
-    private void unlockAchievement(Users user, Achievement achievement) {
+    void unlockAchievement(Users user, Achievement achievement) {
         // Double check in service layer
         if (userAchievementRepository.existsByUserIdAndAchievementId(user.getId(), achievement.getId())) {
             return;
@@ -134,8 +134,9 @@ public class AchievementService {
                     .build();
             userAchievementRepository.save(ua);
 
-            // Grant XP reward to user's daily learning activity
+            // Grant XP reward to user's daily learning activity and users.xp_total
             if (achievement.getXpReward() != null && achievement.getXpReward() > 0) {
+                int reward = achievement.getXpReward();
                 LocalDate today = LocalDate.now();
                 DailyLearningActivity todayActivity = dailyActivityRepository
                         .findByUserIdAndActivityDate(user.getId(), today)
@@ -150,9 +151,14 @@ public class AchievementService {
                             return act;
                         });
                 int currentXp = todayActivity.getXpEarned() != null ? todayActivity.getXpEarned() : 0;
-                int reward = achievement.getXpReward() != null ? achievement.getXpReward() : 0;
                 todayActivity.setXpEarned(currentXp + reward);
                 dailyActivityRepository.save(todayActivity);
+
+                // Cập nhật users.xp_total đồng bộ
+                Users userToUpdate = usersRepository.findById(user.getId()).orElse(user);
+                Long currentXpTotal = userToUpdate.getXpTotal() != null ? userToUpdate.getXpTotal() : 0L;
+                userToUpdate.setXpTotal(currentXpTotal + reward);
+                usersRepository.save(userToUpdate);
             }
 
             // Emit SSE event for new badge notification

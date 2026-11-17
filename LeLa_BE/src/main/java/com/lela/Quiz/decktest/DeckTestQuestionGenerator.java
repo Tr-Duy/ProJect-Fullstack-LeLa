@@ -5,7 +5,6 @@ import com.lela.flashcard.domain.Flashcard;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.text.Normalizer;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -51,13 +50,25 @@ public class DeckTestQuestionGenerator {
 
         List<Flashcard> validFallback = cardFilter.filterValidCards(fallbackPool);
 
-        // 1. Sinh Part 1: Multiple Choice Meaning
+        // 1. Sinh Part 1: Multiple Choice Meaning (xen kẽ VI -> EN và EN -> VI)
         int targetMcCount = Math.min(mcCount, validDeckCards.size());
         List<GeneratedScreen> mcScreens = generateMultipleChoiceScreens(validDeckCards, validFallback, targetMcCount, mcSeconds);
 
-        // 2. Sinh Part 2: Matching Pairs
-        int targetScreens = Math.min(matchingScreensCount, validDeckCards.size() / 4);
-        List<GeneratedScreen> matchingScreens = generateMatchingScreens(validDeckCards, targetScreens, matchingSeconds);
+        // Tập hợp các ID thẻ đã làm đáp án đúng ở Part 1
+        Set<Long> mcTargetCardIds = mcScreens.stream()
+                .map(GeneratedScreen::sourceCardId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        // 2. Sinh Part 2: Matching Pairs - KHÔNG được dùng lại thẻ đã là đáp án đúng ở Part 1
+        // Lọc tập thẻ còn lại không trùng với MC targets
+        List<Flashcard> remainingForMatching = validDeckCards.stream()
+                .filter(c -> !mcTargetCardIds.contains(c.getId()))
+                .collect(Collectors.toCollection(ArrayList::new));
+
+        // Nếu số thẻ còn lại không đủ số màn dự kiến, giảm số màn ghép cặp thay vì lặp lại thẻ MC
+        int targetScreens = Math.min(matchingScreensCount, remainingForMatching.size() / 4);
+        List<GeneratedScreen> matchingScreens = generateMatchingScreens(remainingForMatching, targetScreens, matchingSeconds);
 
         return new GeneratedExam(mcScreens, matchingScreens);
     }
@@ -75,11 +86,21 @@ public class DeckTestQuestionGenerator {
         List<GeneratedScreen> screens = new ArrayList<>();
         Set<String> optionGroups = new HashSet<>();
         Set<String> distractorGroups = new HashSet<>();
+        Map<String, Integer> distractorUsage = new HashMap<>();
 
-        for (Flashcard target : targets) {
+        for (int i = 0; i < targets.size(); i++) {
+            Flashcard target = targets.get(i);
+            boolean isWordToMeaning = (i % 2 == 1); // Trộn chiều EN -> VI xen kẽ
             String targetEn = DeckCardFilter.normalize(target.getFrontText());
             String targetVi = target.getBackText().trim();
             String targetPos = target.getPartOfSpeech() == null ? "" : target.getPartOfSpeech().trim().toLowerCase();
+
+            // Sắp xếp candidates ưu tiên:
+            // 1. distractorUsage < 2
+            // 2. cùng part of speech
+            Comparator<Flashcard> candidateComparator = Comparator
+                    .<Flashcard, Integer>comparing(c -> distractorUsage.getOrDefault(DeckCardFilter.normalize(c.getFrontText()), 0) >= 2 ? 1 : 0)
+                    .thenComparing(c -> !Objects.equals(c.getPartOfSpeech(), targetPos));
 
             // Candidate distractors: ưu tiên cùng bộ thẻ
             List<Flashcard> deckCandidates = deckCards.stream()
@@ -88,8 +109,7 @@ public class DeckTestQuestionGenerator {
                             && !isMeaningConflicting(targetVi, c.getBackText()))
                     .collect(Collectors.toCollection(ArrayList::new));
             Collections.shuffle(deckCandidates);
-            // Sắp xếp ưu tiên cùng part of speech
-            deckCandidates.sort(Comparator.comparing(c -> !Objects.equals(c.getPartOfSpeech(), targetPos)));
+            deckCandidates.sort(candidateComparator);
 
             // Candidate distractors fallback từ kho chung cùng cấp
             List<Flashcard> fallbackCandidates = fallbackPool.stream()
@@ -98,14 +118,14 @@ public class DeckTestQuestionGenerator {
                             && !isMeaningConflicting(targetVi, c.getBackText()))
                     .collect(Collectors.toCollection(ArrayList::new));
             Collections.shuffle(fallbackCandidates);
-            fallbackCandidates.sort(Comparator.comparing(c -> !Objects.equals(c.getPartOfSpeech(), targetPos)));
+            fallbackCandidates.sort(candidateComparator);
 
             List<Flashcard> chosenChoices = null;
             for (int trial = 0; trial < 32; trial++) {
                 List<Flashcard> candidateChoices = new ArrayList<>();
                 candidateChoices.add(target);
 
-                // Lấy từ deck trước
+                // Lấy từ deck trước (ưu tiên distractorUsage < 2)
                 for (Flashcard dc : deckCandidates) {
                     if (candidateChoices.size() >= 4) break;
                     if (candidateChoices.stream().noneMatch(ch -> DeckCardFilter.normalize(ch.getFrontText()).equals(DeckCardFilter.normalize(dc.getFrontText()))
@@ -130,7 +150,9 @@ public class DeckTestQuestionGenerator {
                     String distSig = signature(candidateChoices.stream().filter(c -> !Objects.equals(c.getId(), target.getId())).toList());
                     if (candidateChoices.size() == 4 && (optionGroups.contains(optSig) || distractorGroups.contains(distSig))) {
                         Collections.shuffle(deckCandidates);
+                        deckCandidates.sort(candidateComparator);
                         Collections.shuffle(fallbackCandidates);
+                        fallbackCandidates.sort(candidateComparator);
                         continue;
                     }
                     optionGroups.add(optSig);
@@ -141,11 +163,24 @@ public class DeckTestQuestionGenerator {
             }
 
             if (chosenChoices == null) {
-                // Fallback đơn giản nếu không đủ 4
                 chosenChoices = new ArrayList<>(List.of(target));
                 for (Flashcard dc : deckCandidates) {
                     if (chosenChoices.size() >= 4) break;
                     chosenChoices.add(dc);
+                }
+                if (chosenChoices.size() < 4) {
+                    for (Flashcard fc : fallbackCandidates) {
+                        if (chosenChoices.size() >= 4) break;
+                        chosenChoices.add(fc);
+                    }
+                }
+            }
+
+            // Ghi nhận tần suất xuất hiện của các distractors
+            for (Flashcard ch : chosenChoices) {
+                if (!Objects.equals(ch.getId(), target.getId())) {
+                    String key = DeckCardFilter.normalize(ch.getFrontText());
+                    distractorUsage.put(key, distractorUsage.getOrDefault(key, 0) + 1);
                 }
             }
 
@@ -156,15 +191,20 @@ public class DeckTestQuestionGenerator {
 
             for (Flashcard ch : chosenChoices) {
                 String optionKey = UUID.randomUUID().toString();
-                leftCells.add(new TimedQuizEngine.Cell(optionKey, ch.getFrontText().trim()));
+                // Nếu isWordToMeaning (EN -> VI): hiển thị nghĩa tiếng Việt
+                // Nếu không (VI -> EN): hiển thị từ tiếng Anh
+                String choiceText = isWordToMeaning ? ch.getBackText().trim() : ch.getFrontText().trim();
+                leftCells.add(new TimedQuizEngine.Cell(optionKey, choiceText));
                 if (Objects.equals(ch.getId(), target.getId())) {
                     solution.put("answer", optionKey);
                 }
             }
 
+            String prompt = isWordToMeaning ? target.getFrontText().trim() : targetVi;
+
             screens.add(new GeneratedScreen(
                     "MULTIPLE_CHOICE_MEANING",
-                    targetVi,
+                    prompt,
                     seconds,
                     leftCells,
                     List.of(),
@@ -177,26 +217,25 @@ public class DeckTestQuestionGenerator {
     }
 
     private List<GeneratedScreen> generateMatchingScreens(
-            List<Flashcard> deckCards,
+            List<Flashcard> availableCards,
             int targetScreens,
             int seconds
     ) {
+        if (targetScreens <= 0 || availableCards.size() < 4) {
+            return List.of();
+        }
         List<GeneratedScreen> screens = new ArrayList<>();
-        List<Flashcard> pool = new ArrayList<>(deckCards);
+        List<Flashcard> pool = new ArrayList<>(availableCards);
         Collections.shuffle(pool);
 
         int poolIndex = 0;
         for (int screenIdx = 0; screenIdx < targetScreens; screenIdx++) {
             List<Flashcard> screenCards = new ArrayList<>();
 
-            // Cố gắng lấy 4 thẻ không xung đột
+            // Lấy 4 thẻ không xung đột
             int attempts = 0;
-            while (screenCards.size() < 4 && attempts < 100) {
+            while (screenCards.size() < 4 && attempts < 100 && poolIndex < pool.size()) {
                 attempts++;
-                if (poolIndex >= pool.size()) {
-                    Collections.shuffle(pool);
-                    poolIndex = 0;
-                }
                 Flashcard candidate = pool.get(poolIndex++);
                 if (screenCards.stream().noneMatch(c ->
                         DeckCardFilter.normalize(c.getFrontText()).equals(DeckCardFilter.normalize(candidate.getFrontText()))
@@ -206,7 +245,7 @@ public class DeckTestQuestionGenerator {
             }
 
             if (screenCards.size() < 4) {
-                break; // Không đủ thẻ không xung đột
+                break; // Không đủ thẻ không xung đột trong tập khả dụng
             }
 
             List<TimedQuizEngine.Cell> leftCells = new ArrayList<>();

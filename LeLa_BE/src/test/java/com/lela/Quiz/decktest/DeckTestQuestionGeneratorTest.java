@@ -6,8 +6,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -35,13 +35,19 @@ class DeckTestQuestionGeneratorTest {
 
     private List<Flashcard> sampleDeck(int count) {
         List<Flashcard> cards = new ArrayList<>();
-        String[] words = {"apple", "banana", "orange", "grape", "mango", "lemon", "peach", "cherry",
-                "strawberry", "blueberry", "pineapple", "watermelon", "coconut", "papaya", "avocado", "apricot"};
-        String[] meanings = {"quả táo", "quả chuối", "quả cam", "quả nho", "quả xoài", "quả chanh", "quả đào", "quả anh đào",
-                "quả dâu tây", "quả việt quất", "quả dứa", "quả dưa hấu", "quả dừa", "quả đu đủ", "quả bơ", "quả mơ"};
+        String[] words = {
+                "apple", "banana", "orange", "grape", "mango", "lemon", "peach", "cherry",
+                "strawberry", "blueberry", "pineapple", "watermelon", "coconut", "papaya", "avocado", "apricot",
+                "plum", "fig", "lime", "pear", "guava", "kiwi", "pomegranate", "raspberry"
+        };
+        String[] meanings = {
+                "quả táo", "quả chuối", "quả cam", "quả nho", "quả xoài", "quả chanh", "quả đào", "quả anh đào",
+                "quả dâu tây", "quả việt quất", "quả dứa", "quả dưa hấu", "quả dừa", "quả đu đủ", "quả bơ", "quả mơ",
+                "quả mận", "quả sung", "quả chanh xanh", "quả lê", "quả ổi", "quả kiwi", "quả lựu", "quả mâm xôi"
+        };
         for (int i = 0; i < count; i++) {
             cards.add(createCard((long) (i + 1), words[i % words.length] + (i >= words.length ? "_" + i : ""),
-                    meanings[i % meanings.length] + (i >= meanings.length ? " " + i : ""), "noun"));
+                    meanings[i % meanings.length] + (i >= meanings.length ? " " + i : ""), "n"));
         }
         return cards;
     }
@@ -56,53 +62,131 @@ class DeckTestQuestionGeneratorTest {
     }
 
     @Test
-    @DisplayName("Sinh đề thi đầy đủ 2 phần với bộ thẻ 16 từ")
-    void shouldGenerateFullExamFor16Cards() {
-        List<Flashcard> deck = sampleDeck(16);
+    @DisplayName("Sinh đề thi 18 thẻ: đủ 10 câu MC và 2 màn ghép cặp, không trùng thẻ đích MC")
+    void shouldGenerateDisjointExamFor18Cards() {
+        List<Flashcard> deck = sampleDeck(18);
         DeckTestQuestionGenerator.GeneratedExam exam = generator.generateExam(deck, List.of(), 10, 2, 20, 60);
 
         assertThat(exam.mcScreens()).hasSize(10);
         assertThat(exam.matchingScreens()).hasSize(2);
         assertThat(exam.allScreens()).hasSize(12);
 
-        // Kiểm tra Part 1 (MC)
+        Set<Long> mcTargetIds = exam.mcScreens().stream()
+                .map(DeckTestQuestionGenerator.GeneratedScreen::sourceCardId)
+                .collect(Collectors.toSet());
+        assertThat(mcTargetIds).hasSize(10);
+
+        // Kiểm tra Part 2 (Matching) không chứa từ nào của MC target
+        Set<String> mcTargetEnglishWords = deck.stream()
+                .filter(c -> mcTargetIds.contains(c.getId()))
+                .map(c -> DeckCardFilter.normalize(c.getFrontText()))
+                .collect(Collectors.toSet());
+
+        for (DeckTestQuestionGenerator.GeneratedScreen match : exam.matchingScreens()) {
+            for (TimedQuizEngine.Cell cell : match.left()) {
+                String matchWord = DeckCardFilter.normalize(cell.getText());
+                assertThat(mcTargetEnglishWords).doesNotContain(matchWord);
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("Bộ thẻ 16 từ: giảm màn ghép cặp xuống 1 thay vì lặp lại thẻ MC")
+    void shouldReduceMatchingScreensWhenCardsAreFew() {
+        List<Flashcard> deck = sampleDeck(16);
+        DeckTestQuestionGenerator.GeneratedExam exam = generator.generateExam(deck, List.of(), 10, 2, 20, 60);
+
+        // 16 thẻ: 10 thẻ cho MC, còn 6 thẻ -> chỉ đủ cho 1 màn ghép cặp (4 thẻ), không lặp lại thẻ MC
+        assertThat(exam.mcScreens()).hasSize(10);
+        assertThat(exam.matchingScreens()).hasSize(1);
+        assertThat(exam.allScreens()).hasSize(11);
+
+        Set<Long> mcTargetIds = exam.mcScreens().stream()
+                .map(DeckTestQuestionGenerator.GeneratedScreen::sourceCardId)
+                .collect(Collectors.toSet());
+
+        Set<String> mcTargetEnglishWords = deck.stream()
+                .filter(c -> mcTargetIds.contains(c.getId()))
+                .map(c -> DeckCardFilter.normalize(c.getFrontText()))
+                .collect(Collectors.toSet());
+
+        for (DeckTestQuestionGenerator.GeneratedScreen match : exam.matchingScreens()) {
+            for (TimedQuizEngine.Cell cell : match.left()) {
+                String matchWord = DeckCardFilter.normalize(cell.getText());
+                assertThat(mcTargetEnglishWords).doesNotContain(matchWord);
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("Trộn chiều từ -> nghĩa và nghĩa -> từ trong các câu chọn đáp án")
+    void shouldMixWordToMeaningAndMeaningToWord() {
+        List<Flashcard> deck = sampleDeck(16);
+        DeckTestQuestionGenerator.GeneratedExam exam = generator.generateExam(deck, List.of(), 10, 1, 20, 60);
+
+        boolean hasMeaningToWord = false;
+        boolean hasWordToMeaning = false;
+
         for (DeckTestQuestionGenerator.GeneratedScreen mc : exam.mcScreens()) {
-            assertThat(mc.type()).isEqualTo("MULTIPLE_CHOICE_MEANING");
-            assertThat(mc.seconds()).isEqualTo(20);
-            assertThat(mc.left()).hasSize(4); // 4 lựa chọn
-            assertThat(mc.solution()).containsKey("answer");
-            String correctKey = mc.solution().get("answer");
-            assertThat(mc.left().stream().anyMatch(c -> c.getId().equals(correctKey))).isTrue();
+            // Nếu prompt bắt đầu bằng 'quả ' là tiếng Việt (Meaning -> Word)
+            if (mc.prompt().startsWith("quả ")) {
+                hasMeaningToWord = true;
+                // Các lựa chọn là tiếng Anh
+                assertThat(mc.left().getFirst().getText()).doesNotStartWith("quả ");
+            } else {
+                hasWordToMeaning = true;
+                // Prompt là tiếng Anh, lựa chọn là tiếng Việt
+                assertThat(mc.left().getFirst().getText()).startsWith("quả ");
+            }
         }
 
-        // Kiểm tra Part 2 (Matching)
-        for (DeckTestQuestionGenerator.GeneratedScreen match : exam.matchingScreens()) {
-            assertThat(match.type()).isEqualTo("MATCHING_PAIRS");
-            assertThat(match.seconds()).isEqualTo(60);
-            assertThat(match.left()).hasSize(4);
-            assertThat(match.right()).hasSize(4);
-            assertThat(match.solution()).hasSize(4);
+        assertThat(hasMeaningToWord).isTrue();
+        assertThat(hasWordToMeaning).isTrue();
+    }
+
+    @Test
+    @DisplayName("Đáp án nhiễu không lặp một từ quá 2 lần trong cùng đề khi kho còn lựa chọn")
+    void shouldNotRepeatDistractorMoreThanTwiceWhenPoolIsLarge() {
+        List<Flashcard> deck = sampleDeck(20);
+        List<Flashcard> fallback = sampleDeck(20);
+        DeckTestQuestionGenerator.GeneratedExam exam = generator.generateExam(deck, fallback, 10, 2, 20, 60);
+
+        Map<String, Integer> distractorCount = new HashMap<>();
+        for (DeckTestQuestionGenerator.GeneratedScreen mc : exam.mcScreens()) {
+            String answerKey = mc.solution().get("answer");
+            for (TimedQuizEngine.Cell cell : mc.left()) {
+                if (!cell.getId().equals(answerKey)) {
+                    String text = cell.getText().toLowerCase().trim();
+                    distractorCount.put(text, distractorCount.getOrDefault(text, 0) + 1);
+                }
+            }
+        }
+
+        for (Map.Entry<String, Integer> entry : distractorCount.entrySet()) {
+            assertThat(entry.getValue())
+                    .as("Distractor '%s' should not repeat more than 2 times", entry.getKey())
+                    .isLessThanOrEqualTo(2);
         }
     }
 
     @Test
     @DisplayName("Cột nối cặp không được thẳng hàng 100%")
     void shouldNotHaveAlignedMatchingColumns() {
-        List<Flashcard> deck = sampleDeck(12);
-        DeckTestQuestionGenerator.GeneratedExam exam = generator.generateExam(deck, List.of(), 5, 1, 20, 60);
+        List<Flashcard> deck = sampleDeck(18);
+        DeckTestQuestionGenerator.GeneratedExam exam = generator.generateExam(deck, List.of(), 10, 2, 20, 60);
 
         assertThat(exam.matchingScreens()).isNotEmpty();
-        DeckTestQuestionGenerator.GeneratedScreen screen = exam.matchingScreens().getFirst();
-
-        boolean fullyAligned = true;
-        for (int i = 0; i < screen.left().size(); i++) {
-            String leftId = screen.left().get(i).getId();
-            String rightId = screen.right().get(i).getId();
-            if (!screen.solution().get(leftId).equals(rightId)) {
-                fullyAligned = false;
-                break;
+        for (DeckTestQuestionGenerator.GeneratedScreen screen : exam.matchingScreens()) {
+            boolean fullyAligned = true;
+            for (int i = 0; i < screen.left().size(); i++) {
+                String leftId = screen.left().get(i).getId();
+                String rightId = screen.right().get(i).getId();
+                if (!Objects.equals(screen.solution().get(leftId), rightId)) {
+                    fullyAligned = false;
+                    break;
+                }
             }
+            assertThat(fullyAligned).isFalse();
         }
-        assertThat(fullyAligned).isFalse();
     }
 }
