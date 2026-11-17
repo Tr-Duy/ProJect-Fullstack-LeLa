@@ -7,12 +7,17 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   FlatList,
+  Modal,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../../navigation/RootNavigator';
 import { deckService } from '../services/deck.service';
+import { deckTestService, DeckTestStatusResponse } from '../services/deckTestService';
+import { TimedVocabularyQuiz } from '../../quiz/components/TimedVocabularyQuiz';
+import type { TimedQuizView } from '../../quiz/components/useTimedVocabularyQuiz';
 import { DeckResponse, FlashcardResponse } from '../../../types';
 import { Ionicons } from '@expo/vector-icons';
 import { speakEnglish } from '../../../utils/speech';
@@ -35,16 +40,30 @@ export const DeckDetailScreen: React.FC = () => {
   const [cards, setCards] = useState<FlashcardResponse[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(!initialDeck);
   const [isEnrolling, setIsEnrolling] = useState<boolean>(false);
+  const [deckTestStatus, setDeckTestStatus] = useState<DeckTestStatusResponse | null>(null);
+  const [timedQuizView, setTimedQuizView] = useState<TimedQuizView | null>(null);
+  const [isStartingTest, setIsStartingTest] = useState<boolean>(false);
+
+  const refreshTestStatus = async () => {
+    try {
+      const status = await deckTestService.getStatus(deckId);
+      setDeckTestStatus(status);
+    } catch {
+      // ignore
+    }
+  };
 
   useEffect(() => {
     const loadDeckData = async () => {
       try {
-        const [deckData, cardsPage] = await Promise.all([
+        const [deckData, cardsPage, testStatus] = await Promise.all([
           deckService.getDeckById(deckId),
           deckService.getDeckCards(deckId, 0, 50),
+          deckTestService.getStatus(deckId).catch(() => null),
         ]);
         setDeck(deckData);
         setCards(cardsPage.content || []);
+        setDeckTestStatus(testStatus);
       } catch (error) {
         console.error('[DeckDetailScreen] Error loading data:', error);
       } finally {
@@ -54,6 +73,20 @@ export const DeckDetailScreen: React.FC = () => {
 
     loadDeckData();
   }, [deckId]);
+
+  const handleStartDeckTest = async () => {
+    if (isStartingTest) return;
+    setIsStartingTest(true);
+    try {
+      const view = await deckTestService.start(deckId);
+      setTimedQuizView(view);
+    } catch (error: any) {
+      const msg = error?.response?.data?.message || 'Không thể bắt đầu bài thi. Vui lòng thử lại sau.';
+      Alert.alert('Không thể bắt đầu bài thi', msg);
+    } finally {
+      setIsStartingTest(false);
+    }
+  };
 
   const handleStartStudy = async () => {
     setIsEnrolling(true);
@@ -139,6 +172,116 @@ export const DeckDetailScreen: React.FC = () => {
           )}
         </TouchableOpacity>
 
+        {/* Topic Test Section */}
+        {deckTestStatus && (
+          <View style={styles.topicTestCard}>
+            <View style={styles.topicTestHeader}>
+              <View style={styles.topicTestTitleRow}>
+                <Ionicons name="school" size={20} color="#ea580c" />
+                <Text style={styles.topicTestTitle}>Bài thi theo chủ đề</Text>
+              </View>
+              {!deckTestStatus.hasEnoughCards ? (
+                <View style={[styles.testBadge, { backgroundColor: '#f1f5f9' }]}>
+                  <Text style={[styles.testBadgeText, { color: '#64748b' }]}>Chưa đủ dữ liệu</Text>
+                </View>
+              ) : deckTestStatus.hasPassed ? (
+                <View style={[styles.testBadge, { backgroundColor: '#dcfce7' }]}>
+                  <Text style={[styles.testBadgeText, { color: '#16a34a' }]}>
+                    Đã đạt ({deckTestStatus.bestScore}%)
+                  </Text>
+                </View>
+              ) : deckTestStatus.eligible ? (
+                <View style={[styles.testBadge, { backgroundColor: '#ffedd5' }]}>
+                  <Text style={[styles.testBadgeText, { color: '#ea580c' }]}>Sẵn sàng thi</Text>
+                </View>
+              ) : (
+                <View style={[styles.testBadge, { backgroundColor: '#f1f5f9' }]}>
+                  <Text style={[styles.testBadgeText, { color: '#64748b' }]}>Đang khóa</Text>
+                </View>
+              )}
+            </View>
+
+            {!deckTestStatus.hasEnoughCards ? (
+              <View style={styles.topicTestAlert}>
+                <Ionicons name="information-circle-outline" size={18} color="#94a3b8" />
+                <Text style={styles.topicTestAlertText}>
+                  Bộ thẻ này chưa đủ dữ liệu cho bài thi ({deckTestStatus.totalValidCards}/{deckTestStatus.minValidCardsRequired} thẻ hợp lệ).
+                </Text>
+              </View>
+            ) : (
+              <>
+                <Text style={styles.topicTestDesc}>
+                  10 câu trắc nghiệm (20s/câu) + 2 màn ghép cặp (60s/màn). Điểm đạt: 70%.
+                </Text>
+
+                {/* Progress bar */}
+                <View style={styles.progressContainer}>
+                  <View style={styles.progressLabelRow}>
+                    <Text style={styles.progressLabel}>
+                      Tiến độ học: {deckTestStatus.learnedCards}/{deckTestStatus.requiredLearnedCards} thẻ yêu cầu
+                    </Text>
+                    <Text style={styles.progressPercent}>
+                      {deckTestStatus.requiredLearnedCards > 0
+                        ? Math.min(100, Math.round((deckTestStatus.learnedCards / deckTestStatus.requiredLearnedCards) * 100))
+                        : 0}%
+                    </Text>
+                  </View>
+                  <View style={styles.progressBarTrack}>
+                    <View
+                      style={[
+                        styles.progressBarFill,
+                        {
+                          width: `${
+                            deckTestStatus.requiredLearnedCards > 0
+                              ? Math.min(100, Math.round((deckTestStatus.learnedCards / deckTestStatus.requiredLearnedCards) * 100))
+                              : 0
+                          }%`,
+                          backgroundColor: deckTestStatus.eligible ? '#16a34a' : '#ea580c',
+                        },
+                      ]}
+                    />
+                  </View>
+                </View>
+
+                {!deckTestStatus.eligible && deckTestStatus.lockReason && (
+                  <View style={styles.lockReasonBox}>
+                    <Ionicons name="lock-closed-outline" size={16} color="#d97706" />
+                    <Text style={styles.lockReasonText}>{deckTestStatus.lockReason}</Text>
+                  </View>
+                )}
+
+                {deckTestStatus.eligible && (
+                  <TouchableOpacity
+                    style={[
+                      styles.startTestButton,
+                      deckTestStatus.hasPassed && { backgroundColor: '#059669' },
+                    ]}
+                    onPress={handleStartDeckTest}
+                    disabled={isStartingTest}
+                    activeOpacity={0.8}
+                  >
+                    {isStartingTest ? (
+                      <ActivityIndicator color="#ffffff" size="small" />
+                    ) : (
+                      <>
+                        <Ionicons
+                          name={deckTestStatus.hasPassed ? 'refresh' : 'clipboard-outline'}
+                          size={18}
+                          color="#ffffff"
+                          style={{ marginRight: 6 }}
+                        />
+                        <Text style={styles.startTestButtonText}>
+                          {deckTestStatus.hasPassed ? 'Thi lại cải thiện điểm' : 'Làm bài thi chủ đề'}
+                        </Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                )}
+              </>
+            )}
+          </View>
+        )}
+
         {/* Card List Preview */}
         <View style={styles.cardListSection}>
           <Text style={styles.sectionTitle}>Danh sách từ vựng ({cards.length})</Text>
@@ -165,6 +308,23 @@ export const DeckDetailScreen: React.FC = () => {
           ))}
         </View>
       </ScrollView>
+
+      <Modal
+        visible={!!timedQuizView}
+        animationType="slide"
+        onRequestClose={() => setTimedQuizView(null)}
+      >
+        {timedQuizView && (
+          <TimedVocabularyQuiz
+            initial={timedQuizView}
+            onFinished={(result) => {
+              setTimedQuizView(null);
+              refreshTestStatus();
+              navigation.navigate('QuizResult', { attemptResult: result });
+            }}
+          />
+        )}
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -356,6 +516,126 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 8,
+  },
+  topicTestCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    padding: 18,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#fed7aa',
+    shadowColor: '#ea580c',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  topicTestHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  topicTestTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  topicTestTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#0f172a',
+  },
+  testBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  testBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  topicTestAlert: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#f8fafc',
+    padding: 12,
+    borderRadius: 12,
+    marginTop: 6,
+  },
+  topicTestAlertText: {
+    fontSize: 13,
+    color: '#64748b',
+    flex: 1,
+  },
+  topicTestDesc: {
+    fontSize: 13,
+    color: '#64748b',
+    marginBottom: 12,
+  },
+  progressContainer: {
+    marginBottom: 12,
+  },
+  progressLabelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+  progressLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#475569',
+  },
+  progressPercent: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#0f172a',
+  },
+  progressBarTrack: {
+    height: 8,
+    backgroundColor: '#e2e8f0',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  lockReasonBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#fffbeb',
+    padding: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#fef3c7',
+    marginBottom: 12,
+  },
+  lockReasonText: {
+    fontSize: 12,
+    color: '#b45309',
+    fontWeight: '600',
+    flex: 1,
+  },
+  startTestButton: {
+    backgroundColor: '#ea580c',
+    borderRadius: 14,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#ea580c',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  startTestButtonText: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '700',
   },
 });
 

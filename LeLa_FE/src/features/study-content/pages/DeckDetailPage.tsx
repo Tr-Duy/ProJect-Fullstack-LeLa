@@ -1,12 +1,24 @@
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { Button, Skeleton, Tag } from 'antd';
-import { ArrowLeftOutlined, SoundOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Button, Skeleton, Tag, Modal, message } from 'antd';
+import {
+  ArrowLeftOutlined,
+  SoundOutlined,
+  CheckCircleOutlined,
+  LockOutlined,
+  TrophyOutlined,
+  PlayCircleOutlined,
+  InfoCircleOutlined
+} from '@ant-design/icons';
 import { decksApi } from '../api/decks.api';
 import { flashcardsApi } from '../api/flashcards.api';
 import { deckEnrollmentsApi } from '../api/deck-enrollments.api';
+import { deckTestsApi } from '../api/deck-tests.api';
 import { quizzesApi } from '../../quiz/api/quizzes.api';
 import { quizAttemptsApi } from '../../quiz/api/quiz-attempts.api';
+import { TimedVocabularyQuiz } from '../../quiz/components/TimedVocabularyQuiz';
+import type { TimedQuizView } from '../../quiz/components/useTimedVocabularyQuiz';
 import { useAuth } from '../../../shared/providers/AuthProvider';
 
 export function DeckDetailPage() {
@@ -54,6 +66,34 @@ export function DeckDetailPage() {
     queryFn: () => quizAttemptsApi.getMyAttempts({ size: 100 }),
     enabled: !!deckId && !!user && !isErrorDeck,
   });
+
+  const queryClient = useQueryClient();
+  const [timedView, setTimedView] = useState<TimedQuizView | null>(null);
+  const [startingTest, setStartingTest] = useState(false);
+
+  const { data: deckTestStatus, isLoading: isLoadingTestStatus } = useQuery({
+    queryKey: ['deck-test-status', deckId],
+    queryFn: () => deckTestsApi.getStatus(Number(deckId)),
+    enabled: !!deckId && !!user && !isErrorDeck,
+  });
+
+  const handleStartTopicTest = async () => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    setStartingTest(true);
+    try {
+      const view = await deckTestsApi.start(Number(deckId));
+      console.log('START VIEW RETURNED:', view);
+      setTimedView(view);
+    } catch (err: any) {
+      console.error('START VIEW ERROR:', err);
+      message.error(err.response?.data?.message || 'Không thể bắt đầu bài thi chủ đề.');
+    } finally {
+      setStartingTest(false);
+    }
+  };
 
   const enrollment = enrollmentsPage?.data?.content?.find(e => e.deckId === Number(deckId));
   const quizzes = quizzesResp?.data || [];
@@ -173,6 +213,92 @@ export function DeckDetailPage() {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Khối Bài thi chủ đề (Topic-based Test) */}
+      <div className="mb-12 rounded-[var(--radius-card)] bg-white border-4 border-[var(--border)] p-6 md:p-8 shadow-[var(--shadow-md)]">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 pb-4 border-b-2 border-gray-100">
+          <div>
+            <div className="inline-flex items-center gap-2 bg-[#2A8B9D] text-white font-black text-xs px-3 py-1 mb-2 border-2 border-[var(--border)]">
+              <TrophyOutlined /> BÀI THI CHỦ ĐỀ
+            </div>
+            <h2 className="text-2xl md:text-3xl font-black text-[#2B1B0E]">
+              Bài thi: {deck.title}
+            </h2>
+            <p className="text-gray-600 font-medium text-sm md:text-base mt-1">
+              Đánh giá tổng hợp kiến thức từ vựng của bộ thẻ (chọn nghĩa & ghép cặp tính giờ). Đạt ≥ 70% để nhận huy hiệu Hoàn thành chủ đề!
+            </p>
+          </div>
+
+          {deckTestStatus?.hasEnoughCards && (
+            <div className="shrink-0">
+              {deckTestStatus.hasPassed ? (
+                <Tag color="success" className="font-black text-sm px-3 py-1 border-[var(--border)]">
+                  <CheckCircleOutlined /> ĐÃ HOÀN THÀNH CHỦ ĐỀ ({Math.round(deckTestStatus.bestScore || 0)}%)
+                </Tag>
+              ) : deckTestStatus.eligible ? (
+                <Tag color="processing" className="font-black text-sm px-3 py-1 border-[var(--border)]">
+                  🟢 ĐÃ ĐỦ ĐIỀU KIỆN THI
+                </Tag>
+              ) : (
+                <Tag color="warning" className="font-black text-sm px-3 py-1 border-[var(--border)]">
+                  <LockOutlined /> ĐANG KHÓA
+                </Tag>
+              )}
+            </div>
+          )}
+        </div>
+
+        {isLoadingTestStatus ? (
+          <Skeleton active paragraph={{ rows: 2 }} />
+        ) : !deckTestStatus?.hasEnoughCards ? (
+          <div className="p-4 rounded-lg bg-[#FEF3C7] border-2 border-[#F59E0B] text-[#92400E] flex items-center gap-3">
+            <InfoCircleOutlined className="text-2xl shrink-0" />
+            <div>
+              <p className="font-black text-base mb-0.5">Bộ thẻ này chưa đủ dữ liệu cho bài thi</p>
+              <p className="text-xs md:text-sm font-medium mb-0">
+                Hệ thống yêu cầu tối thiểu {deckTestStatus?.minValidCardsRequired || 8} thẻ có nghĩa hợp lệ để tạo bài thi (hiện có {deckTestStatus?.totalValidCards || 0} thẻ hợp lệ).
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-[#F4F3EE] p-5 rounded-lg border-2 border-[var(--border)]">
+            <div className="flex-1">
+              <div className="flex items-center gap-4 text-sm font-bold text-gray-700 mb-2 flex-wrap">
+                <span>📚 Thẻ đã học: <strong className="text-[#2A8B9D]">{deckTestStatus.learnedCards}</strong> / {deckTestStatus.requiredLearnedCards} thẻ yêu cầu ({deckTestStatus.totalValidCards} thẻ hợp lệ)</span>
+                {deckTestStatus.bestScore != null && (
+                  <span>🏆 Điểm cao nhất: <strong className="text-emerald-700">{Math.round(deckTestStatus.bestScore)}%</strong></span>
+                )}
+              </div>
+
+              {!deckTestStatus.eligible && (
+                <div className="text-amber-800 font-bold text-sm flex items-center gap-2 mt-1">
+                  <LockOutlined /> {deckTestStatus.lockReason}
+                </div>
+              )}
+            </div>
+
+            <div className="shrink-0 flex gap-3 w-full md:w-auto">
+              {!deckTestStatus.eligible ? (
+                <Button
+                  className="w-full md:w-auto brutal-pill font-black h-12 px-8 bg-[#2A8B9D] text-white hover:bg-[#1f6b79] border-2 border-[var(--border)]"
+                  onClick={() => user ? navigate(`/study/${deck.id}`) : navigate('/login')}
+                >
+                  TIẾP TỤC HỌC ĐỂ MỞ KHÓA ➔
+                </Button>
+              ) : (
+                <Button
+                  className="w-full md:w-auto brutal-pill font-black h-12 px-8 !bg-[var(--brand)] !text-[#2A1300] hover:!bg-[var(--brand-600)] transition-transform border-2 border-[var(--border)] shadow-[var(--shadow-sm)] cursor-pointer"
+                  onClick={handleStartTopicTest}
+                  loading={startingTest}
+                  icon={<PlayCircleOutlined />}
+                >
+                  {deckTestStatus.hasPassed ? 'THI LẠI CHỦ ĐỀ' : 'LÀM BÀI THI CHỦ ĐỀ'}
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {quizzes.length > 0 && (
@@ -295,6 +421,19 @@ export function DeckDetailPage() {
           })}
         </div>
       )}
+
+      <Modal open={!!timedView} footer={null} closable={false} width={800} destroyOnClose maskClosable={false} keyboard={false}>
+        {timedView && (
+          <TimedVocabularyQuiz
+            initial={timedView}
+            onExit={() => {
+              setTimedView(null);
+              queryClient.invalidateQueries({ queryKey: ['deck-test-status', deckId] });
+              queryClient.invalidateQueries({ queryKey: ['my-enrollments'] });
+            }}
+          />
+        )}
+      </Modal>
     </div>
   );
 }

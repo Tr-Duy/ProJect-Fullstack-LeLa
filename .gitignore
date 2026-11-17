@@ -16,3 +16,4 @@ replay_pid*
 playwright-report/
 blob-report/
 test-results/
+private-results/

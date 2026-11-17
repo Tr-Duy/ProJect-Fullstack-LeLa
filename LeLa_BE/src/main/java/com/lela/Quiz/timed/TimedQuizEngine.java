@@ -224,11 +224,11 @@ public class TimedQuizEngine {
     public boolean participated(Long id) {
         return states.findById(id).map(s -> read(s).isParticipated()).orElse(false);
     }
-    Session read(TimedQuizState state) {
+    public Session read(TimedQuizState state) {
         try { return json.readValue(state.getPayload(), Session.class); }
         catch (Exception ex) { throw new IllegalStateException("Invalid timed quiz snapshot", ex); }
     }
-    void save(TimedQuizState state, Session session) {
+    public void save(TimedQuizState state, Session session) {
         try { state.setPayload(json.writeValueAsString(session)); states.save(state); }
         catch (Exception ex) { throw new IllegalStateException("Cannot persist timed quiz", ex); }
     }
@@ -347,7 +347,7 @@ public class TimedQuizEngine {
         return earned;
     }
 
-    private View view(QuizAttempt attempt, Session session, Boolean correct) {
+    public View view(QuizAttempt attempt, Session session, Boolean correct) {
         Screen s = session.getScreens().get(session.getIndex());
         boolean paused = s.getPausedAt() != null;
         Set<String> matchedCells = new HashSet<>(s.getMatched());

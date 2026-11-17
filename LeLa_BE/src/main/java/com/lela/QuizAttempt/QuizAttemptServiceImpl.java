@@ -65,6 +65,8 @@ public class QuizAttemptServiceImpl implements QuizAttemptService {
     private final ModelMapper mapper;
     private final com.lela.Quiz.timed.TimedQuizEngine timedQuizEngine;
     private final com.lela.Quiz.timed.VocabularyQuizRewards vocabularyQuizRewards;
+    @org.springframework.context.annotation.Lazy
+    private final com.lela.Quiz.decktest.DeckTestService deckTestService;
 
     private Users getCurrentUser() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -422,10 +424,15 @@ public class QuizAttemptServiceImpl implements QuizAttemptService {
     @Transactional
     @Override
     public QuizAttemptDetailResponse submit(Long id, QuizSubmitRequest request) {
-        Map<Long, com.lela.Quiz.timed.TimedQuizEngine.Earned> timedScores = timedQuizEngine != null
-                ? timedQuizEngine.finalizeForSubmit(id) : Map.of();
         QuizAttempt attempt = quizAttemptRepository.findById(id)
                 .orElseThrow(() -> new NotFoundExeception("QuizAttempt not found: " + id));
+
+        if (attempt.getQuiz() != null && attempt.getQuiz().getQuizCategory() == com.lela.Quiz.domain.QuizCategory.DECK_TEST) {
+            return deckTestService.submitDeckTest(id, request);
+        }
+
+        Map<Long, com.lela.Quiz.timed.TimedQuizEngine.Earned> timedScores = timedQuizEngine != null
+                ? timedQuizEngine.finalizeForSubmit(id) : Map.of();
 
         if (attempt.getSubmittedAt() != null) return buildDetailResponse(attempt);
 

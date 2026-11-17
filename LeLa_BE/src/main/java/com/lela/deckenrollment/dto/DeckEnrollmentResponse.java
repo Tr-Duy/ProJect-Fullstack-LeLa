@@ -18,6 +18,9 @@ public class DeckEnrollmentResponse {
     private LocalDateTime lastStudiedAt;
     private LocalDateTime nextReviewAt;
     private Integer masteredCards;
+    private Boolean topicTestPassed;
+    private java.math.BigDecimal topicTestBestScore;
+    private LocalDateTime topicTestLastAttemptAt;
     private String note;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

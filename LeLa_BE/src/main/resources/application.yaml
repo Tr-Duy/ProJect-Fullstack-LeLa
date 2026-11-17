@@ -69,6 +69,22 @@ app:
       xp-per-meaning: ${QUIZ_XP_PER_MEANING:1}
       xp-per-pair: ${QUIZ_XP_PER_PAIR:2}
       max-xp-per-attempt: ${QUIZ_MAX_XP_PER_ATTEMPT:40}
+    deck-test:
+      min-valid-cards: ${DECK_TEST_MIN_VALID_CARDS:8}
+      required-learned-ratio: ${DECK_TEST_REQUIRED_LEARNED_RATIO:0.50}
+      pass-score-percent: ${DECK_TEST_PASS_SCORE_PERCENT:70.0}
+      mc-question-count: ${DECK_TEST_MC_COUNT:10}
+      matching-screens-count: ${DECK_TEST_MATCHING_SCREENS:2}
+      mc-question-seconds: ${DECK_TEST_MC_SECONDS:20}
+      matching-screen-seconds: ${DECK_TEST_MATCHING_SECONDS:60}
+      tolerance-seconds: ${DECK_TEST_TOLERANCE_SECONDS:2}
+      pair-points: ${DECK_TEST_PAIR_POINTS:1}
+      error-penalty: ${DECK_TEST_ERROR_PENALTY:0.25}
+      xp-per-meaning: ${DECK_TEST_XP_PER_MEANING:1}
+      xp-per-pair: ${DECK_TEST_XP_PER_PAIR:2}
+      max-xp-per-attempt: ${DECK_TEST_MAX_XP_PER_ATTEMPT:40}
+      repeat-attempt-xp-discount: ${DECK_TEST_REPEAT_XP_DISCOUNT:0.50}
+      system-owner: ${DECK_TEST_SYSTEM_OWNER:admin}
   voice:
     daily-xp-cap: ${DAILY_XP_CAP:150}
     turn-model: ${VOICE_TURN_MODEL:gemini-flash-lite-latest}

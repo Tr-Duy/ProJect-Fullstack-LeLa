@@ -9,9 +9,11 @@ import {
   TrophyOutlined,
   ClockCircleOutlined,
   ExclamationCircleOutlined,
+  InfoCircleOutlined,
   ReloadOutlined
 } from '@ant-design/icons';
 import { finalLevelAssessmentApi } from '../api/final-level-assessment.api';
+import { deckTestsApi } from '../../study-content/api/deck-tests.api';
 import { useAuth } from '../../../shared/providers/AuthProvider';
 
 export function FinalLevelAssessmentPage() {
@@ -21,6 +23,13 @@ export function FinalLevelAssessmentPage() {
 
   const [selectedQuizForModal, setSelectedQuizForModal] = useState<any | null>(null);
   const [showDecksDetail, setShowDecksDetail] = useState<boolean>(false);
+  const [activeSection, setActiveSection] = useState<'FINAL_LEVEL' | 'DECK_TESTS'>('FINAL_LEVEL');
+
+  const { data: deckTestsOverview = [], isLoading: isLoadingDeckTests } = useQuery({
+    queryKey: ['my-deck-tests-overview'],
+    queryFn: deckTestsApi.getMyOverview,
+    enabled: !!user,
+  });
 
   const { data: overviewResp, isLoading } = useQuery({
     queryKey: ['final-level-assessment'],
@@ -96,8 +105,34 @@ export function FinalLevelAssessmentPage() {
         </div>
       </div>
 
-      {/* Deck Completion Progress Banner */}
-      <div className="mb-8 rounded-[var(--radius-card)] bg-white p-6 border-4 border-[var(--border)] shadow-[var(--shadow-md)]">
+      {/* Tab Navigation: Thi kết thúc Level vs Bài thi theo chủ đề */}
+      <div className="flex gap-3 mb-8 flex-wrap">
+        <button
+          onClick={() => setActiveSection('FINAL_LEVEL')}
+          className={`brutal-pill font-black px-6 py-3 border-2 border-[var(--border)] transition-all cursor-pointer flex items-center gap-2 ${
+            activeSection === 'FINAL_LEVEL'
+              ? 'bg-[#2A8B9D] text-white shadow-[var(--shadow-sm)]'
+              : 'bg-white text-[#2B1B0E] hover:bg-gray-100'
+          }`}
+        >
+          <TrophyOutlined /> BÀI THI KẾT THÚC LEVEL
+        </button>
+        <button
+          onClick={() => setActiveSection('DECK_TESTS')}
+          className={`brutal-pill font-black px-6 py-3 border-2 border-[var(--border)] transition-all cursor-pointer flex items-center gap-2 ${
+            activeSection === 'DECK_TESTS'
+              ? 'bg-[#2A8B9D] text-white shadow-[var(--shadow-sm)]'
+              : 'bg-white text-[#2B1B0E] hover:bg-gray-100'
+          }`}
+        >
+          <BookOutlined /> BÀI THI THEO CHỦ ĐỀ ({deckTestsOverview.length})
+        </button>
+      </div>
+
+      {activeSection === 'FINAL_LEVEL' && (
+        <>
+          {/* Deck Completion Progress Banner */}
+          <div className="mb-8 rounded-[var(--radius-card)] bg-white p-6 border-4 border-[var(--border)] shadow-[var(--shadow-md)]">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
           <div>
             <h2 className="text-xl font-bold text-[#2B1B0E] flex items-center gap-2">
@@ -322,6 +357,170 @@ export function FinalLevelAssessmentPage() {
               </div>
             );
           })}
+        </div>
+      )}
+      </>
+      )}
+
+      {/* Tab 2: BÀI THI THEO CHỦ ĐỀ (BỘ THẺ) */}
+      {activeSection === 'DECK_TESTS' && (
+        <div className="space-y-8">
+          {/* Stats Summary Banner */}
+          <div className="rounded-[var(--radius-card)] bg-white p-6 border-4 border-[var(--border)] shadow-[var(--shadow-md)]">
+            <h2 className="text-2xl font-black text-[#2B1B0E] mb-2 flex items-center gap-2">
+              <BookOutlined className="text-[#2A8B9D]" /> TIẾN ĐỘ BÀI THI THEO BỘ THẺ
+            </h2>
+            <p className="text-gray-600 font-medium text-sm md:text-base mb-6">
+              Mỗi bộ thẻ có bài thi từ vựng riêng. Để mở khóa bài thi, bạn cần đăng ký bộ thẻ và học đạt tối thiểu 50% số thẻ hợp lệ.
+            </p>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="p-4 rounded-lg bg-[#F4F3EE] border-2 border-[var(--border)]">
+                <span className="text-xs font-bold text-gray-500 block">ĐÃ GHI DANH</span>
+                <span className="text-2xl font-black text-[#2B1B0E]">{deckTestsOverview.length} bộ thẻ</span>
+              </div>
+              <div className="p-4 rounded-lg bg-[#F0FDF4] border-2 border-[#22C55E]">
+                <span className="text-xs font-bold text-emerald-700 block">ĐÃ HOÀN THÀNH</span>
+                <span className="text-2xl font-black text-emerald-800">
+                  {deckTestsOverview.filter(d => d.hasPassed).length} bộ thẻ
+                </span>
+              </div>
+              <div className="p-4 rounded-lg bg-[#E6F4F1] border-2 border-[#2A8B9D]">
+                <span className="text-xs font-bold text-[#2A8B9D] block">SẴN SÀNG THI</span>
+                <span className="text-2xl font-black text-[#1F6B79]">
+                  {deckTestsOverview.filter(d => d.hasEnoughCards && d.eligible && !d.hasPassed).length} bộ thẻ
+                </span>
+              </div>
+              <div className="p-4 rounded-lg bg-[#FFFBEB] border-2 border-[#F59E0B]">
+                <span className="text-xs font-bold text-[#B45309] block">CẦN HỌC THÊM</span>
+                <span className="text-2xl font-black text-[#92400E]">
+                  {deckTestsOverview.filter(d => d.hasEnoughCards && !d.eligible).length} bộ thẻ
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {isLoadingDeckTests ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3, 4, 5, 6].map(i => (
+                <Card key={i} className="rounded-[var(--radius-card)] w-full h-[220px]">
+                  <Skeleton active />
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <>
+              {/* Nhóm 1: Chủ đề có bài thi */}
+              <div>
+                <h3 className="text-xl font-black text-[#2B1B0E] mb-4 flex items-center gap-2">
+                  <span>🎯 Danh sách bài thi chủ đề</span>
+                  <Tag className="font-bold border-[var(--border)]">
+                    {deckTestsOverview.filter(d => d.hasEnoughCards).length} bộ
+                  </Tag>
+                </h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {deckTestsOverview.filter(d => d.hasEnoughCards).map(deckTest => (
+                    <div
+                      key={deckTest.deckId}
+                      className={`rounded-[var(--radius-card)] p-6 border-4 border-[var(--border)] flex flex-col justify-between transition-all bg-white shadow-[var(--shadow-sm)] hover:-translate-y-1 ${
+                        deckTest.hasPassed
+                          ? 'border-[#22C55E] bg-[#F0FDF4]'
+                          : deckTest.eligible
+                            ? 'border-[#2A8B9D]'
+                            : 'border-gray-300 opacity-95'
+                      }`}
+                    >
+                      <div>
+                        <div className="flex justify-between items-start gap-2 mb-2">
+                          <h4 className="text-lg font-black text-[#2B1B0E] leading-tight">
+                            {deckTest.deckTitle}
+                          </h4>
+                          {deckTest.hasPassed ? (
+                            <Tag color="success" className="font-bold text-xs border-[var(--border)] shrink-0">
+                              <CheckCircleOutlined /> {Math.round(deckTest.bestScore || 0)}%
+                            </Tag>
+                          ) : deckTest.eligible ? (
+                            <Tag color="processing" className="font-bold text-xs border-[var(--border)] shrink-0">
+                              🟢 SẴN SÀNG
+                            </Tag>
+                          ) : (
+                            <Tag color="warning" className="font-bold text-xs border-[var(--border)] shrink-0">
+                              <LockOutlined /> KHÓA
+                            </Tag>
+                          )}
+                        </div>
+
+                        <div className="text-xs font-bold text-gray-600 mb-3 space-y-1">
+                          {deckTest.deckLevelName && (
+                            <span className="inline-block bg-gray-100 px-2 py-0.5 rounded mr-2 border border-gray-300">
+                              {deckTest.deckLevelName}
+                            </span>
+                          )}
+                          <span className="block mt-1">
+                            Tiến độ: <strong className="text-[#2A8B9D]">{deckTest.learnedCards}</strong> / {deckTest.requiredLearnedCards} thẻ yêu cầu ({deckTest.totalValidCards} thẻ hợp lệ)
+                          </span>
+                        </div>
+
+                        {!deckTest.eligible && deckTest.lockReason && (
+                          <div className="p-2.5 rounded bg-[#FFFBEB] border border-[#F59E0B] text-[#92400E] text-xs font-bold mb-4 flex items-center gap-1.5">
+                            <LockOutlined className="shrink-0" />
+                            <span>{deckTest.lockReason}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <Button
+                        className="w-full brutal-pill font-black h-11 bg-[#2A8B9D] text-white hover:!bg-[#1f6b79] border-2 border-[var(--border)] mt-2"
+                        onClick={() => navigate(`/decks/${deckTest.deckId}`)}
+                      >
+                        VÀO BỘ THẺ ĐỂ THI ➔
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Nhóm 2: Nhóm riêng 'Chưa có bài thi' (dữ liệu dưới 8 thẻ) */}
+              {deckTestsOverview.filter(d => !d.hasEnoughCards).length > 0 && (
+                <div className="mt-10 pt-6 border-t-2 border-dashed border-gray-300">
+                  <h3 className="text-lg font-black text-gray-700 mb-3 flex items-center gap-2">
+                    <InfoCircleOutlined className="text-amber-500" />
+                    <span>Bộ thẻ chưa có bài thi (chưa đủ dữ liệu tối thiểu)</span>
+                    <Tag className="font-bold border-gray-300">
+                      {deckTestsOverview.filter(d => !d.hasEnoughCards).length} bộ
+                    </Tag>
+                  </h3>
+                  <p className="text-xs text-gray-500 font-medium mb-4">
+                    Các bộ thẻ này hiện có ít hơn 8 thẻ có định nghĩa hợp lệ, đang được đội ngũ cập nhật bổ sung nội dung.
+                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {deckTestsOverview.filter(d => !d.hasEnoughCards).map(deckTest => (
+                      <div
+                        key={deckTest.deckId}
+                        className="p-4 rounded-lg bg-gray-50 border-2 border-gray-300 flex justify-between items-center text-xs font-bold"
+                      >
+                        <div>
+                          <span className="block font-black text-sm text-gray-800">{deckTest.deckTitle}</span>
+                          <span className="text-gray-500">
+                            {deckTest.totalValidCards} / {deckTest.minValidCardsRequired} thẻ hợp lệ
+                          </span>
+                        </div>
+                        <Button
+                          size="small"
+                          className="brutal-pill font-bold text-xs bg-white border border-gray-400"
+                          onClick={() => navigate(`/decks/${deckTest.deckId}`)}
+                        >
+                          Xem bộ thẻ ➔
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
         </div>
       )}
 

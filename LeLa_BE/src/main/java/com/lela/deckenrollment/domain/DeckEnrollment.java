@@ -15,6 +15,7 @@ import jakarta.persistence.Version;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Getter
@@ -56,6 +57,15 @@ public class DeckEnrollment extends AuditableEntity {
 
     @Column(name = "mastered_cards", nullable = false)
     private Integer masteredCards = 0; // Số thẻ đã nắm vững.
+
+    @Column(name = "topic_test_passed", nullable = false)
+    private Boolean topicTestPassed = false; // Đã hoàn thành bài thi chủ đề (đạt >= 70%).
+
+    @Column(name = "topic_test_best_score", precision = 5, scale = 2)
+    private BigDecimal topicTestBestScore; // Điểm số phần trăm cao nhất đạt được trong bài thi chủ đề.
+
+    @Column(name = "topic_test_last_attempt_at")
+    private LocalDateTime topicTestLastAttemptAt; // Thời điểm làm bài thi chủ đề gần nhất.
 
     @Column(length = 500)
     private String note; // Ghi chú cá nhân cho enrollment.

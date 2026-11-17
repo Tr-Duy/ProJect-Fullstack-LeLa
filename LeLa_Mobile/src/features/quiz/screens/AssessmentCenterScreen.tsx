@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { VocabularyQuizLauncher } from '../components/TimedVocabularyQuiz';
+import { VocabularyQuizLauncher, TimedVocabularyQuiz } from '../components/TimedVocabularyQuiz';
+import type { TimedQuizView } from '../components/useTimedVocabularyQuiz';
 import {
   StyleSheet,
   Text,
@@ -10,6 +11,8 @@ import {
   RefreshControl,
   ScrollView,
   Platform,
+  Modal,
+  Alert,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,10 +23,11 @@ import { useAuth } from '../../auth/context/AuthContext';
 import assessmentService, {
   AssessmentOverviewData,
 } from '../services/assessmentService';
+import { deckTestService, DeckTestStatusResponse } from '../../decks/services/deckTestService';
 import { QuizResponse } from '../../../types';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
-type AssessmentTab = 'PLACEMENT' | 'LEVEL_UP' | 'FINAL' | 'PRACTICE';
+type AssessmentTab = 'PLACEMENT' | 'LEVEL_UP' | 'FINAL' | 'PRACTICE' | 'TOPIC';
 
 export const AssessmentCenterScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
@@ -36,18 +40,22 @@ export const AssessmentCenterScreen: React.FC = () => {
   const [levelUpTests, setLevelUpTests] = useState<QuizResponse[]>([]);
   const [finalTests, setFinalTests] = useState<QuizResponse[]>([]);
   const [practiceQuizzes, setPracticeQuizzes] = useState<QuizResponse[]>([]);
+  const [deckTests, setDeckTests] = useState<DeckTestStatusResponse[]>([]);
+  const [activeTimedView, setActiveTimedView] = useState<TimedQuizView | null>(null);
+  const [startingDeckId, setStartingDeckId] = useState<number | null>(null);
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
 
   const loadAllData = async () => {
     try {
-      const [overviewData, placements, levelUps, finals, practices] = await Promise.all([
+      const [overviewData, placements, levelUps, finals, practices, deckTestsData] = await Promise.all([
         assessmentService.getAssessmentOverview(),
         assessmentService.getPlacementTests(),
         assessmentService.getLevelUpTests(),
         assessmentService.getFinalAssessments(),
         assessmentService.getPracticeQuizzes(),
+        deckTestService.getMyOverview().catch(() => [] as DeckTestStatusResponse[]),
       ]);
 
       setOverview(overviewData);
@@ -55,6 +63,7 @@ export const AssessmentCenterScreen: React.FC = () => {
       setLevelUpTests(levelUps);
       setFinalTests(finals.quizzes);
       setPracticeQuizzes(practices);
+      setDeckTests(deckTestsData || []);
 
       // Nếu học viên đã có level thì ưu tiên hiển thị tab Nâng Cấp hoặc Đánh Giá Đầu Ra
       if (overviewData.isLevelAssigned && activeTab === 'PLACEMENT') {
@@ -69,6 +78,20 @@ export const AssessmentCenterScreen: React.FC = () => {
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
+    }
+  };
+
+  const handleStartTopicTest = async (deckId: number) => {
+    if (startingDeckId) return;
+    setStartingDeckId(deckId);
+    try {
+      const view = await deckTestService.start(deckId);
+      setActiveTimedView(view);
+    } catch (error: any) {
+      const msg = error?.response?.data?.message || 'Không thể bắt đầu bài thi. Vui lòng thử lại sau.';
+      Alert.alert('Không thể bắt đầu bài thi', msg);
+    } finally {
+      setStartingDeckId(null);
     }
   };
 
@@ -268,6 +291,21 @@ export const AssessmentCenterScreen: React.FC = () => {
             Luyện Tập ({practiceQuizzes.length})
           </Text>
         </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.tabChip, activeTab === 'TOPIC' && styles.tabChipActive]}
+          onPress={() => setActiveTab('TOPIC')}
+          activeOpacity={0.8}
+        >
+          <Ionicons
+            name="albums-outline"
+            size={16}
+            color={activeTab === 'TOPIC' ? '#EA580C' : '#64748B'}
+          />
+          <Text style={[styles.tabChipText, activeTab === 'TOPIC' && styles.tabChipTextActive]}>
+            Bài Thi Chủ Đề ({deckTests.length})
+          </Text>
+        </TouchableOpacity>
       </ScrollView>
     </View>
   );
@@ -339,8 +377,183 @@ export const AssessmentCenterScreen: React.FC = () => {
     );
   };
 
+  const renderTopicTestsSection = () => {
+    const validDecks = deckTests.filter((d) => d.hasEnoughCards);
+    const missingDecks = deckTests.filter((d) => !d.hasEnoughCards);
+
+    if (deckTests.length === 0) {
+      return (
+        <View style={styles.emptyContainer}>
+          <Ionicons name="albums-outline" size={48} color="#94A3B8" />
+          <Text style={styles.emptyTitle}>Chưa có bài thi chủ đề</Text>
+          <Text style={styles.emptyDesc}>
+            Bạn chưa ghi danh (enroll) bộ thẻ nào. Hãy chọn bộ thẻ từ vựng và bắt đầu học để mở khóa bài thi nhé!
+          </Text>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.topicSectionContainer}>
+        {/* Banner giới thiệu */}
+        <View style={styles.topicIntroCard}>
+          <Ionicons name="bulb-outline" size={20} color="#EA580C" style={{ marginRight: 8 }} />
+          <Text style={styles.topicIntroText}>
+            Bài thi theo chủ đề gồm 10 câu trắc nghiệm (20s/câu) và 2 màn ghép cặp (60s/màn). Đạt 70% để vượt qua và nhận XP!
+          </Text>
+        </View>
+
+        {/* Danh sách các bộ thẻ đủ điều kiện hoặc đang khóa */}
+        {validDecks.map((item) => {
+          const progressPercent =
+            item.requiredLearnedCards > 0
+              ? Math.min(100, Math.round((item.learnedCards / item.requiredLearnedCards) * 100))
+              : 0;
+
+          return (
+            <View
+              key={item.deckId}
+              style={[
+                styles.deckTestCard,
+                item.hasPassed && styles.deckTestCardPassed,
+                !item.eligible && !item.hasPassed && styles.deckTestCardLocked,
+              ]}
+            >
+              <View style={styles.deckTestHeader}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.deckTestTitle}>{item.deckTitle}</Text>
+                  {item.deckLevelName && (
+                    <Text style={styles.deckTestLevel}>{item.deckLevelName}</Text>
+                  )}
+                </View>
+
+                {item.hasPassed ? (
+                  <View style={[styles.statusBadge, { backgroundColor: '#DCFCE7' }]}>
+                    <Ionicons name="checkmark-circle" size={14} color="#16A34A" />
+                    <Text style={[styles.statusBadgeText, { color: '#16A34A' }]}>
+                      Đã đạt ({item.bestScore}%)
+                    </Text>
+                  </View>
+                ) : item.eligible ? (
+                  <View style={[styles.statusBadge, { backgroundColor: '#FFEDD5' }]}>
+                    <Text style={[styles.statusBadgeText, { color: '#EA580C' }]}>
+                      Sẵn sàng thi
+                    </Text>
+                  </View>
+                ) : (
+                  <View style={[styles.statusBadge, { backgroundColor: '#F1F5F9' }]}>
+                    <Ionicons name="lock-closed" size={12} color="#64748B" />
+                    <Text style={[styles.statusBadgeText, { color: '#64748B' }]}>
+                      Đang khóa
+                    </Text>
+                  </View>
+                )}
+              </View>
+
+              {/* Progress info */}
+              <View style={styles.deckProgressRow}>
+                <Text style={styles.deckProgressText}>
+                  Tiến độ: {item.learnedCards}/{item.requiredLearnedCards} thẻ yêu cầu ({item.totalValidCards} thẻ hợp lệ)
+                </Text>
+                <Text style={styles.deckProgressPercent}>{progressPercent}%</Text>
+              </View>
+
+              <View style={styles.progressBarBg}>
+                <View
+                  style={[
+                    styles.progressBarFill,
+                    {
+                      width: `${progressPercent}%`,
+                      backgroundColor: item.eligible ? '#16A34A' : '#EA580C',
+                    },
+                  ]}
+                />
+              </View>
+
+              {!item.eligible && item.lockReason ? (
+                <View style={styles.lockReasonRow}>
+                  <Ionicons name="information-circle-outline" size={14} color="#D97706" />
+                  <Text style={styles.lockReasonLabel}>{item.lockReason}</Text>
+                </View>
+              ) : null}
+
+              {/* Action Buttons */}
+              <View style={styles.deckTestActions}>
+                {item.eligible ? (
+                  <TouchableOpacity
+                    style={[
+                      styles.deckTestButton,
+                      item.hasPassed && { backgroundColor: '#059669' },
+                    ]}
+                    onPress={() => handleStartTopicTest(item.deckId)}
+                    disabled={startingDeckId === item.deckId}
+                    activeOpacity={0.85}
+                  >
+                    {startingDeckId === item.deckId ? (
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                      <>
+                        <Ionicons
+                          name={item.hasPassed ? 'refresh' : 'play'}
+                          size={16}
+                          color="#FFFFFF"
+                        />
+                        <Text style={styles.deckTestButtonText}>
+                          {item.hasPassed ? 'Thi lại cải thiện điểm' : 'Làm bài thi'}
+                        </Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    style={styles.learnMoreButton}
+                    onPress={() => navigation.navigate('DeckDetail', { deckId: item.deckId })}
+                    activeOpacity={0.85}
+                  >
+                    <Ionicons name="book-outline" size={16} color="#EA580C" />
+                    <Text style={styles.learnMoreButtonText}>Học bộ thẻ để mở khóa</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+          );
+        })}
+
+        {/* Nhóm riêng: Bộ thẻ chưa có bài thi (< 8 thẻ hợp lệ) */}
+        {missingDecks.length > 0 && (
+          <View style={styles.missingSection}>
+            <View style={styles.missingHeader}>
+              <Ionicons name="alert-circle-outline" size={18} color="#D97706" />
+              <Text style={styles.missingTitle}>Chưa có bài thi ({missingDecks.length})</Text>
+            </View>
+            <Text style={styles.missingDesc}>
+              Các bộ thẻ này hiện có ít hơn 8 thẻ có định nghĩa hợp lệ, đang được cập nhật thêm nội dung.
+            </Text>
+
+            {missingDecks.map((item) => (
+              <TouchableOpacity
+                key={item.deckId}
+                style={styles.missingItemCard}
+                onPress={() => navigation.navigate('DeckDetail', { deckId: item.deckId })}
+                activeOpacity={0.8}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.missingItemTitle}>{item.deckTitle}</Text>
+                  <Text style={styles.missingItemSub}>
+                    {item.totalValidCards}/{item.minValidCardsRequired} thẻ hợp lệ
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color="#94A3B8" />
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+      </View>
+    );
+  };
+
   const renderEmptyList = () => {
-    if (isLoading) return null;
+    if (isLoading || activeTab === 'TOPIC') return null;
     return (
       <View style={styles.emptyContainer}>
         <Ionicons name="document-text-outline" size={48} color="#94A3B8" />
@@ -399,6 +612,7 @@ export const AssessmentCenterScreen: React.FC = () => {
             <VocabularyQuizLauncher onFinished={attemptResult => navigation.navigate('QuizResult', { attemptResult })} />
             {renderHeroBanner()}
             {renderTabSwitcher()}
+            {activeTab === 'TOPIC' && renderTopicTestsSection()}
           </>
         }
         ListEmptyComponent={renderEmptyList}
@@ -413,6 +627,23 @@ export const AssessmentCenterScreen: React.FC = () => {
           />
         }
       />
+
+      <Modal
+        visible={!!activeTimedView}
+        animationType="slide"
+        onRequestClose={() => setActiveTimedView(null)}
+      >
+        {activeTimedView && (
+          <TimedVocabularyQuiz
+            initial={activeTimedView}
+            onFinished={(result) => {
+              setActiveTimedView(null);
+              loadAllData();
+              navigation.navigate('QuizResult', { attemptResult: result });
+            }}
+          />
+        )}
+      </Modal>
     </View>
   );
 };
@@ -810,6 +1041,196 @@ const styles = StyleSheet.create({
     color: '#64748B',
     textAlign: 'center',
     lineHeight: 18,
+  },
+  topicSectionContainer: {
+    marginTop: 10,
+    gap: 12,
+  },
+  topicIntroCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF7ED',
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#FED7AA',
+    marginBottom: 4,
+  },
+  topicIntroText: {
+    flex: 1,
+    fontSize: 12,
+    color: '#9A3412',
+    lineHeight: 17,
+    fontWeight: '500',
+  },
+  deckTestCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 16,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
+    marginBottom: 4,
+  },
+  deckTestCardPassed: {
+    borderColor: '#86EFAC',
+    backgroundColor: '#F0FDF4',
+  },
+  deckTestCardLocked: {
+    borderColor: '#E2E8F0',
+    opacity: 0.92,
+  },
+  deckTestHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+    gap: 8,
+  },
+  deckTestTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  deckTestLevel: {
+    fontSize: 12,
+    color: '#64748B',
+    marginTop: 2,
+    fontWeight: '500',
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 10,
+    gap: 4,
+  },
+  statusBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  deckProgressRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  deckProgressText: {
+    fontSize: 12,
+    color: '#475569',
+    fontWeight: '500',
+    flex: 1,
+  },
+  deckProgressPercent: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginLeft: 6,
+  },
+  progressBarBg: {
+    height: 8,
+    backgroundColor: '#E2E8F0',
+    borderRadius: 4,
+    overflow: 'hidden',
+    marginBottom: 10,
+  },
+  lockReasonRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#FEF3C7',
+    padding: 8,
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+  lockReasonLabel: {
+    fontSize: 11,
+    color: '#B45309',
+    fontWeight: '600',
+    flex: 1,
+  },
+  deckTestActions: {
+    marginTop: 4,
+  },
+  deckTestButton: {
+    backgroundColor: '#EA580C',
+    borderRadius: 12,
+    paddingVertical: 11,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  deckTestButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  learnMoreButton: {
+    backgroundColor: '#FFF7ED',
+    borderWidth: 1,
+    borderColor: '#FED7AA',
+    borderRadius: 12,
+    paddingVertical: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  learnMoreButtonText: {
+    color: '#EA580C',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  missingSection: {
+    marginTop: 12,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
+    borderStyle: 'dashed',
+  },
+  missingHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  missingTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#475569',
+  },
+  missingDesc: {
+    fontSize: 12,
+    color: '#64748B',
+    marginBottom: 10,
+    lineHeight: 16,
+  },
+  missingItemCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 8,
+  },
+  missingItemTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#334155',
+    marginBottom: 2,
+  },
+  missingItemSub: {
+    fontSize: 11,
+    color: '#94A3B8',
+    fontWeight: '500',
   },
 });
 
