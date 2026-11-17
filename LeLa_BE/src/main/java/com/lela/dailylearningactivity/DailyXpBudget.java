@@ -23,7 +23,9 @@ public class DailyXpBudget {
         entityManager.refresh(user, LockModeType.PESSIMISTIC_WRITE);
         var activity = activities.findForUpdate(userId, date);
         activity.ifPresent(a -> entityManager.refresh(a, LockModeType.PESSIMISTIC_WRITE));
-        int spent = activity.map(a -> a.getXpEarned() == null ? 0 : a.getXpEarned()).orElse(0);
-        return Math.max(0, cap - spent);
+        int totalSpent = activity.map(a -> a.getXpEarned() == null ? 0 : a.getXpEarned()).orElse(0);
+        int achievementXp = activity.map(a -> a.getAchievementXp() == null ? 0 : a.getAchievementXp()).orElse(0);
+        int practiceSpent = Math.max(0, totalSpent - achievementXp);
+        return Math.max(0, cap - practiceSpent);
     }
 }

@@ -424,12 +424,16 @@ public class DeckTestServiceImpl implements DeckTestService {
                 : Optional.empty();
 
         boolean hasPassedBeforeToday = false;
-        if (enrollmentOpt.isPresent()) {
-            DeckEnrollment en = enrollmentOpt.get();
-            if (Boolean.TRUE.equals(en.getTopicTestPassed())
-                    && en.getTopicTestLastAttemptAt() != null
-                    && en.getTopicTestLastAttemptAt().toLocalDate().isBefore(today)) {
+        if (deckId != null) {
+            long passedAttemptsBeforeToday = quizAttemptRepository.countPassedDeckAttemptsBefore(user.getId(), deckId, startOfDay);
+            if (passedAttemptsBeforeToday > 0) {
                 hasPassedBeforeToday = true;
+            } else if (enrollmentOpt.isPresent()) {
+                DeckEnrollment en = enrollmentOpt.get();
+                if (Boolean.TRUE.equals(en.getTopicTestPassed())
+                        && (en.getTopicTestLastAttemptAt() == null || en.getTopicTestLastAttemptAt().toLocalDate().isBefore(today))) {
+                    hasPassedBeforeToday = true;
+                }
             }
         }
 

@@ -72,8 +72,8 @@ class AchievementServiceTest {
         // Verify UserAchievement saved
         verify(userAchievementRepository, times(1)).save(any(UserAchievement.class));
 
-        // Verify DailyLearningActivity saved with 150 XP
-        verify(dailyActivityRepository, times(1)).save(argThat(dla -> dla.getXpEarned() == 150));
+        // Verify DailyLearningActivity saved with 150 XP and 150 achievementXp
+        verify(dailyActivityRepository, times(1)).save(argThat(dla -> dla.getXpEarned() == 150 && dla.getAchievementXp() == 150));
 
         // Verify users.xp_total increased from 50 to 200 (50 + 150)
         assertEquals(200L, user.getXpTotal());

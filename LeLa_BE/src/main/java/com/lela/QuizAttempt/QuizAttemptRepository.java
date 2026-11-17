@@ -47,4 +47,11 @@ public interface QuizAttemptRepository extends JpaRepository<QuizAttempt, Long> 
             @Param("start") java.time.LocalDateTime start,
             @Param("end") java.time.LocalDateTime end,
             @Param("currentAttemptId") Long currentAttemptId);
+
+    @Query("SELECT COUNT(a) FROM QuizAttempt a WHERE a.user.id = :userId AND a.quiz.deck.id = :deckId " +
+           "AND a.passed = true AND a.submittedAt < :start")
+    long countPassedDeckAttemptsBefore(
+            @Param("userId") Long userId,
+            @Param("deckId") Long deckId,
+            @Param("start") java.time.LocalDateTime start);
 }

@@ -387,4 +387,148 @@ class DeckTestServiceTest {
         verify(activityService, times(1)).logActivity(argThat(req -> req.getXpEarned() == 0 && req.getQuizCount() == 1));
         verify(usersRepository, times(1)).save(testUser);
     }
+
+    @Test
+    @DisplayName("Branch (a): Ngày khác nhưng CHƯA TỪNG ĐẠT trước đó -> nhận 100% full XP")
+    void shouldAwardFullXpOnDifferentDayWhenNeverPassedBefore() {
+        QuizAttempt attempt = new QuizAttempt();
+        attempt.setId(503L);
+        attempt.setUser(testUser);
+        Quiz quiz = new Quiz();
+        quiz.setDeck(testDeck);
+        quiz.setQuizCategory(QuizCategory.DECK_TEST);
+        attempt.setQuiz(quiz);
+        attempt.setStartedAt(LocalDateTime.now().minusMinutes(3));
+
+        when(quizAttemptRepository.findById(503L)).thenReturn(Optional.of(attempt));
+        when(quizAttemptRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        TimedQuizEngine.Earned earned = new TimedQuizEngine.Earned(BigDecimal.valueOf(4), 4, BigDecimal.valueOf(4));
+        when(timedQuizEngine.finalizeForSubmit(503L)).thenReturn(Map.of(1L, earned));
+        when(timedQuizEngine.participated(503L)).thenReturn(true);
+
+        com.lela.QuizAttemptQuestion.domain.QuizAttemptQuestion q = new com.lela.QuizAttemptQuestion.domain.QuizAttemptQuestion();
+        q.setId(1L);
+        q.setPoints(4);
+        q.setQuestionType(com.lela.QuizQuestion.domain.QuestionType.MATCHING_PAIRS);
+        when(quizAttemptQuestionRepository.findByAttemptId(503L)).thenReturn(List.of(q));
+
+        // Lần đầu hôm nay: 0 submissions today
+        when(quizAttemptRepository.countSubmittedDeckAttemptsOnDate(eq(100L), eq(10L), any(), any(), eq(503L))).thenReturn(0L);
+        // Chưa từng pass trước hôm nay
+        when(quizAttemptRepository.countPassedDeckAttemptsBefore(eq(100L), eq(10L), any())).thenReturn(0L);
+
+        // Enrollment có lần thi hôm qua nhưng FAILED (topicTestPassed = false)
+        DeckEnrollment enrollment = new DeckEnrollment();
+        enrollment.setUser(testUser);
+        enrollment.setDeck(testDeck);
+        enrollment.setTopicTestPassed(false);
+        enrollment.setTopicTestLastAttemptAt(LocalDateTime.now().minusDays(1));
+        when(deckEnrollmentRepository.findByUserIdAndDeckId(100L, 10L)).thenReturn(Optional.of(enrollment));
+
+        QuizAttemptDetailResponse mockResp = new QuizAttemptDetailResponse();
+        when(mapper.map(any(), eq(QuizAttemptDetailResponse.class))).thenReturn(mockResp);
+
+        service.submitDeckTest(503L, new QuizSubmitRequest());
+
+        // Nhận đủ 100% XP: 4 * 2 = 8 XP
+        assertThat(attempt.getXpAwarded()).isEqualTo(8);
+        verify(activityService, times(1)).logActivity(argThat(req -> req.getXpEarned() == 8));
+    }
+
+    @Test
+    @DisplayName("Branch (b): Ngày khác và ĐÃ TỪNG ĐẠT trước đó -> nhận 50% XP")
+    void shouldAwardFiftyPercentXpOnDifferentDayWhenPreviouslyPassed() {
+        QuizAttempt attempt = new QuizAttempt();
+        attempt.setId(504L);
+        attempt.setUser(testUser);
+        Quiz quiz = new Quiz();
+        quiz.setDeck(testDeck);
+        quiz.setQuizCategory(QuizCategory.DECK_TEST);
+        attempt.setQuiz(quiz);
+        attempt.setStartedAt(LocalDateTime.now().minusMinutes(3));
+
+        when(quizAttemptRepository.findById(504L)).thenReturn(Optional.of(attempt));
+        when(quizAttemptRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        TimedQuizEngine.Earned earned = new TimedQuizEngine.Earned(BigDecimal.valueOf(4), 4, BigDecimal.valueOf(4));
+        when(timedQuizEngine.finalizeForSubmit(504L)).thenReturn(Map.of(1L, earned));
+        when(timedQuizEngine.participated(504L)).thenReturn(true);
+
+        com.lela.QuizAttemptQuestion.domain.QuizAttemptQuestion q = new com.lela.QuizAttemptQuestion.domain.QuizAttemptQuestion();
+        q.setId(1L);
+        q.setPoints(4);
+        q.setQuestionType(com.lela.QuizQuestion.domain.QuestionType.MATCHING_PAIRS);
+        when(quizAttemptQuestionRepository.findByAttemptId(504L)).thenReturn(List.of(q));
+
+        // Lần đầu hôm nay: 0 submissions today
+        when(quizAttemptRepository.countSubmittedDeckAttemptsOnDate(eq(100L), eq(10L), any(), any(), eq(504L))).thenReturn(0L);
+        // Đã từng pass trước hôm nay
+        when(quizAttemptRepository.countPassedDeckAttemptsBefore(eq(100L), eq(10L), any())).thenReturn(1L);
+
+        DeckEnrollment enrollment = new DeckEnrollment();
+        enrollment.setUser(testUser);
+        enrollment.setDeck(testDeck);
+        enrollment.setTopicTestPassed(true);
+        enrollment.setTopicTestLastAttemptAt(LocalDateTime.now().minusDays(1));
+        when(deckEnrollmentRepository.findByUserIdAndDeckId(100L, 10L)).thenReturn(Optional.of(enrollment));
+
+        QuizAttemptDetailResponse mockResp = new QuizAttemptDetailResponse();
+        when(mapper.map(any(), eq(QuizAttemptDetailResponse.class))).thenReturn(mockResp);
+
+        service.submitDeckTest(504L, new QuizSubmitRequest());
+
+        // Nhận 50% XP: 8 * 0.5 = 4 XP
+        assertThat(attempt.getXpAwarded()).isEqualTo(4);
+        verify(activityService, times(1)).logActivity(argThat(req -> req.getXpEarned() == 4));
+    }
+
+    @Test
+    @DisplayName("Regression: users.xp_total chỉ tăng đúng 1 lần qua activityService (không bị cộng đúp trong DeckTestService)")
+    void shouldNotDoubleCountUserXpTotal() {
+        QuizAttempt attempt = new QuizAttempt();
+        attempt.setId(505L);
+        attempt.setUser(testUser);
+        Quiz quiz = new Quiz();
+        quiz.setDeck(testDeck);
+        quiz.setQuizCategory(QuizCategory.DECK_TEST);
+        attempt.setQuiz(quiz);
+        attempt.setStartedAt(LocalDateTime.now().minusMinutes(2));
+
+        when(quizAttemptRepository.findById(505L)).thenReturn(Optional.of(attempt));
+        when(quizAttemptRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        TimedQuizEngine.Earned earned = new TimedQuizEngine.Earned(BigDecimal.valueOf(4), 4, BigDecimal.valueOf(4));
+        when(timedQuizEngine.finalizeForSubmit(505L)).thenReturn(Map.of(1L, earned));
+        when(timedQuizEngine.participated(505L)).thenReturn(true);
+
+        com.lela.QuizAttemptQuestion.domain.QuizAttemptQuestion q = new com.lela.QuizAttemptQuestion.domain.QuizAttemptQuestion();
+        q.setId(1L);
+        q.setPoints(4);
+        q.setQuestionType(com.lela.QuizQuestion.domain.QuestionType.MATCHING_PAIRS);
+        when(quizAttemptQuestionRepository.findByAttemptId(505L)).thenReturn(List.of(q));
+        when(quizAttemptRepository.countSubmittedDeckAttemptsOnDate(eq(100L), eq(10L), any(), any(), eq(505L))).thenReturn(0L);
+        when(quizAttemptRepository.countPassedDeckAttemptsBefore(eq(100L), eq(10L), any())).thenReturn(0L);
+
+        DeckEnrollment enrollment = new DeckEnrollment();
+        enrollment.setUser(testUser);
+        enrollment.setDeck(testDeck);
+        when(deckEnrollmentRepository.findByUserIdAndDeckId(100L, 10L)).thenReturn(Optional.of(enrollment));
+
+        // Ban đầu testUser có xpTotal = 50L.
+        // Khi logActivity được gọi, nó trả về response (ở implementation thực sẽ cộng 8 vào xp_total = 58L).
+        // DeckTestServiceImpl tải refreshedUser từ DB và chỉ cập nhật streak, KHÔNG setXpTotal lần nữa.
+        testUser.setXpTotal(58L); // Giả lập trạng thái sau khi activityService.logActivity hoàn thành
+        when(usersRepository.findById(100L)).thenReturn(Optional.of(testUser));
+
+        QuizAttemptDetailResponse mockResp = new QuizAttemptDetailResponse();
+        when(mapper.map(any(), eq(QuizAttemptDetailResponse.class))).thenReturn(mockResp);
+
+        service.submitDeckTest(505L, new QuizSubmitRequest());
+
+        // Xác nhận testUser.xpTotal vẫn là 58L, không bị tăng thành 66L
+        assertThat(testUser.getXpTotal()).isEqualTo(58L);
+        verify(activityService, times(1)).logActivity(argThat(req -> req.getXpEarned() == 8));
+        verify(usersRepository, times(1)).save(testUser);
+    }
 }

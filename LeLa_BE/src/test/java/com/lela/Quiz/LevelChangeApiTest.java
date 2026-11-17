@@ -47,14 +47,23 @@ public class LevelChangeApiTest {
 
     @org.junit.jupiter.api.BeforeEach
     void setUp() {
-        Users learner2 = usersRepository.findByUsername("learner2").orElse(null);
-        if (learner2 != null) {
-            com.lela.common.domain.ProficiencyLevel level3 = levelRepository.findById(3L).orElse(null);
-            if (level3 != null) {
-                learner2.setCurrentLevel(level3);
-                usersRepository.saveAndFlush(learner2);
-            }
-            var attempts = quizAttemptRepository.findAllByUserIdWithQuiz(learner2.getId());
+        Users learner2 = usersRepository.findByUsername("learner2").orElseGet(() -> {
+            Users u = new Users();
+            u.setUsername("learner2");
+            u.setEmail("learner2@test.com");
+            u.setPasswordHash("$2a$10$to.5QTD1oTDpZJSgVEblbeiJzPOHsBY2H7sz4zB6GaMj/Cwl61A.S");
+            u.setFullName("Learner Two Test Fixture");
+            u.setStatus(com.lela.users.domain.UserStatus.ACTIVE);
+            u.setTimezone("Asia/Ho_Chi_Minh");
+            return u;
+        });
+        com.lela.common.domain.ProficiencyLevel level3 = levelRepository.findById(3L).orElse(null);
+        if (level3 != null) {
+            learner2.setCurrentLevel(level3);
+        }
+        learner2 = usersRepository.saveAndFlush(learner2);
+        var attempts = quizAttemptRepository.findAllByUserIdWithQuiz(learner2.getId());
+        if (!attempts.isEmpty()) {
             quizAttemptRepository.deleteAll(attempts);
             quizAttemptRepository.flush();
         }

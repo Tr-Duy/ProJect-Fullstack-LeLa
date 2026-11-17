@@ -146,11 +146,14 @@ public class AchievementService {
                             act.setActivityDate(today);
                             act.setTimezone("Asia/Ho_Chi_Minh");
                             act.setXpEarned(0);
+                            act.setAchievementXp(0);
                             act.setReviewCount(0);
                             act.setQuizCount(0);
                             return act;
                         });
                 int currentXp = todayActivity.getXpEarned() != null ? todayActivity.getXpEarned() : 0;
+                int currentAchXp = todayActivity.getAchievementXp() != null ? todayActivity.getAchievementXp() : 0;
+                todayActivity.setAchievementXp(currentAchXp + reward);
                 todayActivity.setXpEarned(currentXp + reward);
                 dailyActivityRepository.save(todayActivity);
 
