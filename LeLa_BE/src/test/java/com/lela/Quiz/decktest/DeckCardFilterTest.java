@@ -92,4 +92,45 @@ class DeckCardFilterTest {
         assertThat(valid).hasSize(2);
         assertThat(valid.stream().map(Flashcard::getFrontText)).containsExactly("contract", "market");
     }
+
+    @Test
+    @DisplayName("filterValidCards khử trùng lặp theo (deck_id, front_text chuẩn hóa), giữ thẻ đầu tiên")
+    void shouldDeduplicateCardsWithSameNormalizedFrontTextWithinSameDeck() {
+        com.lela.deck.domain.Deck deck22 = new com.lela.deck.domain.Deck();
+        deck22.setId(22L);
+
+        Flashcard card1 = createCard(893L, "Register", "Ghi vào sổ, đăng ký", "v");
+        card1.setDeck(deck22);
+
+        Flashcard card2 = createCard(894L, "register", "Sổ đăng ký", "n");
+        card2.setDeck(deck22);
+
+        Flashcard card3 = createCard(895L, "access", "truy cập", "v");
+        card3.setDeck(deck22);
+
+        List<Flashcard> result = filter.filterValidCards(List.of(card1, card2, card3));
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).getId()).isEqualTo(893L);
+        assertThat(result.get(0).getFrontText()).isEqualTo("Register");
+        assertThat(result.get(1).getId()).isEqualTo(895L);
+        assertThat(result.get(1).getFrontText()).isEqualTo("access");
+    }
+
+    @Test
+    @DisplayName("filterValidCards cho phép cùng front_text ở 2 deck khác nhau")
+    void shouldAllowSameFrontTextAcrossDifferentDecks() {
+        com.lela.deck.domain.Deck deck22 = new com.lela.deck.domain.Deck();
+        deck22.setId(22L);
+        com.lela.deck.domain.Deck deck23 = new com.lela.deck.domain.Deck();
+        deck23.setId(23L);
+
+        Flashcard cardA = createCard(1L, "Register", "Ghi vào sổ", "v");
+        cardA.setDeck(deck22);
+
+        Flashcard cardB = createCard(2L, "Register", "Đăng ký", "v");
+        cardB.setDeck(deck23);
+
+        List<Flashcard> result = filter.filterValidCards(List.of(cardA, cardB));
+        assertThat(result).hasSize(2);
+    }
 }

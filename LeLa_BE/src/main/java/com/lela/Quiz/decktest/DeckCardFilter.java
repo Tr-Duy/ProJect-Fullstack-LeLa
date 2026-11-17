@@ -45,6 +45,17 @@ public class DeckCardFilter {
 
     public List<Flashcard> filterValidCards(List<Flashcard> cards) {
         if (cards == null) return List.of();
-        return cards.stream().filter(this::isValidCard).toList();
+        java.util.Set<String> seenKeys = new java.util.HashSet<>();
+        java.util.List<Flashcard> result = new java.util.ArrayList<>();
+        for (Flashcard f : cards) {
+            if (isValidCard(f)) {
+                Long deckId = (f.getDeck() != null) ? f.getDeck().getId() : 0L;
+                String key = deckId + "#" + normalize(f.getFrontText());
+                if (seenKeys.add(key)) {
+                    result.add(f);
+                }
+            }
+        }
+        return result;
     }
 }
