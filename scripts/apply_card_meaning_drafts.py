@@ -5,19 +5,30 @@ apply_card_meaning_drafts.py
 Mặc định: DRY-RUN (chỉ in danh sách thay đổi, không ghi DB).
 Chỉ ghi khi có cờ --apply.
 
-Bảo vệ dữ liệu:
-- Không đè lên nghĩa đã được người khác sửa (chỉ cập nhật nếu back_text vẫn là placeholder).
-- Chạy trong transaction; rollback nếu có lỗi.
-- Sao lưu bảng flashcards trước khi ghi (flashcards_backup_YYYYMMDD_HHMMSS).
-- Idempotent: chạy lại không cộng thêm lần nữa.
+Hỗ trợ 2 chế độ:
+1. UPDATE (card_id là số nguyên): cập nhật back_text và part_of_speech cho thẻ có sẵn.
+   - Chỉ cập nhật nếu back_text hiện tại vẫn là placeholder (DeckCardFilter coi là không hợp lệ).
+   - Không đè lên thẻ đã hợp lệ.
+2. INSERT (card_id bắt đầu bằng NEW_ hoặc không phải số): thêm thẻ mới vào bộ thẻ.
+   - Kiểm tra idempotent: nếu bộ thẻ đã có thẻ cùng front_text (không phân biệt hoa thường), bỏ qua.
+   - Tự động gán card_order tiếp nối (max(card_order) + 1, + 2, ...).
+   - Kế thừa created_by từ các thẻ có sẵn trong cùng bộ (fallback = 2).
+   - Điền đầy đủ các trường: phonetic, example_text, is_active=1, version=1, created_at=NOW(), updated_at=NOW().
 
-Mật khẩu DB đọc từ biến môi trường DB_PASSWORD.
+Bảo vệ dữ liệu:
+- Chạy trong transaction; rollback nếu có lỗi bất kỳ.
+- Sao lưu bảng flashcards trước khi ghi (flashcards_backup_YYYYMMDD_HHMMSS).
+- Idempotent: chạy lại lần 2 không thay đổi gì.
+
+Mật khẩu DB đọc từ biến môi trường DB_PASSWORD (mặc định '123456').
 
 Usage:
   python scripts/apply_card_meaning_drafts.py private-results/card_meaning_drafts_batch1.csv
   python scripts/apply_card_meaning_drafts.py private-results/card_meaning_drafts_batch1.csv --apply
+  python scripts/apply_card_meaning_drafts.py private-results/card_meaning_drafts_batch1b.csv --apply --database lela_test_apply_db
 """
 import argparse, csv, os, sys, unicodedata, datetime, re
+from collections import defaultdict
 import pymysql
 
 # ------------------------------------------------------------------ helpers --
@@ -50,9 +61,21 @@ def get_conn(db_name='lela_db'):
         autocommit=False,
     )
 
+def is_new_card_id(card_id_str: str) -> bool:
+    if not card_id_str:
+        return True
+    s = str(card_id_str).strip()
+    if s.upper().startswith('NEW_'):
+        return True
+    try:
+        int(s)
+        return False
+    except ValueError:
+        return True
+
 # -------------------------------------------------------------------- main --
 def main():
-    parser = argparse.ArgumentParser(description='Apply card meaning drafts from CSV.')
+    parser = argparse.ArgumentParser(description='Apply card meaning drafts from CSV (UPDATE & INSERT).')
     parser.add_argument('csv_file', help='Path to CSV draft file')
     parser.add_argument('--apply', action='store_true', help='Actually write to DB (default: dry-run)')
     parser.add_argument('--database', default=os.environ.get('DB_NAME', 'lela_db'), help='Database name (default: lela_db)')
@@ -75,7 +98,7 @@ def main():
     print(f'CSV: {len(rows)} dòng tổng, {len(approved)} dòng approved=Y')
 
     if not approved:
-        print('Không có dòng nào được duyệt. Thoát.')
+        print('Không có dòng nào được duyệt (approved=Y). Thoát.')
         sys.exit(0)
 
     conn = get_conn(db_name)
@@ -84,58 +107,126 @@ def main():
     # --- Validation nội bộ ---
     errors = []
     for row in approved:
+        cid = row.get('card_id', '').strip()
         proposed_back = row.get('proposed_back_text', '').strip()
         front = row.get('front_text', '').strip()
         if not proposed_back:
-            errors.append(f'card_id={row["card_id"]}: proposed_back trống!')
+            errors.append(f'card_id={cid}: proposed_back trống!')
         if len(proposed_back) > 80:
-            errors.append(f'card_id={row["card_id"]}: proposed_back quá 80 ký tự!')
-        if front.lower() in proposed_back.lower():
-            errors.append(f'card_id={row["card_id"]}: back chứa chính front_text!')
+            errors.append(f'card_id={cid}: proposed_back quá 80 ký tự!')
+        if front and front.lower() in proposed_back.lower():
+            errors.append(f'card_id={cid}: back chứa chính front_text!')
+        try:
+            int(row.get('deck_id', '0'))
+        except (ValueError, TypeError):
+            errors.append(f'card_id={cid}: deck_id không hợp lệ!')
+
     if errors:
         print('LỖI VALIDATION, không thực thi:')
         for e in errors: print(' ', e)
         conn.close()
         sys.exit(1)
 
-    # --- Kiểm tra hiện trạng DB ---
+    # --- Phân loại và Kiểm tra hiện trạng DB ---
     to_update = []
+    to_insert = []
     skipped_already_valid = []
+    skipped_already_exists = []
     skipped_not_found = []
 
-    for row in approved:
-        try:
-            card_id = int(row['card_id'])
-        except (ValueError, TypeError):
-            continue
-        cur.execute(f'SELECT id, front_text, back_text, part_of_speech FROM `{table}` WHERE id=%s AND is_active=1 AND deleted_at IS NULL', (card_id,))
-        card = cur.fetchone()
-        if not card:
-            skipped_not_found.append(card_id)
-            continue
-        if not is_invalid(card['front_text'], card['back_text']):
-            skipped_already_valid.append(card_id)
-            continue
-        to_update.append({
-            'card_id': card_id,
-            'front_text': card['front_text'],
-            'old_back': card['back_text'],
-            'old_pos': card['part_of_speech'],
-            'new_back': row['proposed_back_text'].strip(),
-            'new_pos': row['proposed_part_of_speech'].strip(),
-            'deck_id': int(row['deck_id']),
-            'deck_name': row['deck_name'],
-        })
+    # Cache card_order và created_by cho mỗi deck
+    deck_max_order = {}
+    deck_created_by = {}
 
-    print(f'\nSẽ cập nhật:   {len(to_update)} thẻ')
-    print(f'Bỏ qua (đã hợp lệ): {len(skipped_already_valid)} — {skipped_already_valid}')
-    print(f'Bỏ qua (không tìm thấy): {len(skipped_not_found)} — {skipped_not_found}')
+    def get_deck_order(did):
+        if did not in deck_max_order:
+            cur.execute(f'SELECT COALESCE(MAX(card_order), 0) as max_ord FROM `{table}` WHERE deck_id=%s', (did,))
+            deck_max_order[did] = cur.fetchone()['max_ord']
+        deck_max_order[did] += 1
+        return deck_max_order[did]
+
+    def get_deck_creator(did):
+        if did not in deck_created_by:
+            cur.execute(f'SELECT created_by FROM `{table}` WHERE deck_id=%s AND created_by IS NOT NULL LIMIT 1', (did,))
+            r = cur.fetchone()
+            deck_created_by[did] = r['created_by'] if r and r['created_by'] else 2
+        return deck_created_by[did]
+
+    for row in approved:
+        cid_str = row.get('card_id', '').strip()
+        deck_id = int(row['deck_id'])
+        front = row.get('front_text', '').strip()
+        back = row.get('proposed_back_text', '').strip()
+        pos = row.get('proposed_part_of_speech', 'n').strip() or 'n'
+        phonetic = row.get('phonetic', '').strip() or None
+        example = row.get('example_text', '').strip() or None
+
+        if is_new_card_id(cid_str):
+            # Chế độ INSERT: Kiểm tra thẻ đã tồn tại trong deck chưa (idempotent)
+            cur.execute(
+                f'SELECT id, front_text, back_text FROM `{table}` WHERE deck_id=%s AND LOWER(TRIM(front_text)) = LOWER(TRIM(%s)) AND deleted_at IS NULL',
+                (deck_id, front)
+            )
+            existing = cur.fetchone()
+            if existing:
+                skipped_already_exists.append((cid_str, front, deck_id))
+                continue
+
+            order = get_deck_order(deck_id)
+            creator = get_deck_creator(deck_id)
+            to_insert.append({
+                'card_id_code': cid_str,
+                'deck_id': deck_id,
+                'deck_name': row.get('deck_name', f'Deck {deck_id}'),
+                'front_text': front,
+                'back_text': back,
+                'part_of_speech': pos,
+                'phonetic': phonetic,
+                'example_text': example,
+                'card_order': order,
+                'created_by': creator,
+            })
+        else:
+            # Chế độ UPDATE
+            card_id = int(cid_str)
+            cur.execute(
+                f'SELECT id, front_text, back_text, part_of_speech FROM `{table}` WHERE id=%s AND is_active=1 AND deleted_at IS NULL',
+                (card_id,)
+            )
+            card = cur.fetchone()
+            if not card:
+                skipped_not_found.append(card_id)
+                continue
+            if not is_invalid(card['front_text'], card['back_text']):
+                skipped_already_valid.append(card_id)
+                continue
+            to_update.append({
+                'card_id': card_id,
+                'front_text': card['front_text'],
+                'old_back': card['back_text'],
+                'old_pos': card['part_of_speech'],
+                'new_back': back,
+                'new_pos': pos,
+                'deck_id': deck_id,
+                'deck_name': row.get('deck_name', f'Deck {deck_id}'),
+            })
+
+    print(f'\n--- KẾT QUẢ RÀ SOÁT ---')
+    print(f'Sẽ CẬP NHẬT (UPDATE): {len(to_update)} thẻ')
+    print(f'Sẽ THÊM MỚI (INSERT):  {len(to_insert)} thẻ')
+    if skipped_already_valid:
+        print(f'Bỏ qua UPDATE (đã hợp lệ): {len(skipped_already_valid)} — {skipped_already_valid}')
+    if skipped_already_exists:
+        print(f'Bỏ qua INSERT (đã tồn tại): {len(skipped_already_exists)} — {skipped_already_exists}')
+    if skipped_not_found:
+        print(f'Bỏ qua UPDATE (không tìm thấy): {len(skipped_not_found)} — {skipped_not_found}')
 
     # --- Check deck completions after apply ---
-    from collections import defaultdict
     deck_will_gain = defaultdict(int)
     for u in to_update:
         deck_will_gain[u['deck_id']] += 1
+    for ins in to_insert:
+        deck_will_gain[ins['deck_id']] += 1
 
     deck_valid_before = {}
     for did in deck_will_gain:
@@ -155,66 +246,95 @@ def main():
         except Exception:
             deck_title = f'deck_{did}'
         status = '✓ >=8' if passed else f'✗ {after}'
-        print(f'  Deck {did} ({deck_title[:45]}): {deck_valid_before[did]} -> {after} {status}')
+        print(f'  Deck {did:4d} ({deck_title[:35]:35s}): {deck_valid_before[did]} -> {after} {status}')
     print(f'  Tổng: {decks_will_pass}/{len(deck_will_gain)} bộ sẽ đạt >=8 thẻ hợp lệ')
 
-    print('\nDanh sách thay đổi:')
-    for u in to_update:
-        print(f'  card_id={u["card_id"]:6d} [{u["front_text"]!r:20s}]  back: {u["old_back"][:40]!r:42s} -> {u["new_back"]!r}')
-        if u['old_pos'] != u['new_pos']:
-            print(f'           pos: {u["old_pos"]!r} -> {u["new_pos"]!r}')
+    if to_update:
+        print('\nDanh sách UPDATE:')
+        for u in to_update:
+            print(f'  card_id={u["card_id"]:6d} [{u["front_text"]!r:20s}] back: {u["old_back"][:35]!r:37s} -> {u["new_back"]!r}')
+            if u['old_pos'] != u['new_pos']:
+                print(f'           pos: {u["old_pos"]!r} -> {u["new_pos"]!r}')
+
+    if to_insert:
+        print('\nDanh sách INSERT:')
+        for ins in to_insert:
+            print(f'  code={ins["card_id_code"]:10s} deck={ins["deck_id"]:4d} order={ins["card_order"]} [{ins["front_text"]!r:15s}] -> {ins["back_text"]!r} ({ins["part_of_speech"]}) phonetic={ins["phonetic"]!r}')
 
     if not args.apply:
-        print('\n[DRY-RUN] Không ghi gì vào DB. Dùng --apply để thực thi.')
+        print('\n[DRY-RUN] Không ghi gì vào DB. Dùng cờ --apply để thực thi.')
         conn.close()
         return
 
-    if not to_update:
-        print('\nKhông có thẻ nào cần cập nhật (tất cả đã hợp lệ hoặc không tìm thấy). Không cần ghi DB.')
+    if not to_update and not to_insert:
+        print('\nKhông có thẻ nào cần cập nhật hay thêm mới. Không cần ghi DB.')
         conn.close()
         return
 
     # ============================================================
     # Thực thi ghi
     # ============================================================
-    # 1. Sao lưu bảng flashcards
-    ts = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+    ts = datetime.datetime.now().strftime('%Y%m%d_%H%M%S_%f')[:21]
     backup_table = f'{table}_backup_{ts}'
     print(f'\nSao lưu bảng {table} -> {backup_table} ...')
     cur.execute(f'CREATE TABLE `{backup_table}` SELECT * FROM `{table}`')
     conn.commit()
     print(f'Sao lưu hoàn thành: {backup_table}')
 
-    # 2. Cập nhật trong transaction
+    # Transaction
     log_path = f'private-results/apply_log_{ts}.txt'
-    applied = []
+    applied_updates = []
+    applied_inserts = []
     try:
+        # 1. Updates
         for u in to_update:
             cur.execute(
                 f'UPDATE `{table}` SET back_text=%s, part_of_speech=%s, updated_at=NOW() WHERE id=%s',
                 (u['new_back'], u['new_pos'], u['card_id'])
             )
-            applied.append(u)
+            applied_updates.append(u)
+
+        # 2. Inserts
+        for ins in to_insert:
+            cur.execute(
+                f'''
+                INSERT INTO `{table}`
+                    (deck_id, front_text, back_text, part_of_speech, phonetic, example_text,
+                     card_order, is_active, created_by, version, created_at, updated_at)
+                VALUES
+                    (%s, %s, %s, %s, %s, %s, %s, 1, %s, 1, NOW(), NOW())
+                ''',
+                (
+                    ins['deck_id'], ins['front_text'], ins['back_text'], ins['part_of_speech'],
+                    ins['phonetic'], ins['example_text'], ins['card_order'], ins['created_by']
+                )
+            )
+            applied_inserts.append(ins)
+
         conn.commit()
-        print(f'\n✓ Đã ghi {len(applied)} thẻ vào DB.')
+        print(f'\n✓ Đã ghi thành công vào DB: {len(applied_updates)} cập nhật, {len(applied_inserts)} thêm mới.')
     except Exception as e:
         conn.rollback()
-        print(f'\nLỖI khi ghi: {e}. Đã rollback.', file=sys.stderr)
+        print(f'\nLỖI khi ghi: {e}. Đã rollback toàn bộ transaction.', file=sys.stderr)
         conn.close()
         sys.exit(1)
 
-    # 3. Ghi log
+    # Log file
     os.makedirs('private-results', exist_ok=True)
     with open(log_path, 'w', encoding='utf-8') as lf:
         lf.write(f'apply_card_meaning_drafts — {ts}\n')
         lf.write(f'CSV: {args.csv_file}\n')
         lf.write(f'Backup table: {backup_table}\n')
-        lf.write(f'Applied {len(applied)} updates:\n\n')
-        for u in applied:
-            lf.write(f'  card_id={u["card_id"]} deck={u["deck_id"]} front={u["front_text"]!r}\n')
-            lf.write(f'    back: {u["old_back"]!r} -> {u["new_back"]!r}\n')
-            if u['old_pos'] != u['new_pos']:
-                lf.write(f'    pos:  {u["old_pos"]!r} -> {u["new_pos"]!r}\n')
+        lf.write(f'Applied {len(applied_updates)} updates, {len(applied_inserts)} inserts:\n\n')
+        if applied_updates:
+            lf.write('UPDATES:\n')
+            for u in applied_updates:
+                lf.write(f'  card_id={u["card_id"]} deck={u["deck_id"]} front={u["front_text"]!r}\n')
+                lf.write(f'    back: {u["old_back"]!r} -> {u["new_back"]!r}\n')
+        if applied_inserts:
+            lf.write('\nINSERTS:\n')
+            for ins in applied_inserts:
+                lf.write(f'  code={ins["card_id_code"]} deck={ins["deck_id"]} order={ins["card_order"]} front={ins["front_text"]!r} back={ins["back_text"]!r} pos={ins["part_of_speech"]}\n')
     print(f'Log ghi tại: {log_path}')
     conn.close()
 

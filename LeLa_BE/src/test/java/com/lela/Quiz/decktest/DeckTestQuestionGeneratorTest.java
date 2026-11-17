@@ -189,4 +189,122 @@ class DeckTestQuestionGeneratorTest {
             assertThat(fullyAligned).isFalse();
         }
     }
+
+    @Test
+    @DisplayName("Ưu tiên distractors CÙNG part_of_speech với target khi có đủ trong bộ thẻ")
+    void shouldPrioritizeSamePartOfSpeechDistractorsWhenAvailable() {
+        // Tạo bộ 8 thẻ: 4 danh từ ('n') và 4 động từ ('v')
+        List<Flashcard> deck = List.of(
+                createCard(1L, "contract", "hợp đồng", "n"),
+                createCard(2L, "agreement", "sự thỏa thuận", "noun"), // Test normalization: noun -> n
+                createCard(3L, "assurance", "sự bảo đảm", "n"),
+                createCard(4L, "bargain", "món hời", "n"),
+                createCard(5L, "cancel", "hủy bỏ", "v"),
+                createCard(6L, "determine", "xác định", "verb"), // Test normalization: verb -> v
+                createCard(7L, "engage", "tham gia", "v"),
+                createCard(8L, "establish", "thiết lập", "v")
+        );
+
+        Map<Long, Flashcard> cardMap = deck.stream().collect(Collectors.toMap(Flashcard::getId, c -> c));
+        Map<String, Flashcard> wordMap = deck.stream().collect(Collectors.toMap(c -> c.getFrontText().toLowerCase(), c -> c));
+
+        DeckTestQuestionGenerator.GeneratedExam exam = generator.generateExam(deck, List.of(), 8, 0, 20, 60);
+
+        for (DeckTestQuestionGenerator.GeneratedScreen mc : exam.mcScreens()) {
+            Flashcard target = cardMap.get(mc.sourceCardId());
+            String targetPosNorm = DeckTestQuestionGenerator.normalizePos(target.getPartOfSpeech());
+
+            // Tìm các lựa chọn distractors
+            for (TimedQuizEngine.Cell cell : mc.left()) {
+                if (cell.getId().equals(mc.solution().get("answer"))) continue;
+
+                // Xác định thẻ tương ứng của distractor
+                String text = cell.getText().toLowerCase().trim();
+                Flashcard distractorCard = deck.stream()
+                        .filter(c -> c.getFrontText().equalsIgnoreCase(text) || c.getBackText().equalsIgnoreCase(text))
+                        .findFirst()
+                        .orElse(null);
+
+                assertThat(distractorCard).isNotNull();
+                String distractorPosNorm = DeckTestQuestionGenerator.normalizePos(distractorCard.getPartOfSpeech());
+
+                // Vì mỗi nhóm ('n' và 'v') đều có 4 thẻ (target + 3 distractors),
+                // tất cả các distractors PHẢI cùng POS với target!
+                assertThat(distractorPosNorm)
+                        .as("Target '%s' (%s) distractor '%s' should have POS '%s'",
+                                target.getFrontText(), targetPosNorm, distractorCard.getFrontText(), targetPosNorm)
+                        .isEqualTo(targetPosNorm);
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("Fallback sang loại từ khác khi không đủ distractors cùng part_of_speech")
+    void shouldFallbackToOtherPartOfSpeechWhenSamePosIsInsufficient() {
+        // Bộ 8 thẻ: chỉ có 2 danh từ và 6 động từ
+        List<Flashcard> deck = List.of(
+                createCard(1L, "contract", "hợp đồng", "n"),
+                createCard(2L, "agreement", "sự thỏa thuận", "n"),
+                createCard(3L, "cancel", "hủy bỏ", "v"),
+                createCard(4L, "determine", "xác định", "v"),
+                createCard(5L, "engage", "tham gia", "v"),
+                createCard(6L, "establish", "thiết lập", "v"),
+                createCard(7L, "obligate", "bắt buộc", "v"),
+                createCard(8L, "resolve", "giải quyết", "v")
+        );
+
+        Map<Long, Flashcard> cardMap = deck.stream().collect(Collectors.toMap(Flashcard::getId, c -> c));
+
+        // Chỉ test câu hỏi của target là card 1 ("contract", noun)
+        DeckTestQuestionGenerator.GeneratedExam exam = generator.generateExam(deck, List.of(), 8, 0, 20, 60);
+
+        DeckTestQuestionGenerator.GeneratedScreen contractScreen = exam.mcScreens().stream()
+                .filter(s -> Objects.equals(s.sourceCardId(), 1L))
+                .findFirst()
+                .orElse(null);
+
+        assertThat(contractScreen).isNotNull();
+
+        // Target là 'contract' (n): chỉ có 1 thẻ 'n' khác là 'agreement'.
+        // Do đó 3 distractors phải bao gồm: 1 thẻ 'n' và 2 thẻ 'v' (fallback thành công).
+        List<String> distractorPosList = new ArrayList<>();
+        for (TimedQuizEngine.Cell cell : contractScreen.left()) {
+            if (cell.getId().equals(contractScreen.solution().get("answer"))) continue;
+            String text = cell.getText().toLowerCase().trim();
+            Flashcard distractor = deck.stream()
+                    .filter(c -> c.getFrontText().equalsIgnoreCase(text) || c.getBackText().equalsIgnoreCase(text))
+                    .findFirst()
+                    .orElse(null);
+            assertThat(distractor).isNotNull();
+            distractorPosList.add(DeckTestQuestionGenerator.normalizePos(distractor.getPartOfSpeech()));
+        }
+
+        // Chứa đúng 1 danh từ và 2 động từ fallback
+        assertThat(distractorPosList).containsExactlyInAnyOrder("n", "v", "v");
+    }
+
+    @Test
+    @DisplayName("Kiểm tra chuẩn hóa các dạng part_of_speech khác nhau")
+    void shouldNormalizePosCorrectly() {
+        assertThat(DeckTestQuestionGenerator.normalizePos("noun")).isEqualTo("n");
+        assertThat(DeckTestQuestionGenerator.normalizePos("N")).isEqualTo("n");
+        assertThat(DeckTestQuestionGenerator.normalizePos("n.")).isEqualTo("n");
+        assertThat(DeckTestQuestionGenerator.normalizePos("verb")).isEqualTo("v");
+        assertThat(DeckTestQuestionGenerator.normalizePos("VERB")).isEqualTo("v");
+        assertThat(DeckTestQuestionGenerator.normalizePos("v.")).isEqualTo("v");
+        assertThat(DeckTestQuestionGenerator.normalizePos("adjective")).isEqualTo("adj");
+        assertThat(DeckTestQuestionGenerator.normalizePos("adj")).isEqualTo("adj");
+        assertThat(DeckTestQuestionGenerator.normalizePos("adverb")).isEqualTo("adv");
+        assertThat(DeckTestQuestionGenerator.normalizePos("adv")).isEqualTo("adv");
+        assertThat(DeckTestQuestionGenerator.normalizePos("phrase")).isEqualTo("phr");
+        assertThat(DeckTestQuestionGenerator.normalizePos("phr")).isEqualTo("phr");
+        assertThat(DeckTestQuestionGenerator.normalizePos("preposition")).isEqualTo("prep");
+        assertThat(DeckTestQuestionGenerator.normalizePos("")).isEqualTo("");
+        assertThat(DeckTestQuestionGenerator.normalizePos(null)).isEqualTo("");
+
+        assertThat(DeckTestQuestionGenerator.isSamePos("noun", "n")).isTrue();
+        assertThat(DeckTestQuestionGenerator.isSamePos("verb", "v")).isTrue();
+        assertThat(DeckTestQuestionGenerator.isSamePos("adjective", "adj")).isTrue();
+        assertThat(DeckTestQuestionGenerator.isSamePos("noun", "verb")).isFalse();
+    }
 }

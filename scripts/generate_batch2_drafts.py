@@ -2,28 +2,25 @@
 generate_batch2_drafts.py
 -------------------------
 Soạn BẢN NHÁP Lô 2 cho 88 bộ TOEIC Oxford có 0 thẻ hợp lệ (8 thẻ/bộ = 704 thẻ).
-Chia thành 9 file nhỏ:
-  private-results/card_meaning_drafts_batch2a.csv -> batch2i.csv
-Và 1 file tổng hợp review:
-  private-results/card_meaning_drafts_batch2_summary_review.csv
+Nguồn nghĩa (cột source):
+  - a (db_reuse): Tái dùng nghĩa của thẻ đã hợp lệ trong DB (confidence: HIGH)
+  - c (ai_curated): AI tự biên soạn chuyên môn TOEIC (confidence: HIGH/MEDIUM/LOW)
+  - b (Google Translate GTX): Dịch qua dịch vụ công khai (confidence: MEDIUM trở xuống theo yêu cầu)
 
-Quy tắc:
-- Tiếng Việt ngắn gọn, 2-3 nghĩa phổ biến, phù hợp ngữ cảnh của từng bộ.
-- Khớp loại từ (n, v, adj, adv).
-- Không để trùng proposed_back_text trong cùng bộ.
-- Không chứa front_text trong proposed_back_text.
-- Không để trống, không quá 80 ký tự.
-- Gắn nhãn confidence: HIGH (từ rõ nghĩa, chuẩn ngữ cảnh), MEDIUM (nghĩa khá ổn), LOW (từ nhiều nghĩa, cần ngữ cảnh cụ thể).
-- Gắn cờ spot_check = 'Y' cho 5% dòng ngẫu nhiên (tối thiểu 20 dòng, ở đây 36/704 = 5.1%).
-- approved để trống cho người dùng duyệt.
+Xuất ra:
+  1. 9 file nhỏ: private-results/card_meaning_drafts_batch2a.csv -> batch2i.csv
+  2. 1 file tổng hợp review: private-results/card_meaning_drafts_batch2_summary_review.csv
+  3. 1 gói duyệt nhanh: private-results/review_pack.csv
+     (gồm 36 dòng spot_check, toàn bộ dòng MEDIUM/LOW, và 10 dòng HIGH ngẫu nhiên, sắp xếp theo confidence)
 """
-import json, csv, os, re, unicodedata, random, time
+import pymysql, os, re, unicodedata, random, json, csv, time
 from concurrent.futures import ThreadPoolExecutor
 import urllib.request, urllib.parse
 
-# Curated domain-specific dictionary for business/TOEIC nuances
+DB_PWD = os.environ.get('DB_PASSWORD', '123456')
+
+# ---------------------------------------------------------------- Curated dict
 CURATED = {
-    # Business & Management / Admin / Finance / Law nuances
     'disabled': ('Vô hiệu hóa; người khuyết tật', 'adj', 'MEDIUM', 'Trong ngữ cảnh Office/Tech thường là vô hiệu hóa; trong xã hội là người khuyết tật.'),
     'extension': ('Số máy nhánh; sự gia hạn', 'n', 'HIGH', 'Nghĩa số máy nhánh rất phổ biến trong TOEIC Office & Admin.'),
     'fabric': ('Vải, chất liệu vải; kết cấu', 'n', 'HIGH', 'Danh từ chỉ vật liệu may mặc hoặc kết cấu công trình.'),
@@ -72,82 +69,28 @@ CURATED = {
     'bid': ('Giá đấu thầu, sự bỏ thầu', 'n', 'HIGH', 'submit a bid, winning bid trong kinh doanh.'),
     'brick': ('Gạch xây dựng', 'n', 'HIGH', 'Vật liệu xây dựng cơ bản.'),
     'casual': ('Bình thường, giản dị; không chính thức', 'adj', 'HIGH', 'casual wear, casual meeting.'),
-    'clause': ('Điều khoản hợp đồng', 'n', 'HIGH', 'penalty clause, confidentiality clause.'),
-    'commodity': ('Hàng hóa thương mại', 'n', 'HIGH', 'commodity market, raw commodities.'),
-    'compensation': ('Sự bồi thường; thù lao, lương thưởng', 'n', 'HIGH', 'worker compensation, executive compensation.'),
-    'compliance': ('Sự tuân thủ quy định', 'n', 'HIGH', 'regulatory compliance, compliance officer.'),
-    'comprehensive': ('Toàn diện, bao quát', 'adj', 'HIGH', 'comprehensive review, comprehensive insurance.'),
-    'confidential': ('Bảo mật, tuyệt mật', 'adj', 'HIGH', 'confidential information, strictly confidential.'),
-    'consequence': ('Hậu quả, kết quả', 'n', 'HIGH', 'face the consequences, negative consequences.'),
-    'consolidate': ('Hợp nhất, củng cố', 'v', 'HIGH', 'consolidate debts, consolidate position.'),
-    'constrain': ('Ràng buộc, hạn chế', 'v', 'HIGH', 'budget constraints, constrained resources.'),
-    'contingency': ('Sự cố bất ngờ, phương án dự phòng', 'n', 'HIGH', 'contingency plan, contingency fund.'),
-    'contractor': ('Nhà thầu', 'n', 'HIGH', 'general contractor, independent contractor.'),
-    'contribute': ('Đóng góp, cống hiến', 'v', 'HIGH', 'contribute to success, contribute funds.'),
-    'corporate': ('Thuộc doanh nghiệp, tập đoàn', 'adj', 'HIGH', 'corporate strategy, corporate culture.'),
-    'correspondence': ('Thư từ trao đổi; sự tương ứng', 'n', 'HIGH', 'business correspondence, written correspondence.'),
-    'currency': ('Tiền tệ; sự lưu hành', 'n', 'HIGH', 'foreign currency, local currency.'),
-    'debt': ('Khoản nợ, dư nợ', 'n', 'HIGH', 'pay off debt, national debt.'),
-    'deficit': ('Thâm hụt tài chính', 'n', 'HIGH', 'budget deficit, trade deficit.'),
-    'delegate': ('Phân công, ủy quyền; đại biểu', 'v', 'HIGH', 'delegate tasks, conference delegates.'),
-    'demonstrate': ('Chứng minh, thị phạm, làm mẫu', 'v', 'HIGH', 'demonstrate product features.'),
-    'depreciate': ('Khấu hao; giảm giá trị', 'v', 'HIGH', 'depreciate over time, currency depreciates.'),
-    'derive': ('Bắt nguồn từ, rút ra từ', 'v', 'HIGH', 'derive benefits, derive revenue from.'),
-    'disburse': ('Giải ngân, chi trả', 'v', 'HIGH', 'disburse funds, loan disbursement.'),
-    'disclose': ('Tiết lộ, công bố thông tin', 'v', 'HIGH', 'disclose financial data, nondisclosure agreement.'),
-    'dispute': ('Tranh chấp, bất đồng', 'n', 'HIGH', 'resolve dispute, labor dispute.'),
-    'dividend': ('Cổ tức', 'n', 'HIGH', 'pay dividends, annual dividend.'),
-    'draft': ('Bản phác thảo; hối phiếu', 'n', 'HIGH', 'rough draft, bank draft.'),
-    'duration': ('Thời lượng, khoảng thời gian', 'n', 'HIGH', 'flight duration, contract duration.'),
-    'eligible': ('Đủ điều kiện, thích hợp', 'adj', 'HIGH', 'eligible for promotion, eligible candidate.'),
-    'endorse': ('Ủng hộ, chứng thực; ký hậu', 'v', 'HIGH', 'endorse candidate, endorse check.'),
-    'enforce': ('Thực thi, bắt buộc thi hành', 'v', 'HIGH', 'enforce regulations, law enforcement.'),
-    'enhance': ('Nâng cao, cải thiện', 'v', 'HIGH', 'enhance performance, enhance quality.'),
-    'enterprise': ('Doanh nghiệp; sự nghiệp lớn', 'n', 'HIGH', 'private enterprise, joint enterprise.'),
-    'equity': ('Vốn chủ sở hữu; tính công bằng', 'n', 'HIGH', 'shareholders equity, private equity.'),
-    'estate': ('Bất động sản; di sản', 'n', 'HIGH', 'real estate, estate planning.'),
-    'fiscal': ('Thuộc tài khóa, tài chính', 'adj', 'HIGH', 'fiscal year, fiscal policy.'),
-    'fluctuate': ('Dao động, biến động', 'v', 'HIGH', 'prices fluctuate, fluctuating market.'),
-    'implement': ('Triển khai, thực hiện', 'v', 'HIGH', 'implement strategy, implement changes.'),
-    'incentive': ('Động lực, khoản khuyến khích', 'n', 'HIGH', 'tax incentive, financial incentive.'),
-    'infrastructure': ('Cơ sở hạ tầng', 'n', 'HIGH', 'transport infrastructure, IT infrastructure.'),
-    'insolvent': ('Mất khả năng thanh toán, phá sản', 'adj', 'HIGH', 'insolvent company, declared insolvent.'),
-    'inventory': ('Hàng tồn kho; sự kiểm kê', 'n', 'HIGH', 'manage inventory, annual inventory.'),
-    'invoice': ('Hóa đơn thanh toán', 'n', 'HIGH', 'send invoice, pay invoice.'),
-    'lease': ('Hợp đồng thuê; thuê dài hạn', 'n', 'HIGH', 'lease agreement, lease office space.'),
-    'liability': ('Nghĩa vụ nợ; trách nhiệm pháp lý', 'n', 'HIGH', 'assets and liabilities, legal liability.'),
-    'liquidate': ('Thanh lý tài sản, giải thể', 'v', 'HIGH', 'liquidate inventory, liquidate company.'),
-    'logistics': ('Hậu cần, tiếp vận', 'n', 'HIGH', 'logistics management, supply chain logistics.'),
-    'merger': ('Sự sáp nhập doanh nghiệp', 'n', 'HIGH', 'mergers and acquisitions (M&A).'),
-    'monopoly': ('Thế độc quyền', 'n', 'HIGH', 'monopoly market, break up monopoly.'),
-    'mortgage': ('Khoản vay thế chấp nhà đất', 'n', 'HIGH', 'apply for mortgage, mortgage rate.'),
-    'negligence': ('Sự bất cẩn, sơ suất', 'n', 'HIGH', 'gross negligence, professional negligence.'),
-    'negotiate': ('Đàm phán, thương lượng', 'v', 'HIGH', 'negotiate contract, negotiate terms.'),
-    'obligation': ('Nghĩa vụ, bổn phận bắt buộc', 'n', 'HIGH', 'contractual obligation, legal obligation.'),
-    'patent': ('Bằng sáng chế; độc quyền', 'n', 'HIGH', 'file patent, patent protection.'),
-    'portfolio': ('Danh mục đầu tư; hồ sơ năng lực', 'n', 'HIGH', 'investment portfolio, product portfolio.'),
-    'practitioner': ('Người hành nghề chuyên môn', 'n', 'HIGH', 'medical practitioner, legal practitioner.'),
-    'procedure': ('Quy trình, thủ tục', 'n', 'HIGH', 'standard operating procedure (SOP).'),
-    'protocol': ('Giao thức; nghi thức ngoại giao', 'n', 'HIGH', 'safety protocol, communication protocol.'),
-    'provision': ('Điều khoản hợp đồng; sự dự phòng', 'n', 'HIGH', 'contract provision, provision for bad debt.'),
-    'quota': ('Hạn ngạch, chỉ tiêu', 'n', 'HIGH', 'import quota, sales quota.'),
-    'remedy': ('Biện pháp khắc phục; phương thuốc', 'n', 'HIGH', 'legal remedy, effective remedy.'),
-    'revenue': ('Doanh thu, tổng thu nhập', 'n', 'HIGH', 'annual revenue, generate revenue.'),
     'sanction': ('Lệnh trừng phạt; sự phê chuẩn', 'n', 'LOW', 'Từ có 2 nghĩa đối lập: trừng phạt vs phê chuẩn, tùy ngữ cảnh.'),
-    'settlement': ('Sự thanh toán; thỏa thuận giải quyết', 'n', 'HIGH', 'out-of-court settlement, debt settlement.'),
-    'stakeholder': ('Các bên liên quan', 'n', 'HIGH', 'stakeholder meeting, key stakeholders.'),
-    'subsidy': ('Tiền trợ cấp, sự trợ giá', 'n', 'HIGH', 'government subsidy, agricultural subsidy.'),
-    'surgeon': ('Bác sĩ phẫu thuật', 'n', 'HIGH', 'chief surgeon, orthopedic surgeon.'),
-    'tariff': ('Thuế quan, biểu giá', 'n', 'HIGH', 'impose tariffs, tariff rate.'),
-    'tender': ('Hồ sơ dự thầu; bỏ thầu', 'n', 'MEDIUM', 'competitive tender; nghĩa tính từ: mềm dịu.'),
-    'transaction': ('Giao dịch thương mại/tài chính', 'n', 'HIGH', 'online transaction, business transaction.'),
     'yield': ('Lợi tức, sản lượng; sinh lời', 'n', 'MEDIUM', 'bond yield, crop yield; động từ: nhượng bộ.'),
 }
+
+def normalize(text):
+    if text is None: text = ''
+    return unicodedata.normalize('NFC', text).lower().strip()
+
+GARBAGE_SUFFIX = re.compile(r'^.+\s+(ad|adv|adj|n|v)\.?$', re.IGNORECASE)
+
+def is_valid(front_text, back_text, is_active, deleted_at):
+    if not is_active or deleted_at is not None: return False
+    fn, bk = normalize(front_text), normalize(back_text)
+    if not fn or not bk or len(fn)<=1 or len(bk)<=1: return False
+    if 'từ vựng thuộc nhóm' in bk or 'đang cập nhật' in bk: return False
+    if GARBAGE_SUFFIX.match(bk) or GARBAGE_SUFFIX.match(fn): return False
+    if re.search(r'[<>={}]', bk): return False
+    return True
 
 def clean_vi(text):
     text = re.sub(r'\(.*?\)', '', text).strip()
     text = re.sub(r'\s+', ' ', text)
-    # Capitalize first letter
     if text:
         text = text[0].upper() + text[1:]
     return text
@@ -162,71 +105,122 @@ def translate_gtx(word):
     except Exception:
         return ''
 
-def get_word_draft(card, deck_name):
+def get_word_draft(card, deck_name, valid_dict):
     front = card['front_text'].strip()
     key = front.lower()
     pos = card['current_part_of_speech'] or 'n'
 
-    # 1. Curated match
+    # Nguồn a: Tái dùng thẻ hợp lệ trong DB (đối chiếu nội bộ)
+    if key in valid_dict:
+        back, d_pos = valid_dict[key]
+        return back, (d_pos or pos), 'HIGH', 'a (db_reuse)', 'Tái dùng từ thẻ hợp lệ đã có trong DB.'
+
+    # Nguồn c: AI tự biên soạn chuyên môn TOEIC
     if key in CURATED:
         back, c_pos, conf, note = CURATED[key]
-        return back, c_pos, conf, note
+        return back, c_pos, conf, 'c (ai_curated)', note + ' [AI tự soạn chuyên môn TOEIC]'
 
-    # 2. Online translation
+    # Nguồn b: Dịch qua Google Translate GTX (dịch vụ công khai)
     vi = translate_gtx(front)
     cleaned = clean_vi(vi)
     if not cleaned:
         cleaned = front.capitalize()
 
-    # Determine confidence and POS
-    # Simple single words with clear Vietnamese translation
-    conf = 'HIGH'
-    note = f'Từ vựng TOEIC Oxford ({deck_name.split("-")[-1].strip() if "-" in deck_name else deck_name}).'
-    
-    # Check if multiple words / idiom / phrase
-    if ' ' in front or '-' in front:
-        conf = 'LOW'
-        note = 'Cụm từ / thành ngữ; cần người dùng kiểm tra lại ngữ cảnh bộ thẻ.'
-    elif len(cleaned) < 2:
-        conf = 'LOW'
-        note = 'Từ ngắn hoặc nghĩa dịch chưa rõ ràng; cần kiểm tra.'
-    elif pos in ('v', 'adj', 'adv') and pos != card['current_part_of_speech']:
-        conf = 'MEDIUM'
-        note = f'Điều chỉnh loại từ sang {pos} phù hợp với nghĩa.'
+    # Theo quy tắc: Nguồn (b) phải đánh MEDIUM trở xuống, trừ khi đối chiếu độc lập
+    conf = 'MEDIUM'
+    note = f'Dịch tự động qua Google Translate GTX ({deck_name.split("-")[-1].strip() if "-" in deck_name else deck_name}); cần duyệt ToS.'
 
-    return cleaned, pos, conf, note
+    # Nếu từ ngắn, hoặc cụm từ -> LOW
+    if ' ' in front or '-' in front or len(cleaned) < 2:
+        conf = 'LOW'
+        note = 'Cụm từ / từ ngắn dịch tự động; đánh dấu LOW để người dùng kiểm tra.'
+
+    return cleaned, pos, conf, 'b (Google Translate GTX)', note
 
 def run():
     print("=================================================================")
     print("SOẠN BẢN NHÁP LÔ 2 (88 BỘ TOEIC OXFORD, 704 THẺ)")
     print("=================================================================")
 
-    with open('private-results/_batch2_all_cards.json', encoding='utf-8') as f:
-        batches_data = json.load(f)
+    conn = pymysql.connect(host='127.0.0.1', port=3306, user='root', password=DB_PWD, database='lela_db')
+    cur = conn.cursor(pymysql.cursors.DictCursor)
 
-    # Flatten all cards to do translations in parallel
+    # 1. Từ điển thẻ hợp lệ hiện có trong DB
+    cur.execute('''
+        SELECT LOWER(TRIM(front_text)) as word, back_text, part_of_speech
+        FROM flashcards
+        WHERE is_active=1 AND deleted_at IS NULL
+          AND back_text NOT LIKE '%từ vựng thuộc nhóm%'
+          AND back_text NOT LIKE '%đang cập nhật%'
+          AND LENGTH(back_text) > 1
+    ''')
+    valid_dict = {}
+    for r in cur.fetchall():
+        w = r['word']
+        if w not in valid_dict and is_valid(w, r['back_text'], 1, None):
+            valid_dict[w] = (r['back_text'], r['part_of_speech'])
+    print(f"[OK] Đã tải từ điển đối chiếu nội bộ: {len(valid_dict)} từ hợp lệ có sẵn trong DB.")
+
+    # 2. Lấy 88 bộ TOEIC có 0 thẻ hợp lệ
+    cur.execute('''
+        SELECT d.id, d.deck_code, d.title
+        FROM decks d
+        JOIN flashcards f ON f.deck_id = d.id AND f.is_active=1 AND f.deleted_at IS NULL
+        GROUP BY d.id, d.deck_code, d.title
+        ORDER BY d.id
+    ''')
+    all_decks = cur.fetchall()
+    zero_valid_decks = []
+    for d in all_decks:
+        cur.execute('SELECT front_text, back_text, is_active, deleted_at FROM flashcards WHERE deck_id = %s', (d['id'],))
+        cards = cur.fetchall()
+        valid_count = sum(1 for c in cards if is_valid(c['front_text'], c['back_text'], c['is_active'], c['deleted_at']))
+        if valid_count == 0 and ('OXFORD' in d['deck_code'] or 'TOEIC' in d['title']):
+            zero_valid_decks.append(d)
+
+    print(f"[OK] Số bộ TOEIC 0 thẻ hợp lệ: {len(zero_valid_decks)} bộ.")
+
+    # 3. Gom 8 thẻ mỗi bộ và chia 9 batch
+    chunks = [zero_valid_decks[i:i+10] for i in range(0, len(zero_valid_decks), 10)]
+    batches_data = {}
     all_cards = []
-    for bname, clist in batches_data.items():
-        for c in clist:
-            all_cards.append((bname, c))
 
-    print(f"Tổng số thẻ cần xử lý: {len(all_cards)} thẻ trong {len(batches_data)} lô")
+    for idx, chunk in enumerate(chunks):
+        letter = chr(ord('a') + idx)
+        bname = f"batch2{letter}"
+        batches_data[bname] = []
+        for d in chunk:
+            did = d['id']
+            cur.execute("""
+                SELECT id as card_id, deck_id, front_text, back_text as current_back_text, part_of_speech as current_part_of_speech
+                FROM flashcards
+                WHERE deck_id = %s AND is_active = 1 AND deleted_at IS NULL
+                ORDER BY id
+                LIMIT 8
+            """, (did,))
+            cards = cur.fetchall()
+            for c in cards:
+                c['deck_name'] = d['title']
+                batches_data[bname].append(c)
+                all_cards.append((bname, c))
 
-    # Fetch translations with ThreadPoolExecutor
-    print("Đang tra cứu và sinh nghĩa tiếng Việt cho 704 thẻ...")
+    conn.close()
+    print(f"[OK] Đã chọn {len(all_cards)} thẻ từ {len(zero_valid_decks)} bộ.")
+
+    # 4. Sinh nghĩa với ThreadPoolExecutor
+    print("Đang biên soạn và tra cứu nghĩa...")
     start_t = time.time()
-    
-    # Translate sequentially or with pool to be safe
     with ThreadPoolExecutor(max_workers=8) as pool:
-        results = list(pool.map(lambda item: (item[0], item[1], get_word_draft(item[1], item[1]['deck_name'])), all_cards))
+        results = list(pool.map(
+            lambda item: (item[0], item[1], get_word_draft(item[1], item[1]['deck_name'], valid_dict)),
+            all_cards
+        ))
+    print(f"[OK] Hoàn thành sinh nghĩa sau {time.time() - start_t:.2f} giây.")
 
-    print(f"Hoàn thành sinh nghĩa sau {time.time() - start_t:.2f} giây.")
-
-    # Reorganize by batch and apply internal validations
-    random.seed(42)  # For reproducible 5% spot_check selection
+    # 5. Spot check: chọn 36 dòng ngẫu nhiên (5.1% >= 20 dòng)
+    random.seed(42)
     total_cards = len(results)
     spot_indices = set(random.sample(range(total_cards), k=max(20, int(total_cards * 0.05) + 1)))
-    print(f"Đã chọn ngẫu nhiên {len(spot_indices)} dòng cho spot_check = Y ({len(spot_indices)/total_cards*100:.1f}%, tối thiểu 20 dòng)")
 
     batch_rows = {k: [] for k in batches_data.keys()}
     summary_rows = []
@@ -234,7 +228,7 @@ def run():
     global_idx = 0
     validation_fixes = 0
 
-    for bname, card, (back, pos, conf, note) in results:
+    for bname, card, (back, pos, conf, source, note) in results:
         did = card['deck_id']
         front = card['front_text'].strip()
 
@@ -273,6 +267,7 @@ def run():
             'proposed_back_text': back,
             'proposed_part_of_speech': pos,
             'confidence': conf,
+            'source': source,
             'note': note,
             'spot_check': is_spot,
             'approved': '',
@@ -287,16 +282,18 @@ def run():
             'nghĩa đề xuất': back,
             'loại từ': pos,
             'confidence': conf,
+            'source': source,
             'spot_check': is_spot,
             'ghi chú': note,
         })
         global_idx += 1
 
-    print(f"Validation nội bộ hoàn thành: {validation_fixes} điểm cần điều chỉnh đã được sửa tự động.")
+    print(f"[OK] Validation hoàn tất ({validation_fixes} điểm đã tự động hiệu chỉnh).")
 
-    # Write each batch file
+    # 6. Xuất 9 file batch CSV
+    os.makedirs('private-results', exist_ok=True)
     fieldnames = ['card_id','deck_id','deck_name','front_text','current_back_text','current_part_of_speech',
-                  'proposed_back_text','proposed_part_of_speech','confidence','note','spot_check','approved']
+                  'proposed_back_text','proposed_part_of_speech','confidence','source','note','spot_check','approved']
 
     for bname, rows in batch_rows.items():
         fname = f'private-results/card_meaning_drafts_{bname}.csv'
@@ -304,35 +301,78 @@ def run():
             w = csv.DictWriter(f, fieldnames=fieldnames)
             w.writeheader()
             w.writerows(rows)
-        print(f"  ✓ {fname}: {len(rows)} thẻ (10 bộ)")
+        print(f"  ✓ {fname}: {len(rows)} thẻ")
 
-    # Write summary review file
-    summary_fieldnames = ['card_id','deck_id','deck_name','từ','nghĩa đề xuất','loại từ','confidence','spot_check','ghi chú']
+    # 7. Xuất file tổng hợp review
     summary_path = 'private-results/card_meaning_drafts_batch2_summary_review.csv'
+    summary_fieldnames = ['card_id','deck_id','deck_name','từ','nghĩa đề xuất','loại từ','confidence','source','spot_check','ghi chú']
     with open(summary_path, 'w', newline='', encoding='utf-8-sig') as f:
         w = csv.DictWriter(f, fieldnames=summary_fieldnames)
         w.writeheader()
         w.writerows(summary_rows)
     print(f"\n✓ Đã xuất file tổng hợp review: {summary_path} ({len(summary_rows)} dòng)")
 
-    # Statistics
-    conf_counts = {'HIGH': 0, 'MEDIUM': 0, 'LOW': 0}
+    # 8. Tạo Gói Duyệt Nhanh (private-results/review_pack.csv)
+    # Gồm: 36 dòng spot_check, toàn bộ dòng MEDIUM/LOW, và 10 dòng HIGH ngẫu nhiên khác nữa
+    spot_rows = [r for r in summary_rows if r['spot_check'] == 'Y']
+    med_low_rows = [r for r in summary_rows if r['confidence'] in ('MEDIUM', 'LOW')]
+    high_rows = [r for r in summary_rows if r['confidence'] == 'HIGH' and r['spot_check'] != 'Y']
+    
+    random.seed(123)
+    sample_high = random.sample(high_rows, k=min(10, len(high_rows)))
+
+    # Deduplicate by card_id
+    seen_ids = set()
+    pack_rows = []
+    for r in med_low_rows + spot_rows + sample_high:
+        if r['card_id'] not in seen_ids:
+            seen_ids.add(r['card_id'])
+            pack_rows.append(r)
+
+    # Sắp xếp theo mức confidence: LOW -> MEDIUM -> HIGH
+    conf_order = {'LOW': 1, 'MEDIUM': 2, 'HIGH': 3}
+    pack_rows.sort(key=lambda r: (conf_order.get(r['confidence'], 9), r['card_id']))
+
+    review_pack_path = 'private-results/review_pack.csv'
+    pack_fieldnames = ['card_id', 'từ', 'loại từ', 'nghĩa đề xuất', 'confidence', 'source', 'note']
+    with open(review_pack_path, 'w', newline='', encoding='utf-8-sig') as f:
+        w = csv.DictWriter(f, fieldnames=pack_fieldnames)
+        w.writeheader()
+        for r in pack_rows:
+            w.writerow({
+                'card_id': r['card_id'],
+                'từ': r['từ'],
+                'loại từ': r['loại từ'],
+                'nghĩa đề xuất': r['nghĩa đề xuất'],
+                'confidence': r['confidence'],
+                'source': r['source'],
+                'note': r['ghi chú'],
+            })
+
+    print(f"✓ Đã xuất gói duyệt nhanh: {review_pack_path} ({len(pack_rows)} dòng)")
+
+    # In thống kê
+    source_counts = {}
+    conf_counts = {}
     for r in summary_rows:
-        conf_counts[r['confidence']] = conf_counts.get(r['confidence'], 0) + 1
+        s = r['source']
+        c = r['confidence']
+        source_counts[s] = source_counts.get(s, 0) + 1
+        conf_counts[c] = conf_counts.get(c, 0) + 1
 
-    print("\n--- Thống kê Lô 2 ---")
-    print(f"Tổng số thẻ đã soạn: {len(summary_rows)} thẻ cho 88 bộ")
-    print(f"Phân loại Confidence:")
-    for k, v in conf_counts.items():
-        print(f"  {k:6s}: {v:4d} thẻ ({v/len(summary_rows)*100:.1f}%)")
-    print(f"Số thẻ được đánh dấu spot_check = Y: {sum(1 for r in summary_rows if r['spot_check'] == 'Y')} thẻ")
-    print(f"Số bộ sẽ đạt >= 8 thẻ hợp lệ nếu duyệt: 88 / 88 bộ (100%)")
+    print("\n--- THỐNG KÊ NGUỒN NGHĨA (704 thẻ Lô 2) ---")
+    for s, count in sorted(source_counts.items()):
+        print(f"  {s:30s}: {count:4d} thẻ ({count/total_cards*100:.1f}%)")
 
-    print("\n--- 15 Dòng Mẫu từ Bảng Tổng Hợp ---")
-    for i, r in enumerate(summary_rows[:15]):
-        spot_tag = " [SPOT-CHECK]" if r['spot_check'] == 'Y' else ""
-        print(f"  {i+1:2d}. id={r['card_id']:6d} | {r['từ']:15s} -> {r['nghĩa đề xuất'][:30]:32s} ({r['loại từ']}) [{r['confidence']}]{spot_tag}")
-        print(f"      note: {r['ghi chú'][:75]}")
+    print("\n--- THỐNG KÊ CONFIDENCE (704 thẻ Lô 2) ---")
+    for c, count in sorted(conf_counts.items(), key=lambda x: -x[1]):
+        print(f"  {c:6s}: {count:4d} thẻ ({count/total_cards*100:.1f}%)")
+
+    print(f"\n--- GÓI DUYỆT NHANH (review_pack.csv) ---")
+    print(f"  Tổng số dòng gói duyệt: {len(pack_rows)} dòng")
+    print(f"    - LOW:    {sum(1 for r in pack_rows if r['confidence']=='LOW')} dòng")
+    print(f"    - MEDIUM: {sum(1 for r in pack_rows if r['confidence']=='MEDIUM')} dòng")
+    print(f"    - HIGH:   {sum(1 for r in pack_rows if r['confidence']=='HIGH')} dòng")
 
 if __name__ == '__main__':
     run()

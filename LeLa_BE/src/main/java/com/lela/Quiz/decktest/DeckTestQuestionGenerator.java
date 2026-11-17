@@ -93,14 +93,15 @@ public class DeckTestQuestionGenerator {
             boolean isWordToMeaning = (i % 2 == 1); // Trộn chiều EN -> VI xen kẽ
             String targetEn = DeckCardFilter.normalize(target.getFrontText());
             String targetVi = target.getBackText().trim();
-            String targetPos = target.getPartOfSpeech() == null ? "" : target.getPartOfSpeech().trim().toLowerCase();
+            String normTargetPos = normalizePos(target.getPartOfSpeech());
+            boolean hasTargetPos = !normTargetPos.isEmpty();
 
             // Sắp xếp candidates ưu tiên:
-            // 1. distractorUsage < 2
-            // 2. cùng part of speech
+            // 1. CÙNG part_of_speech với target (khi target có POS)
+            // 2. distractorUsage thấp hơn
             Comparator<Flashcard> candidateComparator = Comparator
-                    .<Flashcard, Integer>comparing(c -> distractorUsage.getOrDefault(DeckCardFilter.normalize(c.getFrontText()), 0) >= 2 ? 1 : 0)
-                    .thenComparing(c -> !Objects.equals(c.getPartOfSpeech(), targetPos));
+                    .<Flashcard, Integer>comparing(c -> (hasTargetPos && isSamePos(c.getPartOfSpeech(), normTargetPos)) ? 0 : 1)
+                    .thenComparing(c -> distractorUsage.getOrDefault(DeckCardFilter.normalize(c.getFrontText()), 0));
 
             // Candidate distractors: ưu tiên cùng bộ thẻ
             List<Flashcard> deckCandidates = deckCards.stream()
@@ -312,6 +313,25 @@ public class DeckTestQuestionGenerator {
                 .map(String::trim)
                 .filter(s -> !s.isBlank())
                 .collect(Collectors.toSet());
+    }
+
+    public static String normalizePos(String pos) {
+        if (pos == null) return "";
+        String p = pos.trim().toLowerCase();
+        if (p.equals("noun") || p.equals("n") || p.startsWith("n.")) return "n";
+        if (p.equals("verb") || p.equals("v") || p.startsWith("v.")) return "v";
+        if (p.equals("adjective") || p.equals("adj") || p.startsWith("adj.")) return "adj";
+        if (p.equals("adverb") || p.equals("adv") || p.startsWith("adv.")) return "adv";
+        if (p.equals("phrase") || p.equals("phr") || p.startsWith("phr.")) return "phr";
+        if (p.equals("preposition") || p.equals("prep") || p.startsWith("prep.")) return "prep";
+        return p;
+    }
+
+    public static boolean isSamePos(String pos1, String pos2) {
+        String p1 = normalizePos(pos1);
+        String p2 = normalizePos(pos2);
+        if (p1.isEmpty() || p2.isEmpty()) return false;
+        return p1.equals(p2);
     }
 
     private static String signature(List<Flashcard> cards) {
