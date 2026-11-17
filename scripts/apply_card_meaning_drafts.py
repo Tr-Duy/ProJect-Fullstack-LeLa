@@ -40,12 +40,12 @@ def is_invalid(front_text: str, back_text: str) -> bool:
     if re.search(r'[<>={}]', bk): return True
     return False
 
-def get_conn():
+def get_conn(db_name='lela_db'):
     db_pwd = os.environ.get('DB_PASSWORD', '123456')
     return pymysql.connect(
         host='127.0.0.1', port=3306,
         user='root', password=db_pwd,
-        database='lela_db',
+        database=db_name,
         charset='utf8mb4',
         autocommit=False,
     )
@@ -55,7 +55,12 @@ def main():
     parser = argparse.ArgumentParser(description='Apply card meaning drafts from CSV.')
     parser.add_argument('csv_file', help='Path to CSV draft file')
     parser.add_argument('--apply', action='store_true', help='Actually write to DB (default: dry-run)')
+    parser.add_argument('--database', default=os.environ.get('DB_NAME', 'lela_db'), help='Database name (default: lela_db)')
+    parser.add_argument('--table', default='flashcards', help='Flashcards table name (default: flashcards)')
     args = parser.parse_args()
+
+    table = args.table
+    db_name = args.database
 
     if not os.path.exists(args.csv_file):
         print(f'ERROR: File not found: {args.csv_file}', file=sys.stderr)
@@ -73,7 +78,7 @@ def main():
         print('Không có dòng nào được duyệt. Thoát.')
         sys.exit(0)
 
-    conn = get_conn()
+    conn = get_conn(db_name)
     cur = conn.cursor(pymysql.cursors.DictCursor)
 
     # --- Validation nội bộ ---
@@ -99,8 +104,11 @@ def main():
     skipped_not_found = []
 
     for row in approved:
-        card_id = int(row['card_id'])
-        cur.execute('SELECT id, front_text, back_text, part_of_speech FROM flashcards WHERE id=%s AND is_active=1 AND deleted_at IS NULL', (card_id,))
+        try:
+            card_id = int(row['card_id'])
+        except (ValueError, TypeError):
+            continue
+        cur.execute(f'SELECT id, front_text, back_text, part_of_speech FROM `{table}` WHERE id=%s AND is_active=1 AND deleted_at IS NULL', (card_id,))
         card = cur.fetchone()
         if not card:
             skipped_not_found.append(card_id)
@@ -131,7 +139,7 @@ def main():
 
     deck_valid_before = {}
     for did in deck_will_gain:
-        cur.execute('SELECT front_text, back_text FROM flashcards WHERE deck_id=%s AND is_active=1 AND deleted_at IS NULL', (did,))
+        cur.execute(f'SELECT front_text, back_text FROM `{table}` WHERE deck_id=%s AND is_active=1 AND deleted_at IS NULL', (did,))
         cards = cur.fetchall()
         deck_valid_before[did] = sum(1 for c in cards if not is_invalid(c['front_text'], c['back_text']))
 
@@ -141,8 +149,11 @@ def main():
         after = deck_valid_before[did] + gain
         passed = after >= 8
         if passed: decks_will_pass += 1
-        cur.execute('SELECT title FROM decks WHERE id=%s', (did,))
-        deck_title = (cur.fetchone() or {}).get('title', f'deck_{did}')
+        try:
+            cur.execute('SELECT title FROM decks WHERE id=%s', (did,))
+            deck_title = (cur.fetchone() or {}).get('title', f'deck_{did}')
+        except Exception:
+            deck_title = f'deck_{did}'
         status = '✓ >=8' if passed else f'✗ {after}'
         print(f'  Deck {did} ({deck_title[:45]}): {deck_valid_before[did]} -> {after} {status}')
     print(f'  Tổng: {decks_will_pass}/{len(deck_will_gain)} bộ sẽ đạt >=8 thẻ hợp lệ')
@@ -158,14 +169,19 @@ def main():
         conn.close()
         return
 
+    if not to_update:
+        print('\nKhông có thẻ nào cần cập nhật (tất cả đã hợp lệ hoặc không tìm thấy). Không cần ghi DB.')
+        conn.close()
+        return
+
     # ============================================================
     # Thực thi ghi
     # ============================================================
     # 1. Sao lưu bảng flashcards
     ts = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
-    backup_table = f'flashcards_backup_{ts}'
-    print(f'\nSao lưu bảng flashcards -> {backup_table} ...')
-    cur.execute(f'CREATE TABLE `{backup_table}` SELECT * FROM flashcards')
+    backup_table = f'{table}_backup_{ts}'
+    print(f'\nSao lưu bảng {table} -> {backup_table} ...')
+    cur.execute(f'CREATE TABLE `{backup_table}` SELECT * FROM `{table}`')
     conn.commit()
     print(f'Sao lưu hoàn thành: {backup_table}')
 
@@ -175,7 +191,7 @@ def main():
     try:
         for u in to_update:
             cur.execute(
-                'UPDATE flashcards SET back_text=%s, part_of_speech=%s, updated_at=NOW() WHERE id=%s',
+                f'UPDATE `{table}` SET back_text=%s, part_of_speech=%s, updated_at=NOW() WHERE id=%s',
                 (u['new_back'], u['new_pos'], u['card_id'])
             )
             applied.append(u)
