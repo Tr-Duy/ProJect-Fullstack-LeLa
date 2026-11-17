@@ -13,7 +13,7 @@ Soạn lại proposed_back_text cho toàn bộ 704 thẻ Lô 2:
 """
 import json, csv, os, re, unicodedata, random, pymysql
 
-DB_PWD = os.environ.get('DB_PASSWORD', '123456')
+DB_PWD = os.environ.get('DB_PASSWORD')
 
 def normalize(text):
     if text is None: return ''

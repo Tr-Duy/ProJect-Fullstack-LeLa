@@ -20,7 +20,7 @@ Phần B: Chế độ INSERT (Thêm thẻ mới cho bộ gần ngưỡng)
 """
 import os, sys, csv, pymysql, subprocess
 
-DB_PWD = os.environ.get('DB_PASSWORD', '123456')
+DB_PWD = os.environ.get('DB_PASSWORD')
 TEST_DB = 'lela_test_apply_db'
 
 def run():

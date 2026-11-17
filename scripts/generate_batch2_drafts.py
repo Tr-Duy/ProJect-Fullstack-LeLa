@@ -17,7 +17,7 @@ import pymysql, os, re, unicodedata, random, json, csv, time
 from concurrent.futures import ThreadPoolExecutor
 import urllib.request, urllib.parse
 
-DB_PWD = os.environ.get('DB_PASSWORD', '123456')
+DB_PWD = os.environ.get('DB_PASSWORD')
 
 # ---------------------------------------------------------------- Curated dict
 CURATED = {

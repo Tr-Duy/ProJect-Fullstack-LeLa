@@ -5,7 +5,7 @@ Xuất private-results/decks_survey.csv và in report.
 import pymysql, re, unicodedata, csv, os
 from collections import defaultdict
 
-DB_PWD = os.environ.get('DB_PASSWORD', '123456')
+DB_PWD = os.environ.get('DB_PASSWORD')
 
 def normalize(text):
     if text is None: text = ''

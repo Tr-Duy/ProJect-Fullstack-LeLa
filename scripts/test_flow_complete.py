@@ -6,7 +6,7 @@ import pymysql
 from decimal import Decimal
 
 pwd = os.environ.get('PLAYWRIGHT_PASSWORD', '123456')
-db_pwd = os.environ.get('DB_PASSWORD', '123456')
+db_pwd = os.environ.get('DB_PASSWORD')
 
 def get_db():
     return pymysql.connect(host='127.0.0.1', port=3306, user='root', password=db_pwd, database='lela_db', autocommit=True)

@@ -6,7 +6,7 @@ Không ghi vào DB.
 import pymysql, os, csv, re, unicodedata
 from datetime import datetime
 
-DB_PWD = os.environ.get('DB_PASSWORD', '123456')
+DB_PWD = os.environ.get('DB_PASSWORD')
 OUTPUT = 'private-results/card_meaning_drafts_batch1.csv'
 
 def normalize(text):

@@ -20,7 +20,7 @@ Bảo vệ dữ liệu:
 - Sao lưu bảng flashcards trước khi ghi (flashcards_backup_YYYYMMDD_HHMMSS).
 - Idempotent: chạy lại lần 2 không thay đổi gì.
 
-Mật khẩu DB đọc từ biến môi trường DB_PASSWORD (mặc định '123456').
+Mật khẩu DB bắt buộc đọc từ biến môi trường DB_PASSWORD (không có giá trị mặc định).
 
 Usage:
   python scripts/apply_card_meaning_drafts.py private-results/card_meaning_drafts_batch1.csv
@@ -63,7 +63,9 @@ def is_invalid(front_text: str, back_text: str) -> bool:
     return False
 
 def get_conn(db_name='lela_db'):
-    db_pwd = os.environ.get('DB_PASSWORD', '123456')
+    db_pwd = os.environ.get('DB_PASSWORD')
+    if not db_pwd:
+        raise RuntimeError("Missing required environment variable DB_PASSWORD")
     return pymysql.connect(
         host='127.0.0.1', port=3306,
         user='root', password=db_pwd,

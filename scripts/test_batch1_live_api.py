@@ -13,7 +13,7 @@ Xác nhận bằng API thật sau khi apply Lô 1:
 import pymysql, json, os, urllib.request, urllib.error
 
 BASE_URL = 'http://localhost:8080/api/v1'
-DB_PWD = os.environ.get('DB_PASSWORD', '123456')
+DB_PWD = os.environ.get('DB_PASSWORD')
 
 def http_req(url, method='GET', data=None, headers=None):
     if headers is None: headers = {}
