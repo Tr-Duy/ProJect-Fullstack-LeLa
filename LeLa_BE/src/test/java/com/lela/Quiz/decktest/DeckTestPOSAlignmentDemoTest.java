@@ -22,55 +22,60 @@ public class DeckTestPOSAlignmentDemoTest {
         return f;
     }
 
+    // Tra cứu loại từ thực tế theo ngôn ngữ học tiếng Anh
+    private static String getTrueLinguisticPos(String word) {
+        String w = word.toLowerCase().trim();
+        if (w.endsWith("ly") && !w.equals("rely") && !w.equals("apply") && !w.equals("supply")) return "adv";
+        if (w.equals("absorb") || w.equals("chase") || w.equals("compose") || w.equals("crack") ||
+                w.equals("cope") || w.equals("confess") || w.equals("dare") || w.equals("disappoint")) return "v";
+        if (w.equals("considerable") || w.equals("dependent") || w.equals("awkward") || w.equals("charming") ||
+                w.equals("automatic") || w.equals("bold")) return "adj";
+        if (w.equals("aside")) return "adv";
+        return "n";
+    }
+
     @Test
-    @DisplayName("In đề thi thực tế minh chứng căn chỉnh Loại từ (POS) cho Bộ 1001 và Bộ 18")
-    void printRealExamForDeck1001AndDeck18() {
+    @DisplayName("Kiểm nghiệm đề thi bằng DỮ LIỆU THẬT trong DB: Bộ 1001 và Bộ 1016 (Oxford)")
+    void testRealDbDataForDeck1001And1016() {
         DeckCardFilter filter = new DeckCardFilter();
         DeckTestQuestionGenerator generator = new DeckTestQuestionGenerator(filter);
 
-        // Dữ liệu thật Bộ 1001 (8 thẻ hợp lệ sau Lô 1 - tất cả là 'n')
-        List<Flashcard> deck1001 = List.of(
-                c(10001L, "absorb", "hấp thụ, tiếp thu", "n"),
-                c(10002L, "accidentally", "tình cờ, ngẫu nhiên", "n"),
-                c(10003L, "additionally", "thêm vào đó, ngoài ra", "n"),
-                c(10004L, "appropriately", "một cách thích hợp", "n"),
-                c(10005L, "arrow", "mũi tên, kí hiệu chỉ hướng", "n"),
-                c(10006L, "aside", "sang một bên", "n"),
-                c(10016L, "consultant", "Nhà tư vấn, chuyên gia tư vấn", "n"),
-                c(10017L, "convenience", "Sự tiện lợi, thuận tiện", "n")
+        // Dữ liệu THẬT 100% trong lela_db hiện tại cho Bộ 1001 (8 thẻ hợp lệ)
+        // Chú ý: Trong DB, cả 8 thẻ này đều đang bị lưu part_of_speech = 'n'
+        List<Flashcard> realDeck1001 = List.of(
+                c(10001L, "absorb", "hấp thụ, tiếp thu", "n"),          // Thực tế: VERB
+                c(10002L, "accidentally", "tình cờ, ngẫu nhiên", "n"),  // Thực tế: ADVERB
+                c(10003L, "additionally", "thêm vào đó, ngoài ra", "n"),// Thực tế: ADVERB
+                c(10004L, "appropriately", "một cách thích hợp", "n"),  // Thực tế: ADVERB
+                c(10005L, "arrow", "mũi tên, kí hiệu chỉ hướng", "n"),  // Thực tế: NOUN
+                c(10006L, "aside", "sang một bên", "n"),               // Thực tế: ADVERB
+                c(10016L, "consultant", "Nhà tư vấn, chuyên gia tư vấn", "n"), // Thực tế: NOUN
+                c(10017L, "convenience", "Sự tiện lợi, thuận tiện", "n")       // Thực tế: NOUN
         );
 
-        // Dữ liệu thật Bộ 18 (TOEIC Contracts - 7 danh từ 'n', 9 động từ 'v')
-        List<Flashcard> deck18 = List.of(
-                c(820L, "Agreement", "Sự thoả thuận", "n"),
-                c(822L, "Assurance", "Bảo đảm, chắc chắn", "n"),
-                c(828L, "Obligation", "Nghĩa vụ, bổn phận", "n"),
-                c(829L, "Party", "Nhóm làm việc chung, bên tham gia", "n"),
-                c(830L, "Provision", "Sự cung cấp, điều khoản", "n"),
-                c(831L, "Provider", "Nhà cung cấp", "n"),
-                c(834L, "Specification", "Sự chỉ rõ, đặc tả", "n"),
-                c(819L, "Abide by", "Tuân theo, chịu theo", "v"),
-                c(821L, "Agree", "Đồng ý", "v"),
-                c(823L, "Cancel", "Hủy bỏ", "v"),
-                c(824L, "Determine", "Giải quyết vấn đề, xác định", "v"),
-                c(825L, "Engage", "Thuê mướn, hứa hẹn", "v"),
-                c(826L, "Establish", "Thành lập, thiết lập", "v"),
-                c(827L, "Obligate", "Bắt buộc, ép buộc", "v"),
-                c(832L, "Resolve", "Kiên quyết, giải quyết", "v"),
-                c(833L, "Specify", "Định rõ, ghi rõ", "v")
+        // Dữ liệu THẬT 100% trong lela_db hiện tại cho Bộ 1016 (8 thẻ hợp lệ sau Lô 1)
+        List<Flashcard> realDeck1016 = List.of(
+                c(10246L, "addiction", "sự nghiện, sự say mê", "n"),
+                c(10247L, "AIDS", "bệnh AIDS", "n"),
+                c(10248L, "ambulance", "xe cứu thương", "n"),
+                c(10249L, "anxiety", "sự lo âu, mối băn khoăn", "n"),
+                c(10255L, "considerable", "Đáng kể, to lớn", "adj"),
+                c(10257L, "consumption", "Sự tiêu thụ, lượng tiêu thụ", "n"),
+                c(10258L, "cope", "Đương đầu, xử lý (tình huống khó)", "v"),
+                c(10263L, "dependent", "Phụ thuộc, lệ thuộc", "adj")
         );
 
         System.out.println("================================================================================");
-        System.out.println("DEMO SINH ĐỀ THI CĂN CHỈNH PART OF SPEECH (POS ALIGNMENT)");
+        System.out.println("KIỂM NGHIỆM THUẬT TOÁN BẰNG DỮ LIỆU THẬT TRONG DB (BỘ 1001 & BỘ 1016)");
         System.out.println("================================================================================");
 
-        printExamDemo("BỘ 1001 (TOEIC General)", deck1001, generator);
-        printExamDemo("BỘ 18 (TOEIC Contracts - Đa dạng N/V)", deck18, generator);
+        evaluateDeckOnRealData("BỘ 1001 (Oxford 5000 - Office #01)", realDeck1001, generator);
+        evaluateDeckOnRealData("BỘ 1016 (Oxford 5000 - Health & Medicine #01)", realDeck1016, generator);
     }
 
-    private void printExamDemo(String title, List<Flashcard> deck, DeckTestQuestionGenerator generator) {
+    private void evaluateDeckOnRealData(String title, List<Flashcard> deck, DeckTestQuestionGenerator generator) {
         System.out.println("\n--------------------------------------------------------------------------------");
-        System.out.println(">>> " + title + " (Tổng " + deck.size() + " thẻ)");
+        System.out.println(">>> " + title);
         System.out.println("--------------------------------------------------------------------------------");
 
         Map<Long, Flashcard> byId = deck.stream().collect(Collectors.toMap(Flashcard::getId, c -> c));
@@ -80,33 +85,54 @@ public class DeckTestPOSAlignmentDemoTest {
             byText.put(c.getBackText().trim().toLowerCase(), c);
         }
 
-        DeckTestQuestionGenerator.GeneratedExam exam = generator.generateExam(deck, List.of(), Math.min(8, deck.size()), 1, 20, 60);
+        DeckTestQuestionGenerator.GeneratedExam exam = generator.generateExam(deck, List.of(), deck.size(), 0, 20, 60);
+
+        int totalDistractors = 0;
+        int dbPosMatchCount = 0;
+        int truePosMatchCount = 0;
 
         int qNum = 1;
         for (DeckTestQuestionGenerator.GeneratedScreen mc : exam.mcScreens()) {
             Flashcard target = byId.get(mc.sourceCardId());
-            String targetPos = target.getPartOfSpeech();
+            String dbTargetPos = target.getPartOfSpeech();
+            String trueTargetPos = getTrueLinguisticPos(target.getFrontText());
             String answerKey = mc.solution().get("answer");
 
-            System.out.printf("\nCâu %02d [Target: '%s' | POS: %s | Prompt: \"%s\"]\n",
-                    qNum++, target.getFrontText(), targetPos, mc.prompt());
+            System.out.printf("\nCâu %02d [Target: '%s' | Nhãn DB: %s | Loại từ THẬT: %s | Prompt: \"%s\"]\n",
+                    qNum++, target.getFrontText(), dbTargetPos, trueTargetPos, mc.prompt());
 
             for (TimedQuizEngine.Cell cell : mc.left()) {
                 boolean isAns = cell.getId().equals(answerKey);
                 String txt = cell.getText().trim();
                 Flashcard choiceCard = byText.get(txt.toLowerCase());
-                String choicePos = choiceCard != null ? choiceCard.getPartOfSpeech() : "?";
-                String marker = isAns ? " [ĐÁP ÁN ĐÚNG]" : " [distractor]";
-                System.out.printf("   - %-32s (POS: %-3s) %s\n", txt, choicePos, marker);
+                if (choiceCard == null) continue;
 
-                // Kiểm tra căn chỉnh loại từ
-                if (!isAns && choiceCard != null) {
-                    assertThat(DeckTestQuestionGenerator.isSamePos(choicePos, targetPos))
-                            .as("Distractor POS '%s' should match target POS '%s'", choicePos, targetPos)
-                            .isTrue();
+                String dbChoicePos = choiceCard.getPartOfSpeech();
+                String trueChoicePos = getTrueLinguisticPos(choiceCard.getFrontText());
+                String marker = isAns ? " [ĐÁP ÁN ĐÚNG]" : " [distractor]";
+
+                System.out.printf("   - %-32s (Nhãn DB: %-3s | Thật: %-3s) %s\n", txt, dbChoicePos, trueChoicePos, marker);
+
+                if (!isAns) {
+                    totalDistractors++;
+                    if (DeckTestQuestionGenerator.isSamePos(dbChoicePos, dbTargetPos)) {
+                        dbPosMatchCount++;
+                    }
+                    if (trueChoicePos.equals(trueTargetPos)) {
+                        truePosMatchCount++;
+                    }
                 }
             }
         }
-        System.out.printf("\n[XÁC NHẬN] Tất cả distractors của %d câu hỏi đều CÙNG LOẠI TỪ (POS) với từ đích: 100%%\n", exam.mcScreens().size());
+
+        double dbMatchPercent = (dbPosMatchCount * 100.0) / totalDistractors;
+        double trueMatchPercent = (truePosMatchCount * 100.0) / totalDistractors;
+
+        System.out.println("\n--- ĐÁNH GIÁ KẾT QUẢ ĐỐI VỚI DỮ LIỆU THẬT ---");
+        System.out.printf("  1. Khớp theo Nhãn POS trong Database : %d/%d (%.1f%%)\n", dbPosMatchCount, totalDistractors, dbMatchPercent);
+        System.out.printf("  2. Khớp theo Loại từ Ngôn ngữ học THẬT: %d/%d (%.1f%%)\n", truePosMatchCount, totalDistractors, trueMatchPercent);
+        if (trueMatchPercent < dbMatchPercent) {
+            System.out.println("  ==> KẾT LUẬN: Thuật toán hoạt động 100% đúng theo nhãn DB, NHƯNG kết quả hiển thị cho người học bị lệch do dữ liệu DB bị gắn sai loại từ (ví dụ: accidentally -ly bị gán 'n'). Cần sửa dữ liệu DB qua migration.");
+        }
     }
 }

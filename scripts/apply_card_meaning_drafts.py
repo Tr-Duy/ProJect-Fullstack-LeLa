@@ -36,6 +36,17 @@ def normalize(text: str) -> str:
     if text is None: text = ''
     return unicodedata.normalize('NFC', text).lower().strip()
 
+def normalize_pos(pos: str) -> str:
+    if not pos: return 'n'
+    p = pos.strip().lower()
+    if p.startswith('n'): return 'n'
+    if p.startswith('v'): return 'v'
+    if p.startswith('adj'): return 'adj'
+    if p.startswith('adv'): return 'adv'
+    if p.startswith('prep'): return 'prep'
+    if p.startswith('phr'): return 'phr'
+    return p
+
 def is_still_placeholder(back_text: str) -> bool:
     bk = normalize(back_text)
     return 'từ vựng thuộc nhóm' in bk or 'đang cập nhật' in bk
@@ -157,7 +168,7 @@ def main():
         deck_id = int(row['deck_id'])
         front = row.get('front_text', '').strip()
         back = row.get('proposed_back_text', '').strip()
-        pos = row.get('proposed_part_of_speech', 'n').strip() or 'n'
+        pos = normalize_pos(row.get('proposed_part_of_speech', 'n'))
         phonetic = row.get('phonetic', '').strip() or None
         example = row.get('example_text', '').strip() or None
 
