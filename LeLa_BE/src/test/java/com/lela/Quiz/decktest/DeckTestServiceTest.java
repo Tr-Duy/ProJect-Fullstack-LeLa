@@ -66,28 +66,50 @@ import static org.mockito.Mockito.*;
 @MockitoSettings(strictness = Strictness.LENIENT)
 class DeckTestServiceTest {
 
-    @Mock private DeckRepository deckRepository;
-    @Mock private FlashcardRepository flashcardRepository;
-    @Mock private DeckEnrollmentRepository deckEnrollmentRepository;
-    @Mock private CardProgressRepository cardProgressRepository;
-    @Mock private QuizRepository quizRepository;
-    @Mock private QuizAttemptRepository quizAttemptRepository;
-    @Mock private QuizAttemptQuestionRepository quizAttemptQuestionRepository;
-    @Mock private QuizAttemptOptionRepository quizAttemptOptionRepository;
-    @Mock private QuizAnswerRepository quizAnswerRepository;
-    @Mock private UsersRepository usersRepository;
-    @Mock private TimedQuizStateRepository timedQuizStateRepository;
-    @Mock private VocabularyRepository vocabularyRepository;
-    @Mock private TimedQuizEngine timedQuizEngine;
-    @Mock private VocabularyQuizRewards vocabularyQuizRewards;
-    @Mock private DeckCardFilter cardFilter;
-    @Mock private DeckTestQuestionGenerator questionGenerator;
-    @Mock private DailyXpBudget dailyXpBudget;
-    @Mock private DailyLearningActivityService activityService;
-    @Mock private VoiceConfigurationProperties voiceConfig;
-    @Mock private AchievementService achievementService;
-    @Mock private ModelMapper mapper;
-    @Mock private ObjectMapper json;
+    @Mock
+    private DeckRepository deckRepository;
+    @Mock
+    private FlashcardRepository flashcardRepository;
+    @Mock
+    private DeckEnrollmentRepository deckEnrollmentRepository;
+    @Mock
+    private CardProgressRepository cardProgressRepository;
+    @Mock
+    private QuizRepository quizRepository;
+    @Mock
+    private QuizAttemptRepository quizAttemptRepository;
+    @Mock
+    private QuizAttemptQuestionRepository quizAttemptQuestionRepository;
+    @Mock
+    private QuizAttemptOptionRepository quizAttemptOptionRepository;
+    @Mock
+    private QuizAnswerRepository quizAnswerRepository;
+    @Mock
+    private UsersRepository usersRepository;
+    @Mock
+    private TimedQuizStateRepository timedQuizStateRepository;
+    @Mock
+    private VocabularyRepository vocabularyRepository;
+    @Mock
+    private TimedQuizEngine timedQuizEngine;
+    @Mock
+    private VocabularyQuizRewards vocabularyQuizRewards;
+    @Mock
+    private DeckCardFilter cardFilter;
+    @Mock
+    private DeckTestQuestionGenerator questionGenerator;
+    @Mock
+    private DailyXpBudget dailyXpBudget;
+    @Mock
+    private DailyLearningActivityService activityService;
+    @Mock
+    private VoiceConfigurationProperties voiceConfig;
+    @Mock
+    private AchievementService achievementService;
+    @Mock
+    private ModelMapper mapper;
+    @Mock
+    private ObjectMapper json;
 
     private DeckTestProperties properties;
     private DeckTestServiceImpl service;
@@ -111,8 +133,7 @@ class DeckTestServiceTest {
                 quizRepository, quizAttemptRepository, quizAttemptQuestionRepository, quizAttemptOptionRepository,
                 quizAnswerRepository, usersRepository, timedQuizStateRepository, vocabularyRepository,
                 timedQuizEngine, vocabularyQuizRewards, properties, cardFilter, questionGenerator,
-                dailyXpBudget, activityService, voiceConfig, achievementService, mapper, json
-        );
+                dailyXpBudget, activityService, voiceConfig, achievementService, mapper, json);
 
         testUser = new Users();
         testUser.setId(100L);
@@ -323,7 +344,8 @@ class DeckTestServiceTest {
         when(quizAttemptQuestionRepository.findByAttemptId(501L)).thenReturn(List.of(q));
 
         // Không có lần nộp nào trước đó hôm nay
-        when(quizAttemptRepository.countSubmittedDeckAttemptsOnDate(eq(100L), eq(10L), any(), any(), eq(501L))).thenReturn(0L);
+        when(quizAttemptRepository.countSubmittedDeckAttemptsOnDate(eq(100L), eq(10L), any(), any(), eq(501L)))
+                .thenReturn(0L);
 
         DeckEnrollment enrollment = new DeckEnrollment();
         enrollment.setUser(testUser);
@@ -368,7 +390,8 @@ class DeckTestServiceTest {
         when(quizAttemptQuestionRepository.findByAttemptId(502L)).thenReturn(List.of(q));
 
         // Đã có 1 lần nộp trước đó hôm nay
-        when(quizAttemptRepository.countSubmittedDeckAttemptsOnDate(eq(100L), eq(10L), any(), any(), eq(502L))).thenReturn(1L);
+        when(quizAttemptRepository.countSubmittedDeckAttemptsOnDate(eq(100L), eq(10L), any(), any(), eq(502L)))
+                .thenReturn(1L);
 
         DeckEnrollment enrollment = new DeckEnrollment();
         enrollment.setUser(testUser);
@@ -384,7 +407,8 @@ class DeckTestServiceTest {
         assertThat(testUser.getXpTotal()).isEqualTo(50L);
         assertThat(attempt.getXpAwarded()).isEqualTo(0);
         // Nhưng hoạt động học vẫn được ghi nhận để giữ streak!
-        verify(activityService, times(1)).logActivity(argThat(req -> req.getXpEarned() == 0 && req.getQuizCount() == 1));
+        verify(activityService, times(1))
+                .logActivity(argThat(req -> req.getXpEarned() == 0 && req.getQuizCount() == 1));
         verify(usersRepository, times(1)).save(testUser);
     }
 
