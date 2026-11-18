@@ -60,10 +60,12 @@ def run():
         user_id = cur.fetchone()['id']
     print(f"[OK] Đã sẵn sàng user test: {username} (id={user_id})")
 
+    test_password = os.environ.get('TEST_PASSWORD') or os.environ.get('PLAYWRIGHT_PASSWORD')
+    if not test_password:
+        raise RuntimeError("Missing required environment variable: TEST_PASSWORD (or PLAYWRIGHT_PASSWORD)")
+
     # Login qua REST API để lấy JWT
-    status, login_resp = http_req(f"{BASE_URL}/auth/login", 'POST', {'usernameOrEmail': username, 'password': 'password123'})
-    if status != 200:
-        status, login_resp = http_req(f"{BASE_URL}/auth/login", 'POST', {'usernameOrEmail': username, 'password': '123456'})
+    status, login_resp = http_req(f"{BASE_URL}/auth/login", 'POST', {'usernameOrEmail': username, 'password': test_password})
     token = login_resp.get('data', {}).get('accessToken')
     assert token, f"Login failed: {login_resp}"
     headers = {'Authorization': f'Bearer {token}'}

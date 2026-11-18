@@ -4,8 +4,12 @@ import os
 import uuid
 import pymysql
 
-pwd = os.environ.get('PLAYWRIGHT_PASSWORD', '123456')
+pwd = os.environ.get('TEST_PASSWORD') or os.environ.get('PLAYWRIGHT_PASSWORD')
+if not pwd:
+    raise RuntimeError("Missing required environment variable: TEST_PASSWORD (or PLAYWRIGHT_PASSWORD)")
 db_pwd = os.environ.get('DB_PASSWORD')
+if not db_pwd:
+    raise RuntimeError("Missing required environment variable: DB_PASSWORD")
 
 def get_db():
     conn = pymysql.connect(host='127.0.0.1', port=3306, user='root', password=db_pwd, database='lela_db', autocommit=True)

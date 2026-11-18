@@ -133,4 +133,20 @@ class DeckCardFilterTest {
         List<Flashcard> result = filter.filterValidCards(List.of(cardA, cardB));
         assertThat(result).hasSize(2);
     }
+
+    @Test
+    @DisplayName("Loại bỏ thẻ có chú thích loại từ trong front_text hoặc back_text như (a.), (n.), (v.), (adj.)")
+    void shouldRejectCardWithPosAnnotationInFrontOrBackText() {
+        Flashcard cardFront1 = createCard(892L, "Overcrowded (a.)", "Chật nịch, đông nghịt", "phr");
+        Flashcard cardFront2 = createCard(902L, "Compatible (a.)", "Tương thích, hợp nhau", "phr");
+        Flashcard cardFront3 = createCard(999L, "Contract (n.)", "Hợp đồng", "n");
+        Flashcard cardBack = createCard(1000L, "Affordable", "Phải chăng (adj.)", "adj");
+        Flashcard cardValid = createCard(1001L, "Affordable", "Phải chăng, vừa phải", "adj");
+
+        assertThat(filter.isValidCard(cardFront1)).isFalse();
+        assertThat(filter.isValidCard(cardFront2)).isFalse();
+        assertThat(filter.isValidCard(cardFront3)).isFalse();
+        assertThat(filter.isValidCard(cardBack)).isFalse();
+        assertThat(filter.isValidCard(cardValid)).isTrue();
+    }
 }

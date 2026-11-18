@@ -7,6 +7,13 @@ if (!fs.existsSync(screenshotDir)) {
   fs.mkdirSync(screenshotDir, { recursive: true });
 }
 
+const username = process.env.TEST_USERNAME || process.env.TEST_USER;
+const password = process.env.TEST_PASSWORD || process.env.PLAYWRIGHT_PASSWORD;
+if (!username || !password) {
+  console.error('Missing required environment variable: TEST_USERNAME (or TEST_USER) and TEST_PASSWORD (or PLAYWRIGHT_PASSWORD)');
+  process.exit(1);
+}
+
 async function main() {
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({
@@ -20,8 +27,8 @@ async function main() {
   await page.waitForTimeout(1000);
 
   // Fill credentials
-  await page.fill('input#usernameOrEmail, input[name="usernameOrEmail"], input[type="text"]', 'test_batch1_user');
-  await page.fill('input#password, input[name="password"], input[type="password"]', '123456');
+  await page.fill('input#usernameOrEmail, input[name="usernameOrEmail"], input[type="text"]', username);
+  await page.fill('input#password, input[name="password"], input[type="password"]', password);
   await page.click('button[type="submit"]');
 
   // Wait for navigation after login

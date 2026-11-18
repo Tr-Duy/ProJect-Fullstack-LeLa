@@ -12,6 +12,7 @@ import java.util.regex.Pattern;
 public class DeckCardFilter {
 
     private static final Pattern GARBAGE_SUFFIX = Pattern.compile(".*\\s+(?:ad|adv|adj|n|v)\\.?$", Pattern.CASE_INSENSITIVE);
+    private static final Pattern POS_ANNOTATION = Pattern.compile(".*\\s*\\((?:a|adj|adv|n|v|prep|conj|pron)\\.?\\)\\s*$", Pattern.CASE_INSENSITIVE);
 
     public static String normalize(String text) {
         return Normalizer.normalize(text == null ? "" : text, Normalizer.Form.NFC)
@@ -35,6 +36,9 @@ public class DeckCardFilter {
             return false;
         }
         if (GARBAGE_SUFFIX.matcher(back).matches() || GARBAGE_SUFFIX.matcher(front).matches()) {
+            return false;
+        }
+        if (POS_ANNOTATION.matcher(back).matches() || POS_ANNOTATION.matcher(front).matches()) {
             return false;
         }
         if (back.matches(".*[<>={}].*")) {

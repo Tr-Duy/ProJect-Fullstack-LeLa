@@ -22,10 +22,11 @@ def http_req(url, method='GET', data=None, headers=None):
 
 def run():
     print("=== KIỂM TRA ĐỀ THI BỘ 22 (CÓ CẶP TRÙNG 'Register' 893 & 894) ===")
-    username = 'learner1'
-    status, login_resp = http_req(f"{BASE_URL}/auth/login", 'POST', {'usernameOrEmail': username, 'password': 'password'})
-    if status != 200:
-        status, login_resp = http_req(f"{BASE_URL}/auth/login", 'POST', {'usernameOrEmail': username, 'password': '123456'})
+    username = os.environ.get('TEST_USER') or os.environ.get('TEST_USERNAME') or 'learner1'
+    test_password = os.environ.get('TEST_PASSWORD') or os.environ.get('PLAYWRIGHT_PASSWORD')
+    if not test_password:
+        raise RuntimeError("Missing required environment variable: TEST_PASSWORD (or PLAYWRIGHT_PASSWORD)")
+    status, login_resp = http_req(f"{BASE_URL}/auth/login", 'POST', {'usernameOrEmail': username, 'password': test_password})
     token = login_resp.get('data', {}).get('accessToken')
     assert token, f"Login failed: {login_resp}"
     headers = {'Authorization': f'Bearer {token}'}
