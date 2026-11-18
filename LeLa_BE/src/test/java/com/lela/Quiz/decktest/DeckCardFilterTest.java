@@ -149,4 +149,36 @@ class DeckCardFilterTest {
         assertThat(filter.isValidCard(cardBack)).isFalse();
         assertThat(filter.isValidCard(cardValid)).isTrue();
     }
+
+    @Test
+    @DisplayName("Quy tắc 1c: Loại bỏ thẻ có front_text bất thường (> 40 ký tự, > 4 từ, hoặc chứa token POS sau từ đầu)")
+    void shouldRejectCardWithAbnormalFrontText() {
+        // 1. Quá 40 ký tự
+        Flashcard tooLong = createCard(101L, "This is an extremely long front text that exceeds forty characters easily", "Nghĩa bình thường", "n");
+        assertThat(filter.isValidCard(tooLong)).isFalse();
+
+        // 2. Quá 4 từ
+        Flashcard tooManyWords = createCard(102L, "one two three four five", "Nghĩa bình thường", "n");
+        assertThat(filter.isValidCard(tooManyWords)).isFalse();
+
+        // 3. Chứa token loại từ đứng riêng sau từ đầu (adj, adv, gerund, v., n., v, n)
+        Flashcard promptDict = createCard(1119L, "Prompt adj being on time or punctual, carried out without delay", "Ngay lập tức", "n");
+        Flashcard fulfillingGerund = createCard(1096L, "Fulfilling gerund fulfillment n", "Sự hoàn thành", "n");
+        Flashcard apprenticeshipN = createCard(1344L, "Apprenticeship n", "Sự học việc", "n");
+        Flashcard onboardAdj = createCard(1380L, "Onboard adj", "Trên tàu", "adj");
+
+        assertThat(filter.isValidCard(promptDict)).isFalse();
+        assertThat(filter.isValidCard(fulfillingGerund)).isFalse();
+        assertThat(filter.isValidCard(apprenticeshipN)).isFalse();
+        assertThat(filter.isValidCard(onboardAdj)).isFalse();
+
+        // 4. Các cụm từ hợp lệ (<= 4 từ, không chứa POS token riêng)
+        Flashcard phraseValid1 = createCard(103L, "take part in", "tham gia", "v");
+        Flashcard phraseValid2 = createCard(104L, "get in touch", "liên lạc", "v");
+        Flashcard phraseValid3 = createCard(105L, "look forward to", "trông mong", "v");
+
+        assertThat(filter.isValidCard(phraseValid1)).isTrue();
+        assertThat(filter.isValidCard(phraseValid2)).isTrue();
+        assertThat(filter.isValidCard(phraseValid3)).isTrue();
+    }
 }

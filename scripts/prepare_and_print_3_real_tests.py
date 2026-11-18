@@ -4,7 +4,7 @@ import json
 import urllib.request
 import urllib.error
 
-db_pwd = os.environ.get('DB_PASSWORD', '123456')
+db_pwd = os.environ.get('DB_PASSWORD', '')
 conn = pymysql.connect(
     host='127.0.0.1', port=3306,
     user='root', password=db_pwd,
@@ -78,7 +78,7 @@ def http_get(url, headers=None):
 # 2. Login via API
 login_res = http_post("http://localhost:8080/api/v1/auth/login", {
     "usernameOrEmail": "learner1",
-    "password": "123456"
+    "password": os.environ.get("DB_PASSWORD", "")
 })
 
 token = login_res['data']['accessToken']

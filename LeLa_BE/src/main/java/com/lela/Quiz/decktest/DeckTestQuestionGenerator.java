@@ -90,7 +90,8 @@ public class DeckTestQuestionGenerator {
 
         for (int i = 0; i < targets.size(); i++) {
             Flashcard target = targets.get(i);
-            boolean isWordToMeaning = (i % 2 == 1); // Trộn chiều EN -> VI xen kẽ
+            // Thẻ có back_text chứa front_text (không phân biệt hoa thường) chỉ được ra câu EN -> VI
+            boolean isWordToMeaning = backContainsFront(target) || (i % 2 == 1);
             String targetEn = DeckCardFilter.normalize(target.getFrontText());
             String targetVi = target.getBackText().trim();
             String normTargetPos = normalizePos(target.getPartOfSpeech());
@@ -103,7 +104,7 @@ public class DeckTestQuestionGenerator {
                     .<Flashcard, Integer>comparing(c -> (hasTargetPos && isSamePos(c.getPartOfSpeech(), normTargetPos)) ? 0 : 1)
                     .thenComparing(c -> distractorUsage.getOrDefault(DeckCardFilter.normalize(c.getFrontText()), 0));
 
-            // Candidate distractors: ưu tiên cùng bộ thẻ
+            // Candidate distractors: ưu tiên cùng bộ thẻ (không trùng front_text và không trùng nghĩa với target)
             List<Flashcard> deckCandidates = deckCards.stream()
                     .filter(c -> !Objects.equals(c.getId(), target.getId())
                             && !DeckCardFilter.normalize(c.getFrontText()).equals(targetEn)
@@ -112,48 +113,64 @@ public class DeckTestQuestionGenerator {
             Collections.shuffle(deckCandidates);
             deckCandidates.sort(candidateComparator);
 
-            // Candidate distractors fallback từ kho chung cùng cấp
-            List<Flashcard> fallbackCandidates = fallbackPool.stream()
+            // Candidate distractors fallback từ kho chung cùng cấp: chia cùng POS và khác POS
+            List<Flashcard> fallbackSamePos = fallbackPool.stream()
                     .filter(c -> !Objects.equals(c.getId(), target.getId())
                             && !DeckCardFilter.normalize(c.getFrontText()).equals(targetEn)
+                            && hasTargetPos && isSamePos(c.getPartOfSpeech(), normTargetPos)
                             && !isMeaningConflicting(targetVi, c.getBackText()))
                     .collect(Collectors.toCollection(ArrayList::new));
-            Collections.shuffle(fallbackCandidates);
-            fallbackCandidates.sort(candidateComparator);
+            Collections.shuffle(fallbackSamePos);
+
+            List<Flashcard> fallbackOtherPos = fallbackPool.stream()
+                    .filter(c -> !Objects.equals(c.getId(), target.getId())
+                            && !DeckCardFilter.normalize(c.getFrontText()).equals(targetEn)
+                            && (!hasTargetPos || !isSamePos(c.getPartOfSpeech(), normTargetPos))
+                            && !isMeaningConflicting(targetVi, c.getBackText()))
+                    .collect(Collectors.toCollection(ArrayList::new));
+            Collections.shuffle(fallbackOtherPos);
 
             List<Flashcard> chosenChoices = null;
             for (int trial = 0; trial < 32; trial++) {
                 List<Flashcard> candidateChoices = new ArrayList<>();
                 candidateChoices.add(target);
 
-                // Lấy từ deck trước (ưu tiên distractorUsage < 2)
+                // 1. Lấy từ cùng deck trước
                 for (Flashcard dc : deckCandidates) {
                     if (candidateChoices.size() >= 4) break;
-                    if (candidateChoices.stream().noneMatch(ch -> DeckCardFilter.normalize(ch.getFrontText()).equals(DeckCardFilter.normalize(dc.getFrontText()))
-                            || isMeaningConflicting(ch.getBackText(), dc.getBackText()))) {
+                    if (isChoiceEligible(candidateChoices, dc)) {
                         candidateChoices.add(dc);
                     }
                 }
 
-                // Nếu chưa đủ 4, lấy thêm từ fallback
+                // 2. Nếu chưa đủ 4, lấy từ fallback cùng POS
                 if (candidateChoices.size() < 4) {
-                    for (Flashcard fc : fallbackCandidates) {
+                    for (Flashcard fc : fallbackSamePos) {
                         if (candidateChoices.size() >= 4) break;
-                        if (candidateChoices.stream().noneMatch(ch -> DeckCardFilter.normalize(ch.getFrontText()).equals(DeckCardFilter.normalize(fc.getFrontText()))
-                                || isMeaningConflicting(ch.getBackText(), fc.getBackText()))) {
+                        if (isChoiceEligible(candidateChoices, fc)) {
                             candidateChoices.add(fc);
                         }
                     }
                 }
 
-                if (candidateChoices.size() >= 2) {
+                // 3. Nếu vẫn chưa đủ 4, lấy từ fallback khác POS
+                if (candidateChoices.size() < 4) {
+                    for (Flashcard fc : fallbackOtherPos) {
+                        if (candidateChoices.size() >= 4) break;
+                        if (isChoiceEligible(candidateChoices, fc)) {
+                            candidateChoices.add(fc);
+                        }
+                    }
+                }
+
+                if (candidateChoices.size() == 4) {
                     String optSig = signature(candidateChoices);
                     String distSig = signature(candidateChoices.stream().filter(c -> !Objects.equals(c.getId(), target.getId())).toList());
-                    if (candidateChoices.size() == 4 && (optionGroups.contains(optSig) || distractorGroups.contains(distSig))) {
+                    if (optionGroups.contains(optSig) || distractorGroups.contains(distSig)) {
                         Collections.shuffle(deckCandidates);
                         deckCandidates.sort(candidateComparator);
-                        Collections.shuffle(fallbackCandidates);
-                        fallbackCandidates.sort(candidateComparator);
+                        Collections.shuffle(fallbackSamePos);
+                        Collections.shuffle(fallbackOtherPos);
                         continue;
                     }
                     optionGroups.add(optSig);
@@ -163,18 +180,42 @@ public class DeckTestQuestionGenerator {
                 }
             }
 
+            // Nếu sau 32 trials chưa tìm được tổ hợp signature mới, gom lại 1 lần cuối bảo đảm đúng 4 lựa chọn không trùng nghĩa
             if (chosenChoices == null) {
-                chosenChoices = new ArrayList<>(List.of(target));
+                List<Flashcard> candidateChoices = new ArrayList<>();
+                candidateChoices.add(target);
                 for (Flashcard dc : deckCandidates) {
-                    if (chosenChoices.size() >= 4) break;
-                    chosenChoices.add(dc);
-                }
-                if (chosenChoices.size() < 4) {
-                    for (Flashcard fc : fallbackCandidates) {
-                        if (chosenChoices.size() >= 4) break;
-                        chosenChoices.add(fc);
+                    if (candidateChoices.size() >= 4) break;
+                    if (isChoiceEligible(candidateChoices, dc)) {
+                        candidateChoices.add(dc);
                     }
                 }
+                if (candidateChoices.size() < 4) {
+                    for (Flashcard fc : fallbackSamePos) {
+                        if (candidateChoices.size() >= 4) break;
+                        if (isChoiceEligible(candidateChoices, fc)) {
+                            candidateChoices.add(fc);
+                        }
+                    }
+                }
+                if (candidateChoices.size() < 4) {
+                    for (Flashcard fc : fallbackOtherPos) {
+                        if (candidateChoices.size() >= 4) break;
+                        if (isChoiceEligible(candidateChoices, fc)) {
+                            candidateChoices.add(fc);
+                        }
+                    }
+                }
+                if (candidateChoices.size() == 4) {
+                    chosenChoices = candidateChoices;
+                }
+            }
+
+            // Báo lỗi rõ ràng nếu không thể tìm đủ 4 lựa chọn không trùng nghĩa
+            if (chosenChoices == null || chosenChoices.size() < 4) {
+                int foundCount = (chosenChoices == null) ? 1 : chosenChoices.size();
+                throw new IllegalStateException("Không đủ 4 lựa chọn không trùng nghĩa cho câu hỏi thẻ id="
+                        + target.getId() + " (" + target.getFrontText() + "). Số lựa chọn tìm được: " + foundCount);
             }
 
             // Ghi nhận tần suất xuất hiện của các distractors
@@ -298,21 +339,51 @@ public class DeckTestQuestionGenerator {
         }
     }
 
-    private static boolean isMeaningConflicting(String meaningA, String meaningB) {
+    public static boolean backContainsFront(Flashcard card) {
+        if (card == null || card.getFrontText() == null || card.getBackText() == null) return false;
+        String front = DeckCardFilter.normalize(card.getFrontText());
+        String back = DeckCardFilter.normalize(card.getBackText());
+        return !front.isBlank() && back.contains(front);
+    }
+
+    public static Set<String> extractMeaningSenses(String meaning) {
+        if (meaning == null || meaning.isBlank()) {
+            return Collections.emptySet();
+        }
+        // Tách back_text theo , và ; chuẩn hóa (bỏ dấu câu, thường hóa)
+        String[] parts = meaning.split("[,;]");
+        Set<String> senses = new HashSet<>();
+        for (String part : parts) {
+            String normalized = DeckCardFilter.normalize(part)
+                    .replaceAll("[\\p{Punct}]", " ")
+                    .replaceAll("\\s+", " ")
+                    .trim();
+            if (!normalized.isEmpty()) {
+                senses.add(normalized);
+            }
+        }
+        return senses;
+    }
+
+    public static boolean isMeaningConflicting(String meaningA, String meaningB) {
+        if (meaningA == null || meaningB == null) return false;
         String a = DeckCardFilter.normalize(meaningA);
         String b = DeckCardFilter.normalize(meaningB);
         if (a.equals(b)) return true;
-        Set<String> sensesA = senses(a);
-        Set<String> sensesB = senses(b);
-        if (!Collections.disjoint(sensesA, sensesB)) return true;
-        return false;
+        Set<String> sensesA = extractMeaningSenses(meaningA);
+        Set<String> sensesB = extractMeaningSenses(meaningB);
+        return !Collections.disjoint(sensesA, sensesB);
     }
 
-    private static Set<String> senses(String meaning) {
-        return Arrays.stream(meaning.split("[,;/|]"))
-                .map(String::trim)
-                .filter(s -> !s.isBlank())
-                .collect(Collectors.toSet());
+    private static boolean isChoiceEligible(List<Flashcard> currentChoices, Flashcard candidate) {
+        if (candidate == null) return false;
+        String candidateFront = DeckCardFilter.normalize(candidate.getFrontText());
+        for (Flashcard ch : currentChoices) {
+            if (Objects.equals(ch.getId(), candidate.getId())) return false;
+            if (DeckCardFilter.normalize(ch.getFrontText()).equals(candidateFront)) return false;
+            if (isMeaningConflicting(ch.getBackText(), candidate.getBackText())) return false;
+        }
+        return true;
     }
 
     public static String normalizePos(String pos) {

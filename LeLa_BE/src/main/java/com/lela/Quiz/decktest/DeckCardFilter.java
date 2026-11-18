@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 import java.text.Normalizer;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 @Component
@@ -13,10 +14,34 @@ public class DeckCardFilter {
 
     private static final Pattern GARBAGE_SUFFIX = Pattern.compile(".*\\s+(?:ad|adv|adj|n|v)\\.?$", Pattern.CASE_INSENSITIVE);
     private static final Pattern POS_ANNOTATION = Pattern.compile(".*\\s*\\((?:a|adj|adv|n|v|prep|conj|pron)\\.?\\)\\s*$", Pattern.CASE_INSENSITIVE);
+    private static final Set<String> ABNORMAL_POS_TOKENS = Set.of(
+            "adj", "adj.", "adv", "adv.", "gerund", "v.", "v", "n.", "n"
+    );
 
     public static String normalize(String text) {
         return Normalizer.normalize(text == null ? "" : text, Normalizer.Form.NFC)
                 .toLowerCase(Locale.ROOT).trim().replaceAll("\\s+", " ");
+    }
+
+    public static boolean isAbnormalFrontText(String frontText) {
+        if (frontText == null) return true;
+        String raw = frontText.trim();
+        if (raw.length() > 40) {
+            return true;
+        }
+        String[] words = raw.split("\\s+");
+        if (words.length > 4) {
+            return true;
+        }
+        if (words.length > 1) {
+            for (int i = 1; i < words.length; i++) {
+                String token = words[i].toLowerCase(Locale.ROOT).replaceAll("[()\\[\\],;]", "");
+                if (ABNORMAL_POS_TOKENS.contains(token)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     public boolean isValidCard(Flashcard f) {
@@ -42,6 +67,9 @@ public class DeckCardFilter {
             return false;
         }
         if (back.matches(".*[<>={}].*")) {
+            return false;
+        }
+        if (isAbnormalFrontText(f.getFrontText())) {
             return false;
         }
         return true;

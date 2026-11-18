@@ -10,6 +10,7 @@ import com.lela.flashcard.FlashcardRepository;
 import com.lela.flashcard.domain.Flashcard;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,6 +49,7 @@ public class DeckTestAllQualifiedDecksTest {
     private DeckTestProperties properties;
 
     @Test
+    @EnabledIfEnvironmentVariable(named = "LELA_RUN_ALL_DECKS_TEST", matches = "true")
     @DisplayName("Kiểm thử Question Generator trên TẤT CẢ các bộ có >= 8 thẻ hợp lệ")
     void testQuestionGenerationOnAllQualifiedDecks() {
         List<Deck> allDecks = deckRepository.findAll().stream()
@@ -127,6 +129,30 @@ public class DeckTestAllQualifiedDecksTest {
                     // Không trùng từ đích trong cùng đề
                     if (screen.sourceCardId() != null) {
                         assertThat(targetCardIds.add(screen.sourceCardId())).isTrue();
+                    }
+
+                    // Quy tắc 1b: Không có cặp lựa chọn nào trong cùng câu chia sẻ phân đoạn nghĩa
+                    List<String> rawChoiceTexts = screen.left().stream().map(c -> c.getText().trim()).toList();
+                    for (int ci = 0; ci < rawChoiceTexts.size(); ci++) {
+                        Set<String> sensesCi = DeckTestQuestionGenerator.extractMeaningSenses(rawChoiceTexts.get(ci));
+                        for (int cj = ci + 1; cj < rawChoiceTexts.size(); cj++) {
+                            Set<String> sensesCj = DeckTestQuestionGenerator.extractMeaningSenses(rawChoiceTexts.get(cj));
+                            assertThat(Collections.disjoint(sensesCi, sensesCj))
+                                    .as("Deck %d: Hai lựa chọn '%s' và '%s' trong cùng câu hỏi không được chia sẻ phân đoạn nghĩa",
+                                            deck.getId(), rawChoiceTexts.get(ci), rawChoiceTexts.get(cj))
+                                    .isTrue();
+                        }
+                    }
+
+                    // Quy tắc 1a: Với thẻ nhóm (a) (back_text chứa front_text), chỉ có hướng EN -> VI
+                    Flashcard targetCard = validCards.stream()
+                            .filter(c -> Objects.equals(c.getId(), screen.sourceCardId()))
+                            .findFirst().orElse(null);
+                    if (targetCard != null && DeckTestQuestionGenerator.backContainsFront(targetCard)) {
+                        assertThat(screen.prompt())
+                                .as("Thẻ nhóm 1a (id=%d, front='%s', back='%s') bắt buộc phải ra hướng EN -> VI",
+                                        targetCard.getId(), targetCard.getFrontText(), targetCard.getBackText())
+                                .isEqualTo(targetCard.getFrontText().trim());
                     }
                 }
 

@@ -127,8 +127,8 @@ def main():
             errors.append(f'card_id={cid}: proposed_back trống!')
         if len(proposed_back) > 80:
             errors.append(f'card_id={cid}: proposed_back quá 80 ký tự!')
-        if front and front.strip().lower() == proposed_back.strip().lower():
-            errors.append(f'card_id={cid}: back trùng hoàn toàn với front_text!')
+        if front and front.strip().lower() in proposed_back.strip().lower():
+            errors.append(f'card_id={cid}: back_text chứa front_text ("{front}"), kể cả trong ngoặc!')
         try:
             int(row.get('deck_id', '0'))
         except (ValueError, TypeError):

@@ -307,4 +307,103 @@ class DeckTestQuestionGeneratorTest {
         assertThat(DeckTestQuestionGenerator.isSamePos("adjective", "adj")).isTrue();
         assertThat(DeckTestQuestionGenerator.isSamePos("noun", "verb")).isFalse();
     }
+
+    @Test
+    @DisplayName("Quy tắc 1a: Thẻ có back_text chứa front_text chỉ được ra câu EN -> VI, không bao giờ ra VI -> EN")
+    void shouldOnlyGenerateEnglishToVietnameseForCardsWhereBackContainsFront() {
+        Flashcard loanwordCard = createCard(10247L, "AIDS", "bệnh AIDS", "n");
+        List<Flashcard> deck = new ArrayList<>(sampleDeck(10));
+        deck.set(0, loanwordCard); // Đặt AIDS vào danh sách
+
+        // Chạy nhiều lần để kiểm tra cả các lượt chẵn/lẻ
+        for (int trial = 0; trial < 10; trial++) {
+            DeckTestQuestionGenerator.GeneratedExam exam = generator.generateExam(deck, List.of(), 10, 0, 20, 60);
+            var aidsScreenOpt = exam.mcScreens().stream()
+                    .filter(s -> Objects.equals(s.sourceCardId(), 10247L))
+                    .findFirst();
+
+            assertThat(aidsScreenOpt).isPresent();
+            var screen = aidsScreenOpt.get();
+
+            // Prompt PHẢI là từ tiếng Anh "AIDS" (hướng EN -> VI)
+            assertThat(screen.prompt()).isEqualTo("AIDS");
+
+            // Các lựa chọn PHẢI là nghĩa tiếng Việt (chứa "bệnh AIDS")
+            String correctOptionKey = screen.solution().get("answer");
+            var correctCell = screen.left().stream()
+                    .filter(c -> c.getId().equals(correctOptionKey))
+                    .findFirst().orElseThrow();
+            assertThat(correctCell.getText()).isEqualTo("bệnh AIDS");
+        }
+    }
+
+    @Test
+    @DisplayName("Quy tắc 1b: Distractor bị loại nếu trùng bất kỳ phân đoạn nghĩa nào với đáp án đúng hoặc distractor khác")
+    void shouldRejectDistractorWithOverlappingMeaningSense() {
+        // Thẻ target: "hiệp hội; sự liên kết"
+        Flashcard target = createCard(1L, "association", "hiệp hội; sự liên kết", "n");
+        // Thẻ cùng deck nhưng có phân đoạn "sự liên kết" trùng với target
+        Flashcard conflictingCard = createCard(2L, "alliance", "đồng minh, sự liên kết", "n");
+
+        List<Flashcard> deck = new ArrayList<>();
+        deck.add(target);
+        deck.add(conflictingCard);
+        for (int i = 3; i <= 10; i++) {
+            deck.add(createCard((long) i, "word" + i, "nghĩa riêng biệt " + i, "n"));
+        }
+
+        DeckTestQuestionGenerator.GeneratedExam exam = generator.generateExam(deck, List.of(), 10, 0, 20, 60);
+
+        var targetScreen = exam.mcScreens().stream()
+                .filter(s -> Objects.equals(s.sourceCardId(), 1L))
+                .findFirst().orElseThrow();
+
+        // Thẻ conflictingCard không bao giờ được xuất hiện trong 4 lựa chọn của targetScreen
+        for (TimedQuizEngine.Cell cell : targetScreen.left()) {
+            assertThat(cell.getText()).isNotEqualTo("đồng minh, sự liên kết");
+            assertThat(cell.getText()).isNotEqualTo("alliance");
+        }
+
+        // Kiểm tra không có bất kỳ 2 lựa chọn nào trong 4 lựa chọn chia sẻ phân đoạn nghĩa
+        List<String> choiceTexts = targetScreen.left().stream().map(TimedQuizEngine.Cell::getText).toList();
+        for (int i = 0; i < choiceTexts.size(); i++) {
+            Set<String> sensesI = DeckTestQuestionGenerator.extractMeaningSenses(choiceTexts.get(i));
+            for (int j = i + 1; j < choiceTexts.size(); j++) {
+                Set<String> sensesJ = DeckTestQuestionGenerator.extractMeaningSenses(choiceTexts.get(j));
+                assertThat(Collections.disjoint(sensesI, sensesJ))
+                        .as("Lựa chọn '%s' và '%s' không được chia sẻ phân đoạn nghĩa", choiceTexts.get(i), choiceTexts.get(j))
+                        .isTrue();
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("Quy tắc 1b: Lấy từ fallbackPool khi deck không đủ distractor không trùng nghĩa, báo lỗi nếu thiếu")
+    void shouldFetchFromFallbackPoolAndThrowIfStillInsufficient() {
+        // Deck có 8 thẻ, nhưng 6 thẻ trong đó bị trùng nghĩa với nhau
+        Flashcard target = createCard(1L, "targetWord", "mục tiêu; đích đến", "n");
+        List<Flashcard> deck = new ArrayList<>();
+        deck.add(target);
+        // 6 thẻ đều có nghĩa chứa "mục tiêu" -> xung đột với target
+        for (int i = 2; i <= 7; i++) {
+            deck.add(createCard((long) i, "conflict" + i, "mục tiêu, phần " + i, "n"));
+        }
+        deck.add(createCard(8L, "distinct8", "nghĩa riêng 8", "n"));
+
+        // Fallback pool có đủ 3 thẻ cùng POS n
+        List<Flashcard> fallbackPool = List.of(
+                createCard(101L, "fallback1", "kho dự trữ 1", "n"),
+                createCard(102L, "fallback2", "kho dự trữ 2", "n"),
+                createCard(103L, "fallback3", "kho dự trữ 3", "n")
+        );
+
+        // Với fallbackPool: sinh thành công và đủ 4 lựa chọn
+        DeckTestQuestionGenerator.GeneratedExam exam = generator.generateExam(deck, fallbackPool, 1, 0, 20, 60);
+        assertThat(exam.mcScreens().get(0).left()).hasSize(4);
+
+        // Nếu fallbackPool rỗng: không đủ 3 distractors không trùng nghĩa -> bắt buộc ném IllegalStateException
+        assertThatThrownBy(() -> generator.generateExam(deck, List.of(), 1, 0, 20, 60))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Không đủ 4 lựa chọn không trùng nghĩa");
+    }
 }
