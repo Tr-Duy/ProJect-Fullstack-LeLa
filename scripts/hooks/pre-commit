@@ -1,0 +1,8 @@
+#!/bin/sh
+python scripts/hooks/check_staged_secrets.py
+STATUS=$?
+if [ $STATUS -ne 0 ]; then
+  echo "Commit bi chan boi pre-commit security hook (phat hien mat khau hoac file CSV)."
+  exit 1
+fi
+exit 0
