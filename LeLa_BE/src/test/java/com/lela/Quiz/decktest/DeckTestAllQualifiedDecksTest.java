@@ -98,27 +98,42 @@ public class DeckTestAllQualifiedDecksTest {
 
             for (int seed = 1; seed <= 30; seed++) {
                 try {
+                    Set<Long> questionsWithFallbackInExam = new HashSet<>();
+                    long[] distractorCounters = new long[2]; // [0] = total, [1] = samePos
+
+                    DeckTestQuestionGenerator.ExamStatsCollector statsCollector = (target, distractor, isOutsideDeck, isSamePos) -> {
+                        distractorCounters[0]++;
+                        if (isSamePos) {
+                            distractorCounters[1]++;
+                        }
+                        if (isOutsideDeck) {
+                            questionsWithFallbackInExam.add(target.getId());
+                        }
+                    };
+
                     DeckTestQuestionGenerator.GeneratedExam exam = questionGenerator.generateExam(
                             validCards,
                             fallbackPool,
                             properties.getMcQuestionCount(),
                             properties.getMatchingScreensCount(),
                             properties.getMcQuestionSeconds(),
-                            properties.getMatchingScreenSeconds()
+                            properties.getMatchingScreenSeconds(),
+                            statsCollector
                     );
                     totalExamsGenerated++;
                     totalFallbackUsed += exam.fallbackUsedCount();
                     totalMcQuestions += exam.mcScreens().size();
-                    totalMcQuestionsWithFallback += exam.questionsWithFallbackCount();
-                    totalDistractorsAll += exam.totalDistractorsCount();
-                    totalSamePosDistractorsAll += exam.samePosDistractorCount();
+                    int qWithFallback = questionsWithFallbackInExam.size();
+                    totalMcQuestionsWithFallback += qWithFallback;
+                    totalDistractorsAll += distractorCounters[0];
+                    totalSamePosDistractorsAll += distractorCounters[1];
 
                     if (validCards.size() == 8) {
                         mcQuestionsDeck8 += exam.mcScreens().size();
-                        mcWithFallbackDeck8 += exam.questionsWithFallbackCount();
+                        mcWithFallbackDeck8 += qWithFallback;
                     } else if (validCards.size() >= 14) {
                         mcQuestionsDeckGe14 += exam.mcScreens().size();
-                        mcWithFallbackDeckGe14 += exam.questionsWithFallbackCount();
+                        mcWithFallbackDeckGe14 += qWithFallback;
                     }
 
                     // 1. Kiểm tra MC Screens
