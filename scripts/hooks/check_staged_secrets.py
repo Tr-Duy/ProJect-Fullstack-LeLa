@@ -33,12 +33,16 @@ def main():
         if status.startswith('D'):
             continue
 
-        # 3. Skip checking the hook script itself
-        if f == 'scripts/hooks/check_staged_secrets.py':
+        # 3. Skip checking the hook script itself and hook docs
+        if f.startswith('scripts/hooks/'):
             continue
 
-        # 4. Scan code and configuration files
-        if not (f.endswith('.py') or f.endswith('.java') or f.endswith('.sql') or f.endswith('.js') or f.endswith('.ts') or f.endswith('.yml') or f.endswith('.yaml')):
+        # 4. Scan code, data, script and configuration files
+        scanned_extensions = (
+            '.py', '.java', '.sql', '.js', '.ts', '.yml', '.yaml',
+            '.mjs', '.md', '.json', '.env', '.properties', '.sh', '.ps1', '.txt'
+        )
+        if not any(f.endswith(ext) for ext in scanned_extensions):
             continue
 
         try:
