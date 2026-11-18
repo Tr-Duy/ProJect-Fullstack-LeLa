@@ -406,4 +406,76 @@ class DeckTestQuestionGeneratorTest {
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Không đủ 4 lựa chọn không trùng nghĩa");
     }
+
+    @Test
+    @DisplayName("Matching screen: Convince và Persuade cùng bộ không bao giờ xuất hiện trong cùng một màn ghép")
+    void shouldNotPutConvinceAndPersuadeInSameMatchingScreen() {
+        Flashcard convince = createCard(1L, "convince", "thuyết phục", "v");
+        Flashcard persuade = createCard(2L, "persuade", "thuyết phục; làm cho tin", "v");
+
+        List<Flashcard> deck = new ArrayList<>();
+        deck.add(convince);
+        deck.add(persuade);
+        for (int i = 3; i <= 16; i++) {
+            deck.add(createCard((long) i, "word" + i, "nghĩa riêng biệt " + i, "v"));
+        }
+
+        // Chạy 20 lần thử ngẫu nhiên
+        for (int trial = 0; trial < 20; trial++) {
+            DeckTestQuestionGenerator.GeneratedExam exam = generator.generateExam(deck, List.of(), 8, 2, 20, 60);
+            for (DeckTestQuestionGenerator.GeneratedScreen match : exam.matchingScreens()) {
+                List<String> wordsInScreen = match.left().stream()
+                        .map(c -> DeckCardFilter.normalize(c.getText()))
+                        .toList();
+                boolean hasConvince = wordsInScreen.contains("convince");
+                boolean hasPersuade = wordsInScreen.contains("persuade");
+                assertThat(hasConvince && hasPersuade)
+                        .as("Màn ghép không được chứa cả hai thẻ trùng nghĩa Convince và Persuade")
+                        .isFalse();
+
+                List<String> meaningsInScreen = match.right().stream().map(c -> c.getText().trim()).toList();
+                for (int i = 0; i < meaningsInScreen.size(); i++) {
+                    Set<String> sI = DeckTestQuestionGenerator.extractMeaningSenses(meaningsInScreen.get(i));
+                    for (int j = i + 1; j < meaningsInScreen.size(); j++) {
+                        Set<String> sJ = DeckTestQuestionGenerator.extractMeaningSenses(meaningsInScreen.get(j));
+                        assertThat(Collections.disjoint(sI, sJ))
+                                .as("Màn ghép có hai cặp chia sẻ phân đoạn nghĩa: '%s' và '%s'", meaningsInScreen.get(i), meaningsInScreen.get(j))
+                                .isTrue();
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("Matching screen: giảm số màn ghép khi số thẻ còn lại không đủ 4 thẻ không trùng nghĩa")
+    void shouldReduceMatchingScreensWhenRemainingCardsConflict() {
+        Flashcard convince = createCard(11L, "convince", "thuyết phục", "v");
+        Flashcard persuade = createCard(12L, "persuade", "thuyết phục; làm cho tin", "v");
+        Flashcard c3 = createCard(13L, "card3", "nghĩa riêng 3", "v");
+        Flashcard c4 = createCard(14L, "card4", "nghĩa riêng 4", "v");
+
+        List<Flashcard> deck = new ArrayList<>();
+        for (int i = 1; i <= 8; i++) {
+            deck.add(createCard((long) i, "mcWord" + i, "mc nghĩa " + i, "n"));
+        }
+        deck.add(convince);
+        deck.add(persuade);
+        deck.add(c3);
+        deck.add(c4);
+
+        DeckTestQuestionGenerator.GeneratedExam exam = generator.generateExam(deck, List.of(), 8, 1, 20, 60);
+        assertThat(exam.mcScreens()).hasSize(8);
+        for (var match : exam.matchingScreens()) {
+            assertThat(match.left()).hasSize(4);
+            List<String> meanings = match.right().stream().map(c -> c.getText().trim()).toList();
+            for (int i = 0; i < meanings.size(); i++) {
+                Set<String> sI = DeckTestQuestionGenerator.extractMeaningSenses(meanings.get(i));
+                for (int j = i + 1; j < meanings.size(); j++) {
+                    Set<String> sJ = DeckTestQuestionGenerator.extractMeaningSenses(meanings.get(j));
+                    assertThat(Collections.disjoint(sI, sJ)).isTrue();
+                }
+            }
+        }
+    }
 }

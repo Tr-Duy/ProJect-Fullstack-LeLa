@@ -69,7 +69,7 @@ print("\n=== 6. CREATE DEDICATED QA USER: qa_topic_test_01 ===")
 cur.execute("SELECT id FROM users WHERE username='qa_topic_test_01'")
 existing_qa = cur.fetchone()
 if not existing_qa:
-    # Use standard bcrypt hash for '123456': $2a$10$70NHF6uEzsz.eR97n0I29..XrPftergfKlJwDR0AhQ.boDRn73ble
+    # Use standard bcrypt hash for os.environ.get('DB_PASSWORD', ''): $2a$10$70NHF6uEzsz.eR97n0I29..XrPftergfKlJwDR0AhQ.boDRn73ble
     cur.execute("""
         INSERT INTO users (username, email, password_hash, full_name, status, timezone, version, created_at, updated_at)
         VALUES ('qa_topic_test_01', 'qa_topic_test_01@lela.com', '$2a$10$70NHF6uEzsz.eR97n0I29..XrPftergfKlJwDR0AhQ.boDRn73ble',

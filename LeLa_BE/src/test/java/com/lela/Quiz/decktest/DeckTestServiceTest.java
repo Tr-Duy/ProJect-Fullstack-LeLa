@@ -297,6 +297,39 @@ class DeckTestServiceTest {
     }
 
     @Test
+    @DisplayName("startDeckTest: Ném ResponseStatusException HTTP 422 khi generator ném IllegalStateException")
+    void shouldThrow422WhenQuestionGeneratorFailsWithIllegalStateException() {
+        when(deckRepository.findById(10L)).thenReturn(Optional.of(testDeck));
+        DeckEnrollment enrollment = new DeckEnrollment();
+        enrollment.setStatus(DeckEnrollmentStatus.ACTIVE);
+        when(deckEnrollmentRepository.findByUserIdAndDeckId(100L, 10L)).thenReturn(Optional.of(enrollment));
+
+        List<Flashcard> cards = makeCards(16);
+        when(flashcardRepository.findAllByDeckIdAndIsActiveTrue(10L)).thenReturn(cards);
+        when(cardFilter.filterValidCards(cards)).thenReturn(cards);
+
+        List<CardProgress> progressList = new ArrayList<>();
+        for (int i = 0; i < 8; i++) {
+            CardProgress cp = new CardProgress();
+            cp.setCard(cards.get(i));
+            cp.setState(CardProgressState.LEARNING);
+            progressList.add(cp);
+        }
+        when(cardProgressRepository.findAllByUserIdAndDeckId(100L, 10L)).thenReturn(progressList);
+
+        when(questionGenerator.generateExam(any(), any(), anyInt(), anyInt(), anyInt(), anyInt()))
+                .thenThrow(new IllegalStateException("Không đủ 4 lựa chọn không trùng nghĩa cho câu hỏi"));
+
+        assertThatThrownBy(() -> service.startDeckTest(10L))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> {
+                    ResponseStatusException rse = (ResponseStatusException) ex;
+                    assertThat(rse.getStatusCode().value()).isEqualTo(422);
+                    assertThat(rse.getReason()).contains("Không thể sinh đề thi cho bộ thẻ này");
+                });
+    }
+
+    @Test
     @DisplayName("submitDeckTest: Idempotent - nộp lần 2 cùng một attempt không cộng thêm XP")
     void shouldBeIdempotentOnResubmit() {
         QuizAttempt attempt = new QuizAttempt();

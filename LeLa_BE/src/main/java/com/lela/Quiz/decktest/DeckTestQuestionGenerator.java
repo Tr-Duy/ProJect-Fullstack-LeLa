@@ -26,14 +26,21 @@ public class DeckTestQuestionGenerator {
 
     public record GeneratedExam(
             List<GeneratedScreen> mcScreens,
-            List<GeneratedScreen> matchingScreens
+            List<GeneratedScreen> matchingScreens,
+            int fallbackUsedCount
     ) {
+        public GeneratedExam(List<GeneratedScreen> mcScreens, List<GeneratedScreen> matchingScreens) {
+            this(mcScreens, matchingScreens, 0);
+        }
+
         public List<GeneratedScreen> allScreens() {
             List<GeneratedScreen> all = new ArrayList<>(mcScreens);
             all.addAll(matchingScreens);
             return all;
         }
     }
+
+    private record ExamMcResult(List<GeneratedScreen> screens, int fallbackUsedCount) {}
 
     public GeneratedExam generateExam(
             List<Flashcard> deckCards,
@@ -52,7 +59,8 @@ public class DeckTestQuestionGenerator {
 
         // 1. Sinh Part 1: Multiple Choice Meaning (xen kẽ VI -> EN và EN -> VI)
         int targetMcCount = Math.min(mcCount, validDeckCards.size());
-        List<GeneratedScreen> mcScreens = generateMultipleChoiceScreens(validDeckCards, validFallback, targetMcCount, mcSeconds);
+        ExamMcResult mcResult = generateMultipleChoiceScreens(validDeckCards, validFallback, targetMcCount, mcSeconds);
+        List<GeneratedScreen> mcScreens = mcResult.screens();
 
         // Tập hợp các ID thẻ đã làm đáp án đúng ở Part 1
         Set<Long> mcTargetCardIds = mcScreens.stream()
@@ -70,10 +78,10 @@ public class DeckTestQuestionGenerator {
         int targetScreens = Math.min(matchingScreensCount, remainingForMatching.size() / 4);
         List<GeneratedScreen> matchingScreens = generateMatchingScreens(remainingForMatching, targetScreens, matchingSeconds);
 
-        return new GeneratedExam(mcScreens, matchingScreens);
+        return new GeneratedExam(mcScreens, matchingScreens, mcResult.fallbackUsedCount());
     }
 
-    private List<GeneratedScreen> generateMultipleChoiceScreens(
+    private ExamMcResult generateMultipleChoiceScreens(
             List<Flashcard> deckCards,
             List<Flashcard> fallbackPool,
             int count,
@@ -82,6 +90,9 @@ public class DeckTestQuestionGenerator {
         List<Flashcard> targets = new ArrayList<>(deckCards);
         Collections.shuffle(targets);
         targets = targets.subList(0, count);
+
+        Set<Long> fallbackCardIds = fallbackPool.stream().map(Flashcard::getId).collect(Collectors.toSet());
+        int totalFallbackUsed = 0;
 
         List<GeneratedScreen> screens = new ArrayList<>();
         Set<String> optionGroups = new HashSet<>();
@@ -218,11 +229,14 @@ public class DeckTestQuestionGenerator {
                         + target.getId() + " (" + target.getFrontText() + "). Số lựa chọn tìm được: " + foundCount);
             }
 
-            // Ghi nhận tần suất xuất hiện của các distractors
+            // Ghi nhận tần suất xuất hiện của các distractors và đếm số lượng fallback được dùng
             for (Flashcard ch : chosenChoices) {
                 if (!Objects.equals(ch.getId(), target.getId())) {
                     String key = DeckCardFilter.normalize(ch.getFrontText());
                     distractorUsage.put(key, distractorUsage.getOrDefault(key, 0) + 1);
+                    if (fallbackCardIds.contains(ch.getId())) {
+                        totalFallbackUsed++;
+                    }
                 }
             }
 
@@ -255,7 +269,7 @@ public class DeckTestQuestionGenerator {
             ));
         }
 
-        return screens;
+        return new ExamMcResult(screens, totalFallbackUsed);
     }
 
     private List<GeneratedScreen> generateMatchingScreens(
@@ -270,25 +284,30 @@ public class DeckTestQuestionGenerator {
         List<Flashcard> pool = new ArrayList<>(availableCards);
         Collections.shuffle(pool);
 
-        int poolIndex = 0;
         for (int screenIdx = 0; screenIdx < targetScreens; screenIdx++) {
             List<Flashcard> screenCards = new ArrayList<>();
+            List<Flashcard> skipped = new ArrayList<>();
 
-            // Lấy 4 thẻ không xung đột
-            int attempts = 0;
-            while (screenCards.size() < 4 && attempts < 100 && poolIndex < pool.size()) {
-                attempts++;
-                Flashcard candidate = pool.get(poolIndex++);
-                if (screenCards.stream().noneMatch(c ->
+            for (Flashcard candidate : pool) {
+                if (screenCards.size() >= 4) {
+                    skipped.add(candidate);
+                    continue;
+                }
+                boolean conflicts = screenCards.stream().anyMatch(c ->
                         DeckCardFilter.normalize(c.getFrontText()).equals(DeckCardFilter.normalize(candidate.getFrontText()))
-                                || isMeaningConflicting(c.getBackText(), candidate.getBackText()))) {
+                                || isMeaningConflicting(c.getBackText(), candidate.getBackText()));
+                if (!conflicts) {
                     screenCards.add(candidate);
+                } else {
+                    skipped.add(candidate);
                 }
             }
 
             if (screenCards.size() < 4) {
-                break; // Không đủ thẻ không xung đột trong tập khả dụng
+                break; // Không đủ thẻ không xung đột trong tập khả dụng, giảm số màn ghép
             }
+
+            pool = skipped;
 
             List<TimedQuizEngine.Cell> leftCells = new ArrayList<>();
             List<TimedQuizEngine.Cell> rightCells = new ArrayList<>();

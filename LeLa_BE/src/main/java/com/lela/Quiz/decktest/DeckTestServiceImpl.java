@@ -221,14 +221,20 @@ public class DeckTestServiceImpl implements DeckTestService {
         List<Flashcard> fallbackPool = vocabularyRepository.findSystemWords(properties.getSystemOwner(), levelId);
 
         // Sinh đề bài thi kết hợp
-        DeckTestQuestionGenerator.GeneratedExam exam = questionGenerator.generateExam(
-                deckCards,
-                fallbackPool,
-                properties.getMcQuestionCount(),
-                properties.getMatchingScreensCount(),
-                properties.getMcQuestionSeconds(),
-                properties.getMatchingScreenSeconds()
-        );
+        DeckTestQuestionGenerator.GeneratedExam exam;
+        try {
+            exam = questionGenerator.generateExam(
+                    deckCards,
+                    fallbackPool,
+                    properties.getMcQuestionCount(),
+                    properties.getMatchingScreensCount(),
+                    properties.getMcQuestionSeconds(),
+                    properties.getMatchingScreenSeconds()
+            );
+        } catch (IllegalStateException ex) {
+            log.error("Không thể sinh đề thi cho bộ thẻ id={}: {}", deck.getId(), ex.getMessage(), ex);
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Không thể sinh đề thi cho bộ thẻ này: " + ex.getMessage(), ex);
+        }
 
         // Tạo hoặc lấy Quiz cho chủ đề
         String quizCode = "DECK-TEST-" + deck.getId();
