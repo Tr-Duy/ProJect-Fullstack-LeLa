@@ -471,7 +471,8 @@ class DeckTestServiceTest {
         when(quizAttemptQuestionRepository.findByAttemptId(503L)).thenReturn(List.of(q));
 
         // Lần đầu hôm nay: 0 submissions today
-        when(quizAttemptRepository.countSubmittedDeckAttemptsOnDate(eq(100L), eq(10L), any(), any(), eq(503L))).thenReturn(0L);
+        when(quizAttemptRepository.countSubmittedDeckAttemptsOnDate(eq(100L), eq(10L), any(), any(), eq(503L)))
+                .thenReturn(0L);
         // Chưa từng pass trước hôm nay
         when(quizAttemptRepository.countPassedDeckAttemptsBefore(eq(100L), eq(10L), any())).thenReturn(0L);
 
@@ -519,7 +520,8 @@ class DeckTestServiceTest {
         when(quizAttemptQuestionRepository.findByAttemptId(504L)).thenReturn(List.of(q));
 
         // Lần đầu hôm nay: 0 submissions today
-        when(quizAttemptRepository.countSubmittedDeckAttemptsOnDate(eq(100L), eq(10L), any(), any(), eq(504L))).thenReturn(0L);
+        when(quizAttemptRepository.countSubmittedDeckAttemptsOnDate(eq(100L), eq(10L), any(), any(), eq(504L)))
+                .thenReturn(0L);
         // Đã từng pass trước hôm nay
         when(quizAttemptRepository.countPassedDeckAttemptsBefore(eq(100L), eq(10L), any())).thenReturn(1L);
 
@@ -564,7 +566,8 @@ class DeckTestServiceTest {
         q.setPoints(4);
         q.setQuestionType(com.lela.QuizQuestion.domain.QuestionType.MATCHING_PAIRS);
         when(quizAttemptQuestionRepository.findByAttemptId(505L)).thenReturn(List.of(q));
-        when(quizAttemptRepository.countSubmittedDeckAttemptsOnDate(eq(100L), eq(10L), any(), any(), eq(505L))).thenReturn(0L);
+        when(quizAttemptRepository.countSubmittedDeckAttemptsOnDate(eq(100L), eq(10L), any(), any(), eq(505L)))
+                .thenReturn(0L);
         when(quizAttemptRepository.countPassedDeckAttemptsBefore(eq(100L), eq(10L), any())).thenReturn(0L);
 
         DeckEnrollment enrollment = new DeckEnrollment();
@@ -573,8 +576,10 @@ class DeckTestServiceTest {
         when(deckEnrollmentRepository.findByUserIdAndDeckId(100L, 10L)).thenReturn(Optional.of(enrollment));
 
         // Ban đầu testUser có xpTotal = 50L.
-        // Khi logActivity được gọi, nó trả về response (ở implementation thực sẽ cộng 8 vào xp_total = 58L).
-        // DeckTestServiceImpl tải refreshedUser từ DB và chỉ cập nhật streak, KHÔNG setXpTotal lần nữa.
+        // Khi logActivity được gọi, nó trả về response (ở implementation thực sẽ cộng 8
+        // vào xp_total = 58L).
+        // DeckTestServiceImpl tải refreshedUser từ DB và chỉ cập nhật streak, KHÔNG
+        // setXpTotal lần nữa.
         testUser.setXpTotal(58L); // Giả lập trạng thái sau khi activityService.logActivity hoàn thành
         when(usersRepository.findById(100L)).thenReturn(Optional.of(testUser));
 

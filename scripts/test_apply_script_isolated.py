@@ -21,6 +21,8 @@ Phần B: Chế độ INSERT (Thêm thẻ mới cho bộ gần ngưỡng)
 import os, sys, csv, pymysql, subprocess
 
 DB_PWD = os.environ.get('DB_PASSWORD')
+if not DB_PWD:
+    raise RuntimeError("Missing required environment variable DB_PASSWORD")
 TEST_DB = 'lela_test_apply_db'
 
 def run():

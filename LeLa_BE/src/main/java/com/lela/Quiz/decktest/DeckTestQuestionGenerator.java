@@ -27,10 +27,17 @@ public class DeckTestQuestionGenerator {
     public record GeneratedExam(
             List<GeneratedScreen> mcScreens,
             List<GeneratedScreen> matchingScreens,
-            int fallbackUsedCount
+            int fallbackUsedCount,
+            int questionsWithFallbackCount,
+            int samePosDistractorCount,
+            int totalDistractorsCount
     ) {
+        public GeneratedExam(List<GeneratedScreen> mcScreens, List<GeneratedScreen> matchingScreens, int fallbackUsedCount) {
+            this(mcScreens, matchingScreens, fallbackUsedCount, 0, 0, 0);
+        }
+
         public GeneratedExam(List<GeneratedScreen> mcScreens, List<GeneratedScreen> matchingScreens) {
-            this(mcScreens, matchingScreens, 0);
+            this(mcScreens, matchingScreens, 0, 0, 0, 0);
         }
 
         public List<GeneratedScreen> allScreens() {
@@ -40,7 +47,13 @@ public class DeckTestQuestionGenerator {
         }
     }
 
-    private record ExamMcResult(List<GeneratedScreen> screens, int fallbackUsedCount) {}
+    private record ExamMcResult(
+            List<GeneratedScreen> screens,
+            int fallbackUsedCount,
+            int questionsWithFallbackCount,
+            int samePosDistractorCount,
+            int totalDistractorsCount
+    ) {}
 
     public GeneratedExam generateExam(
             List<Flashcard> deckCards,
@@ -78,7 +91,14 @@ public class DeckTestQuestionGenerator {
         int targetScreens = Math.min(matchingScreensCount, remainingForMatching.size() / 4);
         List<GeneratedScreen> matchingScreens = generateMatchingScreens(remainingForMatching, targetScreens, matchingSeconds);
 
-        return new GeneratedExam(mcScreens, matchingScreens, mcResult.fallbackUsedCount());
+        return new GeneratedExam(
+                mcScreens,
+                matchingScreens,
+                mcResult.fallbackUsedCount(),
+                mcResult.questionsWithFallbackCount(),
+                mcResult.samePosDistractorCount(),
+                mcResult.totalDistractorsCount()
+        );
     }
 
     private ExamMcResult generateMultipleChoiceScreens(
@@ -91,8 +111,11 @@ public class DeckTestQuestionGenerator {
         Collections.shuffle(targets);
         targets = targets.subList(0, count);
 
-        Set<Long> fallbackCardIds = fallbackPool.stream().map(Flashcard::getId).collect(Collectors.toSet());
+        Set<Long> deckCardIds = deckCards.stream().map(Flashcard::getId).collect(Collectors.toSet());
         int totalFallbackUsed = 0;
+        int questionsWithFallback = 0;
+        int samePosDistractors = 0;
+        int totalDistractors = 0;
 
         List<GeneratedScreen> screens = new ArrayList<>();
         Set<String> optionGroups = new HashSet<>();
@@ -230,14 +253,23 @@ public class DeckTestQuestionGenerator {
             }
 
             // Ghi nhận tần suất xuất hiện của các distractors và đếm số lượng fallback được dùng
+            boolean usedFallbackInThisQuestion = false;
             for (Flashcard ch : chosenChoices) {
                 if (!Objects.equals(ch.getId(), target.getId())) {
                     String key = DeckCardFilter.normalize(ch.getFrontText());
                     distractorUsage.put(key, distractorUsage.getOrDefault(key, 0) + 1);
-                    if (fallbackCardIds.contains(ch.getId())) {
+                    totalDistractors++;
+                    if (!deckCardIds.contains(ch.getId())) {
                         totalFallbackUsed++;
+                        usedFallbackInThisQuestion = true;
+                    }
+                    if (hasTargetPos && isSamePos(ch.getPartOfSpeech(), normTargetPos)) {
+                        samePosDistractors++;
                     }
                 }
+            }
+            if (usedFallbackInThisQuestion) {
+                questionsWithFallback++;
             }
 
             Collections.shuffle(chosenChoices);
@@ -269,7 +301,7 @@ public class DeckTestQuestionGenerator {
             ));
         }
 
-        return new ExamMcResult(screens, totalFallbackUsed);
+        return new ExamMcResult(screens, totalFallbackUsed, questionsWithFallback, samePosDistractors, totalDistractors);
     }
 
     private List<GeneratedScreen> generateMatchingScreens(

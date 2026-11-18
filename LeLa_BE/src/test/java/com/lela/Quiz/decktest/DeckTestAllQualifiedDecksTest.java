@@ -65,6 +65,16 @@ public class DeckTestAllQualifiedDecksTest {
         long totalFallbackUsed = 0;
         long totalExceptions = 0;
         long totalRule1aQuestions = 0;
+
+        long totalMcQuestions = 0;
+        long totalMcQuestionsWithFallback = 0;
+        long mcQuestionsDeck8 = 0;
+        long mcWithFallbackDeck8 = 0;
+        long mcQuestionsDeckGe14 = 0;
+        long mcWithFallbackDeckGe14 = 0;
+        long totalDistractorsAll = 0;
+        long totalSamePosDistractorsAll = 0;
+
         List<String> failedDeckReports = new ArrayList<>();
 
         System.out.println("================================================================================");
@@ -98,6 +108,18 @@ public class DeckTestAllQualifiedDecksTest {
                     );
                     totalExamsGenerated++;
                     totalFallbackUsed += exam.fallbackUsedCount();
+                    totalMcQuestions += exam.mcScreens().size();
+                    totalMcQuestionsWithFallback += exam.questionsWithFallbackCount();
+                    totalDistractorsAll += exam.totalDistractorsCount();
+                    totalSamePosDistractorsAll += exam.samePosDistractorCount();
+
+                    if (validCards.size() == 8) {
+                        mcQuestionsDeck8 += exam.mcScreens().size();
+                        mcWithFallbackDeck8 += exam.questionsWithFallbackCount();
+                    } else if (validCards.size() >= 14) {
+                        mcQuestionsDeckGe14 += exam.mcScreens().size();
+                        mcWithFallbackDeckGe14 += exam.questionsWithFallbackCount();
+                    }
 
                     // 1. Kiểm tra MC Screens
                     List<DeckTestQuestionGenerator.GeneratedScreen> mcScreens = exam.mcScreens();
@@ -225,9 +247,25 @@ public class DeckTestAllQualifiedDecksTest {
         System.out.println("Số bộ PASS 100% cả 30 lần sinh đề: " + passCount);
         System.out.println("Số bộ FAIL: " + failCount);
         System.out.println("Tổng số đề sinh: " + totalExamsGenerated);
-        System.out.println("Số lần phải dùng fallbackPool: " + totalFallbackUsed);
+        System.out.println("Số lần phải dùng fallbackPool (gọi distractor): " + totalFallbackUsed);
         System.out.println("Số ngoại lệ (exceptions): " + totalExceptions);
         System.out.println("Số câu EN->VI bắt buộc do rule 1a: " + totalRule1aQuestions);
+
+        double pctFallbackOverall = (totalMcQuestions > 0) ? (100.0 * totalMcQuestionsWithFallback / totalMcQuestions) : 0.0;
+        double pctFallback8 = (mcQuestionsDeck8 > 0) ? (100.0 * mcWithFallbackDeck8 / mcQuestionsDeck8) : 0.0;
+        double pctFallbackGe14 = (mcQuestionsDeckGe14 > 0) ? (100.0 * mcWithFallbackDeckGe14 / mcQuestionsDeckGe14) : 0.0;
+        double pctSamePos = (totalDistractorsAll > 0) ? (100.0 * totalSamePosDistractorsAll / totalDistractorsAll) : 0.0;
+
+        System.out.println("Tổng số câu hỏi MC đã sinh: " + totalMcQuestions);
+        System.out.printf("Số câu có ít nhất 1 distractor từ fallbackPool: %d (%.2f%% trên tổng số câu)\n",
+                totalMcQuestionsWithFallback, pctFallbackOverall);
+        System.out.printf("  - Với các bộ đúng 8 thẻ: %d/%d câu (%.2f%%)\n",
+                mcWithFallbackDeck8, mcQuestionsDeck8, pctFallback8);
+        System.out.printf("  - Với các bộ >= 14 thẻ: %d/%d câu (%.2f%%)\n",
+                mcWithFallbackDeckGe14, mcQuestionsDeckGe14, pctFallbackGe14);
+        System.out.printf("Tỷ lệ distractors cùng loại từ (POS) với từ đích: %d/%d (%.2f%%)\n",
+                totalSamePosDistractorsAll, totalDistractorsAll, pctSamePos);
+
         if (failCount > 0) {
             System.out.println("Chi tiết bộ lỗi:");
             for (String r : failedDeckReports) {
